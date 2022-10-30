@@ -1,1 +1,5 @@
-{ "dependencies": { "baojs": "^0.1.3" } }
+{
+    "dependencies": {
+        "baojs": "^0.1.3"
+    }
+}
