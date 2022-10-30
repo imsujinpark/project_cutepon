@@ -1,10 +1,8 @@
 import { Database } from 'bun:sqlite';
-import { open } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
   
-function setup_database() {
-    const file = await open('./definition.sql');
+async function setup_database() {
+    const file_content = await readFile('./definition.sql', { encoding: "utf8" });
     const db = new Database("data.db");
-    console.log(
-        db.run(file.readFile("utf8"))
-    );
+    db.run(file_content);
 }
