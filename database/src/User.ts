@@ -25,6 +25,26 @@ export class User {
         User.query_all_statement = db.query(User.query_all);
         User.initialized = true;
     }
+    
+    /** Resets the User table to an empty table */
+    static reset_table(db: Database) {
+        db.run(`
+            drop table if exists user;
+        `);
+        db.run(`
+            create table user (
+                internal_id integer unique primary key autoincrement not null,
+                unique_id text unique not null,
+                public_id text not null
+            );
+        `);
+        db.run(`
+            create trigger readonly_user before update of id, public_id on user
+            begin
+                select raise(abort, 'user is readonly!');
+            end
+        `);
+    }
 
     static initialized: boolean = false;
 
