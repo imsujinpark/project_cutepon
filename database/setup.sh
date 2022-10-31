@@ -12,4 +12,4 @@ then
     exit
 fi
 
-bun setup_database.ts
+sqlite3 sql/data.db < sql/definition.sql

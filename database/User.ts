@@ -1,16 +1,5 @@
 import { Database, Statement } from 'bun:sqlite';
 
-
-// | js         | sqlite3            |
-// |------------|--------------------|
-// | string     | TEXT               |
-// | number     | INTEGER or DECIMAL |
-// | boolean    | INTEGER (1 or 0)   |
-// | Uint8Array | BLOB               |
-// | Buffer     | BLOB               |
-// | bigint     | INTEGER            |
-// | null       | NULL               |
-
 export class User {
 
     /** The id used internally, a standard autoincrement in the db */
@@ -75,6 +64,13 @@ export class User {
             users.push(User.parse_object(result[i]));
         }
         return users;
+    }
+
+    static log_all() {
+        let all_users = User.all();
+        for (let i = 0; i < all_users.length; i += 1) {
+            all_users[i].log();
+        }
     }
 
     static require_initialized() {
