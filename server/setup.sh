@@ -15,4 +15,4 @@ if [ ! -d "$DIR" ]; then
     bun install
 fi
 
-bun dev baojs.ts
+bun baojs.ts
