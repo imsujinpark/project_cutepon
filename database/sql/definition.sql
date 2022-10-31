@@ -8,7 +8,7 @@ drop table if exists coupon;
 create table coupon (
     
     -- ** read-only data, definition of the coupon **
-    id integer primary key autoincrement not null, -- Notes (Oscar) I believe sqlite will create an alias for rowid... TODO Gotta check
+    id integer unique primary key autoincrement not null, -- Notes (Oscar) I believe sqlite will create an alias for rowid... TODO Gotta check
     title text not null,
     description text not null,
     created_date datetime not null,
@@ -43,7 +43,9 @@ drop table if exists user;
 -- user is a read-only data and we dont expect it to change, at all
 create table user (
     
-    id integer primary key autoincrement not null,
+    internal_id integer unique primary key autoincrement not null,
+    -- probably a unique id provided by oauth google
+    unique_id text unique not null,
     -- for now the public id is intended to be an email
     public_id text not null
     
