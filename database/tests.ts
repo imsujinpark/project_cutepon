@@ -42,6 +42,7 @@ function run_tests(all_tests: any) {
 let db: Database = null;
 
 on_start = () => {
+    // Always run the tests on a test database that has been reset already
     db = new Database("./sql/test_db.db");
     User.reset_table(db);
     User.initialize_statements(db);
@@ -51,6 +52,28 @@ on_end = () => {
 }
 
 run_tests(() => {
+
+    test("reset table", () => {
+
+        // Create an in memory sqlite database to not modify the original
+        const db = new Database();
+        User.reset_table(db);
+        
+        // The table should exists
+        let query1 = db.query(`
+            SELECT name FROM sqlite_master WHERE type = ? AND name = ?
+        `);
+        let result1 = query1.get(`table`, `user`);
+        expect(result1.name === `user`);
+        
+        // There should be no users
+        let query2 = db.query(`
+            SELECT * FROM user
+        `);
+        let result2 = query2.get();
+        expect(result2 === null);
+
+    });
 
     test("create user", () => {
         let newUser = User.create_new_user("some-unique-id", "nickname");

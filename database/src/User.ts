@@ -19,6 +19,7 @@ export class User {
         console.log(this);
     }
 
+    /** Initializes the static methods used for interacting with the User table */
     static initialize_statements(db: Database) {
         User.query_insert_statement = db.query(User.query_insert);
         User.query_get_statement = db.query(User.query_get);
@@ -28,22 +29,22 @@ export class User {
     
     /** Resets the User table to an empty table */
     static reset_table(db: Database) {
-        db.run(`
+        console.log(db.run(`
             drop table if exists user;
-        `);
-        db.run(`
+        `));
+        console.log(db.run(`
             create table user (
                 internal_id integer unique primary key autoincrement not null,
                 unique_id text unique not null,
                 public_id text not null
             );
-        `);
-        db.run(`
+        `));
+        console.log(db.run(`
             create trigger readonly_user before update of id, public_id on user
             begin
                 select raise(abort, 'user is readonly!');
             end
-        `);
+        `));
     }
 
     static initialized: boolean = false;
@@ -86,15 +87,15 @@ export class User {
         return users;
     }
 
+    static require_initialized() {
+        if (!User.initialized) throw "Not initialized!";
+    }
+
     static log_all() {
         let all_users = User.all();
         for (let i = 0; i < all_users.length; i += 1) {
             all_users[i].log();
         }
-    }
-
-    static require_initialized() {
-        if (!User.initialized) throw "Not initialized!";
     }
 
 }
