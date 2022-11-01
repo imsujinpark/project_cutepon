@@ -1,12 +1,27 @@
 import { User } from './src/User';
-import { Database } from 'bun:sqlite';
+import { Database, Statement } from 'bun:sqlite';
 
 // behold my testing library:
 let on_start: any = null;
 let on_end: any = null;
-let test_name: string = null;
+let test_name: string | null = null;
+
 function expect(thing: boolean) {
     if (!thing) throw new Error("Lower your expectations!");
+}
+
+function expect_throw(f: any, expectation: (error: Error) => any) {
+    
+    let has_thrown = false;
+    try {
+        f();
+    }
+    catch (e) {
+        has_thrown = true;
+        expectation(e);
+    }
+    
+    if (!has_thrown) throw new Error("Expected to throw, but it didn't!");
 }
 
 function success() {
@@ -85,14 +100,54 @@ run_tests(() => {
     });
     
     test("fail on duplication of unique ids", () => {
+        
         User.create_new_user("same-id", "doesntmatter");
-        try {
-            // This should throw since unique_id is unique
-            User.create_new_user("same-id", "doesntmatter");
-        }
-        catch (e) {
-            expect(e.message === "constraint failed");
-        }
+        
+        expect_throw(
+            () => User.create_new_user("same-id", "doesntmatter"),
+            (e) => expect(e.message === "constraint failed")
+        );
+
+    });
+
+    test("user cant have nulls", () => {
+        
+        expect_throw(
+            () => User.create_new_user(null , null),
+            (e) => expect(e.message === "constraint failed")
+        );
+
+        expect_throw(
+            () => User.create_new_user("user_not_null", null),
+            (e) => expect(e.message === "constraint failed")
+        );
+
+        expect_throw(
+            () => User.create_new_user(null, "public name"),
+            (e) => expect(e.message === "constraint failed")
+        );
+
+    });
+
+    test("user is read only", () => {
+        
+        let unique_id = "user_read_only_test"
+        User.create_new_user(unique_id, "doesntmatter");
+
+        expect_throw(
+            () => db.run(`update user set public_id = ? where unique_id = ?`, `new_name`, unique_id),
+            (e) => expect(e.message === "constraint failed")
+        );
+
+        expect_throw(
+            () => db.run(`update user set unique_id = ? where unique_id = ?`, `new_id`, unique_id),
+            (e) => expect(e.message === "constraint failed")
+        );
+
+        expect_throw(
+            () => db.run(`update user set internal_id = ? where unique_id = ?`, 300, unique_id),
+            (e) => expect(e.message === "constraint failed")
+        );
     });
 
 });
