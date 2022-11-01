@@ -1,4 +1,5 @@
 import { User } from './src/User';
+import { Coupon } from './src/Coupon';
 import { Database, Statement } from 'bun:sqlite';
 
 // behold my testing library:
@@ -59,16 +60,21 @@ let db: Database = null;
 on_start = () => {
     // Always run the tests on a test database that has been reset already
     db = new Database("./sql/test_db.db");
+    console.log("opened " + db);
     User.reset_table(db);
     User.initialize_statements(db);
+    Coupon.reset_table(db);
+    Coupon.initialize_statements(db);
 }
 on_end = () => {
+    console.log("closing " + db);
     db.close();
 }
 
+// User tests
 run_tests(() => {
 
-    test("reset table", () => {
+    test("reset table user", () => {
 
         // Create an in memory sqlite database to not modify the original
         const db = new Database();
@@ -79,6 +85,7 @@ run_tests(() => {
             SELECT name FROM sqlite_master WHERE type = ? AND name = ?
         `);
         let result1 = query1.get(`table`, `user`);
+        expect(result1 != null);
         expect(result1.name === `user`);
         
         // There should be no users
@@ -86,7 +93,7 @@ run_tests(() => {
             SELECT * FROM user
         `);
         let result2 = query2.get();
-        expect(result2 === null);
+        expect(result2 == null);
 
     });
 
@@ -148,6 +155,35 @@ run_tests(() => {
             () => db.run(`update user set internal_id = ? where unique_id = ?`, 300, unique_id),
             (e) => expect(e.message === "constraint failed")
         );
+    });
+
+});
+
+// Coupon tests
+run_tests(() => {
+
+    test("reset table coupon", () => {
+
+        // Create an in memory sqlite database to not modify the original
+        const db = new Database();
+        User.reset_table(db);
+        
+        // debug with select name, type from sqlite_master;
+        // The table should exists
+        let query1 = db.query(`
+            SELECT name FROM sqlite_master WHERE type = ? AND name = ?
+        `);
+        let result1 = query1.get(`table`, `coupon`);
+        expect(result1 != null);
+        expect(result1.name === `coupon`);
+        
+        // There should be no users
+        let query2 = db.query(`
+            SELECT * FROM coupon
+        `);
+        let result2 = query2.get();
+        expect(result2 == null);
+
     });
 
 });

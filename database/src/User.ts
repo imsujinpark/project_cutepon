@@ -24,6 +24,7 @@ export class User {
         User.query_insert_statement = db.query(User.query_insert);
         User.query_get_statement = db.query(User.query_get);
         User.query_all_statement = db.query(User.query_all);
+        User.query_get_by_internal_statement = db.query(User.query_get_by_internal);
         User.initialized = true;
     }
     
@@ -60,6 +61,10 @@ export class User {
     static query_get_statement: Statement | null = null;
 
     /** Query that creates a new user in the database and returns the autoincremented internal_id */
+    static query_get_by_internal = 'select unique_id, public_id from user where internal_id = ?';
+    static query_get_by_internal_statement: Statement | null = null;
+
+    /** Query that creates a new user in the database and returns the autoincremented internal_id */
     static query_all = 'select * from user';
     static query_all_statement: Statement | null = null;
 
@@ -71,6 +76,12 @@ export class User {
         User.require_initialized();
         let result = User.query_insert_statement.get(unique_id, public_id);
         return new User(result.internal_id, unique_id, public_id);
+    }
+
+    static get_existing_user_internal(internal_id: number): User {
+        User.require_initialized();
+        let { unique_id, public_id } = User.query_get_by_internal_statement.get(internal_id);
+        return new User(internal_id, unique_id, public_id);
     }
 
     static get_existing_user(unique_id: string): User {
