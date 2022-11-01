@@ -60,14 +60,14 @@ let db: Database = null;
 on_start = () => {
     // Always run the tests on a test database that has been reset already
     db = new Database("./sql/test_db.db");
-    console.log("opened " + db);
+    console.log("opened " + db.filename);
     User.reset_table(db);
     User.initialize_statements(db);
     Coupon.reset_table(db);
     Coupon.initialize_statements(db);
 }
 on_end = () => {
-    console.log("closing " + db);
+    console.log("closing " + db.filename);
     db.close();
 }
 
@@ -138,7 +138,7 @@ run_tests(() => {
 
     test("user is read only", () => {
         
-        let unique_id = "user_read_only_test"
+        let unique_id = "user_read_only_test";
         User.create_new_user(unique_id, "doesntmatter");
 
         expect_throw(
@@ -166,16 +166,13 @@ run_tests(() => {
 
         // Create an in memory sqlite database to not modify the original
         const db = new Database();
-        User.reset_table(db);
+        Coupon.reset_table(db);
         
         // debug with select name, type from sqlite_master;
         // The table should exists
-        let query1 = db.query(`
-            SELECT name FROM sqlite_master WHERE type = ? AND name = ?
-        `);
-        let result1 = query1.get(`table`, `coupon`);
-        expect(result1 != null);
-        expect(result1.name === `coupon`);
+        let result = db.query(`select name from sqlite_master where type=? AND name=?`).get(`table`, `coupon`);
+        expect(result != null);
+        expect(result.name === `coupon`);
         
         // There should be no users
         let query2 = db.query(`

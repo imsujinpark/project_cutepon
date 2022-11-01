@@ -30,24 +30,22 @@ export class User {
     
     /** Resets the User table to an empty table */
     static reset_table(db: Database) {
-        let returned: Array<any> = new Array();
-        returned.push(db.run(`
+        db.run(`
             drop table if exists user;
-        `));
-        returned.push(db.run(`
+        `);
+        db.run(`
             create table user (
                 internal_id integer unique primary key autoincrement not null,
                 unique_id text unique not null,
                 public_id text not null
             );
-        `));
-        returned.push(db.run(`
+        `);
+        db.run(`
             create trigger readonly_user before update on user
             begin
                 select raise(abort, 'user is readonly!');
             end;
-        `));
-        console.log(returned);
+        `);
     }
 
     static initialized: boolean = false;

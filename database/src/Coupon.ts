@@ -41,11 +41,10 @@ export class Coupon {
     
     /** Resets the User table to an empty table */
     static reset_table(db: Database) {
-        let returned: Array<any> = new Array();
-        returned.push(db.run(`
+        db.run(`
             drop table if exists coupon;
-        `));
-        returned.push(db.run(`
+        `);
+        db.run(`
             create table coupon (
                 
                 -- ** read-only data, definition of the coupon **
@@ -71,15 +70,14 @@ export class Coupon {
                 finish_date datetime not null
             
             );
-        `));
-        returned.push(db.run(`
+        `);
+        db.run(`
             -- Set an extra index for the table, since we will index by status and by origin pretty often
             create index by_status_index on coupon (status);
-        `));
-        returned.push(db.run(`
+        `);
+        db.run(`
             create index by_origin_user_index on coupon (origin_user);
-        `));
-        console.log(returned);
+        `);
     }
 
     static initialized: boolean = false;
