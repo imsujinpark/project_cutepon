@@ -8,11 +8,3 @@ then
     echo '> export PATH="$BUN_INSTALL/bin:$PATH"'
     exit
 fi
-
-DIR="node_modules"
-if [ ! -d "$DIR" ]; then
-    echo 'running bun install...'
-    bun install
-fi
-
-bun baojs.ts
