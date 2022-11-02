@@ -35,21 +35,22 @@ async function get_access_token_google(code: string): Promise<string> {
     const url = 'https://oauth2.googleapis.com/token'
     const values = {
         code,
-        client_id: process.env.CLIENT_ID,
-        client_secret: process.env.CLIENT_SECRET,
-        redirect_uri: process.env.REDIRECT_URI,
+        client_id: process.env.CLIENT_ID  ?? throw_expression("process.env.CLIENT_ID required!"),
+        client_secret: process.env.CLIENT_SECRET  ?? throw_expression("process.env.CLIENT_SECRET required!"),
+        redirect_uri: process.env.REDIRECT_URI  ?? throw_expression("process.env.REDIRECT_URI required!"),
         grant_type: 'authorization_code'
     }
     const data = new URLSearchParams(values).toString();
-    const response = await fetch(
-        url, {
+    console.log(`get_access_token_google with:\n${JSON.stringify(data)}`);
+    const response = await fetch(url, {
         method: 'POST',
         // TODO might have to send the data raw
-        body: JSON.stringify(data)
+        body: JSON.stringify(values)
     });
     /* response data from google comes with access_token, refresh_token and id_token, expires_in and scope
     we only need the access_token for this process */
-    const jsonResponse = await response.json<{access_token:string}>();
+    const jsonResponse = await response.json<any>();
+    console.log(`Got a json:\n${jsonResponse}`);
     return jsonResponse.access_token;
 }
 
@@ -163,8 +164,13 @@ app.get('/oauth2/google', function handleGoogleLogin (ctx) {
 
 // callback URI for google oauth
 app.get('/oauth2/google/callback', async function handleGoogleLoginCallback (ctx) {
-    // extract authorization grant code from the querystring
-    const code = ctx.params['code'];
+    
+    const url = new URL(ctx.req.url);
+    url.searchParams.get('code');
+    
+    const code = url.searchParams.get('code');
+    if (!code) throw "not code!"
+
     console.log(`Got a code ${code} on the oauth callback`);
         
     // get access_token with the authorization grant code
