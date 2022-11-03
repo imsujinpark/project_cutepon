@@ -43,7 +43,7 @@ export class Tester {
 
     failed(error: Error) {
         console.log("Test FAIL! " + this.current_test_name);
-        throw error;
+        console.log(error);
     }
 
     test(name: string, testing_function: any) {

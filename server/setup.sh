@@ -8,3 +8,5 @@ then
     echo '> export PATH="$BUN_INSTALL/bin:$PATH"'
     exit
 fi
+
+rm node_modules/ -r && rm ~/.bun/install/cache/ -r && bun install --backend=copyfile
