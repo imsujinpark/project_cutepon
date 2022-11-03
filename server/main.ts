@@ -1,9 +1,8 @@
 import Bao from "baojs";
-import jwt from "jsonwebtoken";
-import Bun from "bun";
 import { User } from '../database/src/User';
 import { Coupon } from '../database/src/Coupon';
 import { Database, Statement } from 'bun:sqlite';
+import * as jose from 'jose';
 
 function database_start(): Database {
     const database = new Database("./data/database.sqlite3");
@@ -22,6 +21,17 @@ function database_close(database: Database) {
     database.close();
 }
 
+interface token_data {
+    token: string,
+    internal_id: number,
+    expiration: number
+};
+
+interface user_tokens {
+    token: string,
+    refresh_token: string,
+};
+
 function require_not_null(object: any): void {
     if (!object) throw new Error("required non null!");
 }
@@ -36,17 +46,32 @@ function verify_environment(): void {
     require_not_null(process.env.REDIRECT_URI);
 }
 
-/** Only reason this exist is that I cant throw an Error from an expression */
 function throw_expression(msg: string): never {
     throw new Error(msg);
 }
 
-function generate_user_token(internal_id:number, public_id:string) {
-    return jwt.sign({internal_id, public_id}, process.env.JWT_SECRET, { expiresIn: 60*5 });
+// TODO not working for now...
+// https://medium.com/@Flowlet/a-quick-introduction-to-json-web-tokens-jwt-and-jose-95f6e06b7bf7
+async function generate_user_token(internal_id: number, public_id: string): Promise<string> {
+    const secret = process.env.JWT_SECRET;
+    const data = { internal_id, public_id };
+    const jwt = await new jose.SignJWT(data)
+        .setProtectedHeader({ alg: 'ES256' })
+        .setExpirationTime('5h')
+        .sign(Buffer.from(secret));
+    return jwt;
 }
 
-function generate_user_token_long(internal_id:number, public_id:string) {
-    return jwt.sign({internal_id, public_id}, process.env.REFRESH_JWT_SECRET, { expiresIn: '150d' });
+// TODO not working for now...
+// https://medium.com/@Flowlet/a-quick-introduction-to-json-web-tokens-jwt-and-jose-95f6e06b7bf7
+async function generate_user_token_long(internal_id: number, public_id: string): Promise<string> {
+    const secret = process.env.REFRESH_JWT_SECRET;
+    const data = { internal_id, public_id };
+    const jwt = await new jose.SignJWT(data)
+        .setProtectedHeader({ alg: 'ES256' })
+        .setExpirationTime('150d')
+        .sign(Buffer.from(secret));
+    return jwt;
 }
 
 /** return type of googleapis.com/token */
@@ -126,6 +151,13 @@ function get_or_register_user(data: user_data): User {
 const database = database_start();
 const app = new Bao();
 
+/** token -> token_data */
+const sessions = new Map<string, token_data>();
+/** refresh_token -> refresh_token_data */
+const sessions_long = new Map<string, token_data>();
+/** internal_id -> user_tokens */
+const user_sessions = new Map<number, user_tokens>();
+
 app.errorHandler = (error: Error) => {
     console.log(error);
     if (process.env.NODE_ENV === 'development')
@@ -140,51 +172,57 @@ app.notFoundHandler = () => {
 
 app.before((ctx) => {
     if (ctx.path.startsWith(`/li`)) {
-        const token = ctx.headers.get("Authorization");
-        if(!token) {
+        const session = ctx.headers.get("Authorization");
+        if(!session) {
             throw new Error("Authorization header is missing!");
         }
-        console.log("token");
-        console.log(token);
-        jwt.verify(token, process.env.JWT_SECRET, (err, payload) => {
-            if(err) throw err;
-            console.log("payload");
-            console.log(payload);
-            console.log("ctx.extra");
-            console.log(ctx.extra);
-            ctx.extra['user'] = payload;
-            console.log("ctx.extra.user");
-            console.log(ctx.extra.user);
-        })
+        const user_session = sessions.get(session);
+        if (!user_session) {
+            throw new Error("Authorization not recognized!");
+        }
+        if (Date.now().valueOf() > user_session.expiration) {
+            throw new Error("Authorization expired!");
+        }
+        ctx.extra['internal_id'] = user_session.internal_id;
     }
     return ctx;
 });
 
+app.get("/refresh_token", (ctx) => {
+    const auth = ctx.headers.get("Authorization");
+    if(!auth) {
+        throw new Error("Authorization header is missing!");
+    }
+    const refresh_token = sessions_long.get(auth);
+    if (!refresh_token) {
+        throw new Error("Authorization not recognized!");
+    }
+    if (Date.now().valueOf() > refresh_token.expiration) {
+        throw new Error("Authorization expired!");
+    }
+
+    const user_tokens = user_sessions.get(refresh_token.internal_id);
+    if (!user_tokens) {
+        throw new Error("Unreachable! The user somehow has a valid refresh token but not sessions?");
+    }
+    sessions.delete(user_tokens.token);
+    const hour_in_ms = 3600000;
+    const expiration_short = new Date().getTime() + hour_in_ms * 1;
+    const token = crypto.randomUUID();
+    sessions.set(token, {internal_id: refresh_token.internal_id, token: token, expiration: expiration_short});
+    const tokens = {token, refresh_token: refresh_token.token};
+    user_sessions.set(refresh_token.internal_id, tokens);
+    return ctx.sendJson(tokens);
+});
+
 app.get("/li/hello", (ctx) => {
-    console.log("ctx.extra.user");
-    console.log(ctx.extra.user);
-    console.log("ctx.extra");
-    console.log(ctx.extra);
-    return ctx.sendText(`Hello ${ctx.extra.user.internal_id}!`);
+    return ctx.sendText(`Hello ${ctx.extra.internal_id}!`);
 });
 
 app.get("/hello", (ctx) => {
     return ctx.sendText(`Hello world!`);
 });
 
-// Notes Oscar. Step 1, user goes to the google login page
-// by using the link provided by /login/google down below...
-// That link provided will have a series of configuration parameters
-// which will define:
-// * Where to redirect the user when the authorization process is completed
-// * What permissions we are asking the user to give us (profile and email in this case)
-// * What format we want to get the permission in (in our case, we want a `code`
-//   which we can send google when asking for data we got permissions for)
-// * Lastly we set a secret ID that represents our application, which google knows of and
-//   recognizes, so that when the user goes authenthicate google can see that indeed we
-//   the ones asking for permissions.
-
-// route that returns the link to the google oauth consent screen
 app.get('/oauth2/google', function handleGoogleLogin (ctx) {
     const rootURL = 'https://accounts.google.com/o/oauth2/v2/auth';
     const options = {
@@ -206,29 +244,6 @@ app.get('/oauth2/google', function handleGoogleLogin (ctx) {
     return ctx.sendRaw(Response.redirect(url));
 });
 
-// Notes Oscar. Step 2, when user finishes the google login and gives consent,
-// google will redirect the user to the URI we asked it to be redirected, in our case,
-// this one down here `http://localhost:3000/oauth2/redirect/google`.
-// When redirected, the URI that google gives the client will have a `code` which we
-// can then use when querying google for the user's data. Now that we have access to the
-// users verified data (email, name, and picture) we will...
-// 1. Ask google for the access_token to the users data, using the code received. 
-// 2. Ask google for the email, name and picture of the user, using the access_token received.
-//    Notes: Why is there 2 steps for this? kind of redundant?
-// 3. Store the data of the user in the database.
-// 4. Generate an encrypted token with a private key that only the server knows
-//    {private key} + {name, email} = Access token
-//    Since it is encrypted no one can get the email and name of that token except us.
-//    And since it contains name and email, we can require it while accessing our server,
-//    allowing us to verify the user is a validated user.
-//    Notes: Aparently JWT allows to put an expiration date to the token, so that the token
-//    can expire, making the user have to get a new token.
-//    Notes: Since we are going to access that token very often, we can store it in redis
-//    for O(1) verification of tokens.
-// 5. Finally, send that token to the user.
-//    Notes: For some reason, here it generates 2 tokens with same data (name and email) but
-//    different expirations, and sends both to the user (token and refreshToken), but not sure why...
-
 // https://developers.google.com/identity/protocols/oauth2/web-server#handlingresponse
 app.get('/oauth2/google/callback', async function handle_google_oauth_callback (ctx) {
     const url = new URL(ctx.req.url);
@@ -236,9 +251,8 @@ app.get('/oauth2/google/callback', async function handle_google_oauth_callback (
     if (error) { throw new Error(error); }
     const code = url.searchParams.get('code');
     if (!code) throw new Error("No code found on oauth callback");
-    const token = await googleapi_token(code) ;
-    console.log(token.access_token);
-    const user_details = await googleapi_oauth2_v2_userinfo(token.access_token);
+    const api_access = await googleapi_token(code) ;
+    const user_details = await googleapi_oauth2_v2_userinfo(api_access.access_token);
     if(!user_details.verified_email) {
         throw new Error('User has not a verified email!');
     }
@@ -249,14 +263,28 @@ app.get('/oauth2/google/callback', async function handle_google_oauth_callback (
         pciture: user_details.picture,
     }
     const user: User = get_or_register_user(user_data);
-    const jwt_token = generate_user_token(user.internal_id, user.public_id)
-    console.log("jwt_token");
-    console.log(jwt_token);
-    const jwt_refresh_token = generate_user_token_long(user.internal_id, user.public_id)
-    // store refresh token on redis
-    // Notes Oscar. It does SADD (Set Add) of key `name` and value `refreshToken`.
-    // await redisService.appendRefreshToken(name, refreshToken)
-    return ctx.sendJson({token: jwt_token, refresh_token: jwt_refresh_token});
+
+    // TODO fix the issues with jwt stuff...
+    // https://medium.com/@Flowlet/a-quick-introduction-to-json-web-tokens-jwt-and-jose-95f6e06b7bf7
+    // const jwt_token = await generate_user_token(user.internal_id, user.public_id)
+    // const jwt_refresh_token = await generate_user_token_long(user.internal_id, user.public_id)
+
+    const old_sessions = user_sessions.get(user.internal_id);
+    if (old_sessions) {
+        sessions_long.delete(old_sessions.refresh_token);
+        sessions.delete(old_sessions.token);
+    }
+    const hour_in_ms = 3600000;
+    const expiration_short = new Date().getTime() + hour_in_ms * 1;
+    const expiration_long = new Date().getTime() + hour_in_ms * 2;
+    const token = crypto.randomUUID();
+    sessions.set(token, {internal_id: user.internal_id, token: token, expiration: expiration_short});
+    const refresh_token = crypto.randomUUID();
+    sessions_long.set(refresh_token, {internal_id: user.internal_id, token: refresh_token, expiration: expiration_long});
+    const tokens = {token, refresh_token};
+    user_sessions.set(user.internal_id, tokens);
+
+    return ctx.sendJson(tokens);
 });
 
 verify_environment();
