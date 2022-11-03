@@ -1,72 +1,117 @@
 import Bao from "baojs";
 import jwt from "jsonwebtoken";
 import Bun from "bun";
-import {User} from '../database/src/User';
-import {Coupon} from '../database/src/Coupon';
+import { User } from '../database/src/User';
+import { Coupon } from '../database/src/Coupon';
+import { Database, Statement } from 'bun:sqlite';
 
-// if (process.env.NODE_ENV == null) {
-//     process.env.NODE_ENV = 'development';
-// }
+function database_start(): Database {
+    const database = new Database("./data/database.sqlite3");
+    console.log("Opening " + database.filename);
+    if (process.env.NODE_ENV === 'development') {
+        User.reset_table(database);
+        Coupon.reset_table(database);
+    }
+    User.initialize_statements(database);
+    Coupon.initialize_statements(database);
+    return database;
+}
 
-const app = new Bao();
+function database_close(database: Database) {
+    console.log("Closing " + database.filename);
+    database.close();
+}
+
+function require_not_null(object: any): void {
+    if (!object) throw new Error("required non null!");
+}
+
+function verify_environment(): void {
+    require_not_null(process.env.NODE_ENV);
+    require_not_null(process.env.APP_PORT);
+    require_not_null(process.env.JWT_SECRET);
+    require_not_null(process.env.REFRESH_JWT_SECRET);
+    require_not_null(process.env.CLIENT_ID);
+    require_not_null(process.env.CLIENT_SECRET);
+    require_not_null(process.env.REDIRECT_URI);
+}
 
 /** Only reason this exist is that I cant throw an Error from an expression */
 function throw_expression(msg: string): never {
     throw new Error(msg);
 }
 
-function generate_user_token(data: {unique_id:string, email:string}) {
-    jwt.sign(data, process.env.JWT_SECRET ?? throw_expression("process.env.SECRET required!"), { expiresIn: 60*5 });
+function generate_user_token(internal_id:number, public_id:string) {
+    return jwt.sign({internal_id, public_id}, process.env.JWT_SECRET, { expiresIn: 60*5 });
 }
 
-function generate_user_token_long(data: {unique_id:string, email:string}) {
-    jwt.sign(data, process.env.REFRESH_JWT_SECRET ?? throw_expression("process.env.SECRET required!"), { expiresIn: '150d' });
+function generate_user_token_long(internal_id:number, public_id:string) {
+    return jwt.sign({internal_id, public_id}, process.env.REFRESH_JWT_SECRET, { expiresIn: '150d' });
 }
 
-function get_user_data(authorization: string) {
-    jwt.verify(authorization, process.env.JWT_SECRET ?? throw_expression("process.env.SECRET required!"), (err, payload) => {
-        if (err) throw err;
-        if (!payload) throw "Esto no puede ser gente";
-        return payload;
-    });
-}
+/** return type of googleapis.com/token */
+interface g_token {
+    access_token: string,
+    expires_in: number,
+    token_type: string,
+    scope: string,
+    refresh_token: string
+};
 
-async function get_access_token_google(code: string): Promise<string> {
-    const url = 'https://oauth2.googleapis.com/token'
+// https://developers.google.com/identity/protocols/oauth2/web-server#exchange-authorization-code
+async function googleapi_token(code: string): Promise<g_token> {
+    const url = 'https://oauth2.googleapis.com/token';
     const values = {
         code,
-        client_id: process.env.CLIENT_ID  ?? throw_expression("process.env.CLIENT_ID required!"),
-        client_secret: process.env.CLIENT_SECRET  ?? throw_expression("process.env.CLIENT_SECRET required!"),
-        redirect_uri: process.env.REDIRECT_URI  ?? throw_expression("process.env.REDIRECT_URI required!"),
+        client_id: process.env.CLIENT_ID,
+        client_secret: process.env.CLIENT_SECRET,
+        redirect_uri: process.env.REDIRECT_URI,
         grant_type: 'authorization_code'
-    }
-    const data = new URLSearchParams(values).toString();
-    console.log(`get_access_token_google with:\n${JSON.stringify(data)}`);
+    };
     const response = await fetch(url, {
         method: 'POST',
-        // TODO might have to send the data raw
         body: JSON.stringify(values)
     });
-    /* response data from google comes with access_token, refresh_token and id_token, expires_in and scope
-    we only need the access_token for this process */
-    const jsonResponse = await response.json<any>();
-    console.log(`Got a json:\n${jsonResponse}`);
-    return jsonResponse.access_token;
+    // Google responds to this request by returning a JSON object that contains a short-lived access token
+    // and a refresh token. Note that the refresh token is only returned if your application set the
+    // access_type parameter to offline in the initial request to Google's authorization server.
+    const token = await response.json<g_token>();
+    return token;
 }
 
-async function get_user_data_google(access_token: string): Promise<{unique_id:string, email:string}> {
+/** return type of googleapis.com/oauth2/v2/userinfo */
+interface g_userinfo {
+    id: string;
+    email: string;
+    verified_email: boolean;
+    name: string;
+    given_name: string;
+    family_name: string;
+    picture: string;
+    locale: string;
+};
+  
+// https://developers.google.com/identity/protocols/oauth2/web-server#callinganapi
+async function googleapi_oauth2_v2_userinfo(access_token: string): Promise<g_userinfo> {
     const url = 'https://www.googleapis.com/oauth2/v2/userinfo'
-    const response = await fetch(
-        url, {
+    const response = await fetch(url, {
         headers: {
             'Authorization': `Bearer ${access_token}`
         }
-    })
-    const userInfo = await response.json<{unique_id: string, email:string}>();
-    return userInfo;
+    });
+    const userinfo = await response.json<g_userinfo>();
+    return userinfo;
 }
 
-function get_or_register_user(data: {unique_id:string, email:string}): User {
+/** return type of googleapis.com/token */
+interface user_data {
+    name: string,
+    email: string,
+    unique_id: string,
+    pciture: string,
+};
+
+function get_or_register_user(data: user_data): User {
     let user = User.get_existing_user(data.unique_id);
     if (!user) {
         user = User.create_new_user(data.unique_id, data.email);
@@ -74,9 +119,16 @@ function get_or_register_user(data: {unique_id:string, email:string}): User {
     return user;
 }
 
+///////////////////////////////
+// Application down below... //
+///////////////////////////////
+
+const database = database_start();
+const app = new Bao();
+
 app.errorHandler = (error: Error) => {
     console.log(error);
-    if ((process.env.NODE_ENV ?? throw_expression("process.env.NODE_ENV required!")) === 'development')
+    if (process.env.NODE_ENV === 'development')
         return new Response(`Oh no! An error has occurred...\n${error}`);
     else
         return new Response(`Oh no! An error has occurred...`);
@@ -88,15 +140,32 @@ app.notFoundHandler = () => {
 
 app.before((ctx) => {
     if (ctx.path.startsWith(`/li`)) {
-        console.log("Protected API being called...");
-        const user = get_user_data(ctx.headers.get("Authorization") ?? throw_expression("No Authorization found!"));
-        ctx.extra["auth"] = user;
+        const token = ctx.headers.get("Authorization");
+        if(!token) {
+            throw new Error("Authorization header is missing!");
+        }
+        console.log("token");
+        console.log(token);
+        jwt.verify(token, process.env.JWT_SECRET, (err, payload) => {
+            if(err) throw err;
+            console.log("payload");
+            console.log(payload);
+            console.log("ctx.extra");
+            console.log(ctx.extra);
+            ctx.extra['user'] = payload;
+            console.log("ctx.extra.user");
+            console.log(ctx.extra.user);
+        })
     }
     return ctx;
 });
 
 app.get("/li/hello", (ctx) => {
-    return ctx.sendText(`Hello ${ctx.extra.user.displayName}!`);
+    console.log("ctx.extra.user");
+    console.log(ctx.extra.user);
+    console.log("ctx.extra");
+    console.log(ctx.extra);
+    return ctx.sendText(`Hello ${ctx.extra.user.internal_id}!`);
 });
 
 app.get("/hello", (ctx) => {
@@ -117,15 +186,13 @@ app.get("/hello", (ctx) => {
 
 // route that returns the link to the google oauth consent screen
 app.get('/oauth2/google', function handleGoogleLogin (ctx) {
-    
     const rootURL = 'https://accounts.google.com/o/oauth2/v2/auth';
     const options = {
         // Notes Oscar. REDIRECT_URI = http://localhost:3000/oauth2/redirect/google
         // After the user has gone through the google login page, google will redirect him to this URI
         // that we provide him with in here.
-
-        redirect_uri: process.env.REDIRECT_URI ?? throw_expression("process.env.REDIRECT_URI required!"),
-        client_id: process.env.CLIENT_ID ?? throw_expression("process.env.CLIENT_ID required!"),
+        redirect_uri: process.env.REDIRECT_URI,
+        client_id: process.env.CLIENT_ID,
         access_type: 'offline',
         response_type: 'code',
         prompt: 'consent',
@@ -136,7 +203,7 @@ app.get('/oauth2/google', function handleGoogleLogin (ctx) {
     };
     const queryString = new URLSearchParams(options);
     const url = `${rootURL}?${queryString.toString()}`;
-    return ctx.sendJson({ url });
+    return ctx.sendRaw(Response.redirect(url));
 });
 
 // Notes Oscar. Step 2, when user finishes the google login and gives consent,
@@ -162,46 +229,38 @@ app.get('/oauth2/google', function handleGoogleLogin (ctx) {
 //    Notes: For some reason, here it generates 2 tokens with same data (name and email) but
 //    different expirations, and sends both to the user (token and refreshToken), but not sure why...
 
-// callback URI for google oauth
-app.get('/oauth2/google/callback', async function handleGoogleLoginCallback (ctx) {
-    
+// https://developers.google.com/identity/protocols/oauth2/web-server#handlingresponse
+app.get('/oauth2/google/callback', async function handle_google_oauth_callback (ctx) {
     const url = new URL(ctx.req.url);
-    url.searchParams.get('code');
-    
+    const error = url.searchParams.get('error');
+    if (error) { throw new Error(error); }
     const code = url.searchParams.get('code');
-    if (!code) throw "not code!"
-
-    console.log(`Got a code ${code} on the oauth callback`);
-        
-    // get access_token with the authorization grant code
-    const access_token = await get_access_token_google(code) ;
-
-    // get user details from google resource server using the access_token
-    const userDetails = await get_user_data_google(access_token);
-
-    // if(!userDetails.verified_email) {
-    //     throw 'User has not a verified email!';
-    // }
-
-    // upsert user details on the database
-    // TODO get a unique identifier for this user
-    // TODO check if user already exists
-    // TODO if not, inser in db
-    const user = get_or_register_user(userDetails);
-
-    // generate JWT for the user
-    const token = generate_user_token(userDetails)
-
-    // generate refresh token for user 
-    const refreshToken = generate_user_token_long(userDetails)
-
+    if (!code) throw new Error("No code found on oauth callback");
+    const token = await googleapi_token(code) ;
+    console.log(token.access_token);
+    const user_details = await googleapi_oauth2_v2_userinfo(token.access_token);
+    if(!user_details.verified_email) {
+        throw new Error('User has not a verified email!');
+    }
+    const user_data: user_data = {
+        name: user_details.name,
+        email: user_details.email,
+        unique_id: user_details.id,
+        pciture: user_details.picture,
+    }
+    const user: User = get_or_register_user(user_data);
+    const jwt_token = generate_user_token(user.internal_id, user.public_id)
+    console.log("jwt_token");
+    console.log(jwt_token);
+    const jwt_refresh_token = generate_user_token_long(user.internal_id, user.public_id)
     // store refresh token on redis
     // Notes Oscar. It does SADD (Set Add) of key `name` and value `refreshToken`.
     // await redisService.appendRefreshToken(name, refreshToken)
-
-    return ctx.sendJson({token, refreshToken});
+    return ctx.sendJson({token: jwt_token, refresh_token: jwt_refresh_token});
 });
 
-const port = process.env.APP_PORT ?? 3000;
-console.log(`Starting app at http://localhost:${port}`);
-app.listen({ port: Number(port) });
+verify_environment();
+
+console.log(`Starting app at http://localhost:${process.env.APP_PORT}/oauth2/google`);
+
+app.listen({ port: Number(process.env.APP_PORT) });

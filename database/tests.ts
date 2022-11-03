@@ -105,6 +105,11 @@ run_tests(() => {
         expect(newUser.public_id === existingUser.public_id);
         expect(newUser.unique_id === existingUser.unique_id);
     });
+
+    test("non existing user", () => {
+        let existingUser = User.get_existing_user("non-existing-user");
+        expect(existingUser === null);
+    });
     
     test("fail on duplication of unique ids", () => {
         
