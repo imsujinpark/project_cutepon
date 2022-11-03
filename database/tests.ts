@@ -21,7 +21,7 @@ new Tester(
     },
     function tests(t:Tester, udata) {
 
-        t.test("reset table user", () => {
+        t.test("reset table user", async () => {
 
             // Create an in memory sqlite database to not modify the original
             const db = new Database();
@@ -44,7 +44,7 @@ new Tester(
 
         });
 
-        t.test("create user", () => {
+        t.test("create user", async () => {
             let newUser = User.create_new_user("some-unique-id", "nickname");
             let existingUser = User.get_existing_user("some-unique-id");
             
@@ -53,12 +53,12 @@ new Tester(
             t.expect(newUser.unique_id === existingUser.unique_id);
         });
 
-        t.test("non existing user", () => {
+        t.test("non existing user", async () => {
             let existingUser = User.get_existing_user("non-existing-user");
             t.expect(existingUser === null);
         });
         
-        t.test("fail on duplication of unique ids", () => {
+        t.test("fail on duplication of unique ids", async () => {
             
             User.create_new_user("same-id", "doesntmatter");
             
@@ -69,7 +69,7 @@ new Tester(
 
         });
 
-        t.test("user cant have nulls", () => {
+        t.test("user cant have nulls", async () => {
             
             t.expect_throw(
                 () => User.create_new_user(null , null),
@@ -88,7 +88,7 @@ new Tester(
 
         });
 
-        t.test("user is read only", () => {
+        t.test("user is read only", async () => {
             
             let unique_id = "user_read_only_test";
             User.create_new_user(unique_id, "doesntmatter");
@@ -129,7 +129,7 @@ new Tester(
     },
     function tests(t:Tester, udata) {
 
-        t.test("reset table coupon", () => {
+        t.test("reset table coupon", async () => {
 
             // Create an in memory sqlite database to not modify the original
             const db = new Database();

@@ -46,10 +46,10 @@ export class Tester {
         console.log(error);
     }
 
-    test(name: string, testing_function: any) {
+    async test(name: string, testing_function: {():Promise<void>}) {
         this.current_test_name = name;
         try {
-            testing_function();
+            await testing_function();
             this.success();
         } catch (e) { this.failed(e); }
     }
