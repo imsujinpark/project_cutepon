@@ -73,23 +73,27 @@ export class User {
     static create_new_user(unique_id: string, public_id: string): User {
         User.require_initialized();
         let result = User.query_insert_statement.get(unique_id, public_id);
-        return new User(result.internal_id, unique_id, public_id);
+        const user = new User(result.internal_id, unique_id, public_id);
+        user.log();
+        return user;
     }
 
     static get_existing_user_internal(internal_id: number): User | null {
         User.require_initialized();
         const result = User.query_get_by_internal_statement.get(internal_id);
         if (!result) return null;
-        console.log(`get_existing_user_internal -> ${result}`);
-        return new User(internal_id, result.unique_id, result.public_id);
+        const user = new User(internal_id, result.unique_id, result.public_id);
+        user.log();
+        return user;
     }
     
     static get_existing_user(unique_id: string): User | null {
         User.require_initialized();
         const result = User.query_get_statement.get(unique_id);
         if (!result) return null;
-        console.log(`get_existing_user -> ${result}`);
-        return new User(result.internal_id, unique_id, result.public_id);
+        const user = new User(result.internal_id, unique_id, result.public_id);
+        user.log();
+        return user;
     }
 
     static all(): User[] {
