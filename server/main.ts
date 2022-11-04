@@ -289,6 +289,4 @@ app.get('/oauth2/google/callback', async function handle_google_oauth_callback (
 
 verify_environment();
 
-console.log(`Starting app at http://localhost:${process.env.APP_PORT}/oauth2/google`);
-
-app.listen({ port: Number(process.env.APP_PORT) });
+app.listen({ hostname: process.env.APP_DOMAIN,  port: Number(process.env.APP_PORT), development: false });
