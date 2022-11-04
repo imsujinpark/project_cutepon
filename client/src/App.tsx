@@ -1,10 +1,12 @@
 import './App.css'
-import MyComponent from './MyComponent'
+import GlobalStyle from './GlobalStyle'
+import Login from './pages/Login'
 
 function App() {
     return (
-        <div className="App">
-            <MyComponent />
+        <div>
+            <GlobalStyle />
+            <Login />
         </div>
     )
 }
