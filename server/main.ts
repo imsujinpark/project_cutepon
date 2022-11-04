@@ -289,4 +289,4 @@ app.get('/oauth2/google/callback', async function handle_google_oauth_callback (
 
 verify_environment();
 
-app.listen({ hostname: process.env.APP_DOMAIN,  port: Number(process.env.APP_PORT), development: false });
+app.listen({ port: Number(process.env.APP_PORT), development: false });
