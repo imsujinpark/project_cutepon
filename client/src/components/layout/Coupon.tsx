@@ -1,5 +1,8 @@
 import styled from 'styled-components';
 import { CouponData } from '../../common/types';
+import Button from '../common/Button';
+import { useState, useRef, RefObject } from 'react';
+import useDetectClickOutside from '../../hooks/useDetectClickOutside';
 
 type UserProps = {
     data: CouponData;
@@ -17,36 +20,88 @@ const Coupon = ({ data }: UserProps) => {
         status,
     } = data;
 
-    console.log({ target });
+    const couponRef = useRef(null);
+    const [isClicked, setIsClicked] = useDetectClickOutside(couponRef, false);
+
+    const handleCouponClick = (): void => {
+        setIsClicked(true);
+    };
+
+    const handleDelete = (): void => {
+        console.log('deleted!');
+        setIsClicked(false);
+    };
+
+    const handleSendCopy = (): void => {
+        console.log('gonna go to new coupon page!');
+        setIsClicked(false);
+    };
+
+    const handleRedeem = (): void => {
+        console.log('redeemed!');
+        setIsClicked(false);
+    };
 
     return (
-        <Container className={status}>
-            <InnerContainer>
-                <Head>
-                    <h2>{title}</h2>
-                    {/* from 정보가 있으면 받는 쿠폰으로 origin 표시, 없으면 보내는 쿠폰으로 to 표시 */}
-                    {/* 추후 유저 정보에 따라 from 이 내 아이디인지 to가 내 아이디인지 확인 예정 */}
-                    <span>
-                        {origin !== undefined
-                            ? `from. ${origin}`
-                            : `to. ${target}`}
-                    </span>
-                </Head>
-                <Body>{description}</Body>
-                <TailTop>{status}</TailTop>
-                <TailBottom>
-                    <span>
-                        #{receivedDate}-{id}
-                    </span>
-                    <span>Expiration D-2100</span>
-                </TailBottom>
-            </InnerContainer>
-        </Container>
+        <OuterContainer>
+            <Container
+                className={`${status} ${isClicked && 'blur'}`}
+                onClick={handleCouponClick}
+                ref={couponRef}
+            >
+                <InnerContainer>
+                    <Head>
+                        <h2>{title}</h2>
+                        {/* from 정보가 있으면 받는 쿠폰으로 origin 표시, 없으면 보내는 쿠폰으로 to 표시 */}
+                        {/* 추후 유저 정보에 따라 from 이 내 아이디인지 to가 내 아이디인지 확인 예정 */}
+                        <span>
+                            {origin !== undefined
+                                ? `from. ${origin}`
+                                : `to. ${target}`}
+                        </span>
+                    </Head>
+                    <Body>{description}</Body>
+                    <TailTop>{status}</TailTop>
+                    <TailBottom>
+                        <span>
+                            #{receivedDate}-{id}
+                        </span>
+                        <span>Expiration D-2100</span>
+                    </TailBottom>
+                </InnerContainer>
+            </Container>
+            {isClicked && (
+                <ButtonWrapper>
+                    <Button
+                        content="Delete"
+                        className="grey"
+                        onClick={handleDelete}
+                    />
+                    <Button
+                        content="Send Copy"
+                        className="lightpink"
+                        onClick={handleSendCopy}
+                    />
+                    {status === 'active' && (
+                        <Button
+                            content="Redeem"
+                            className="primary"
+                            onClick={handleRedeem}
+                        />
+                    )}
+                </ButtonWrapper>
+            )}
+        </OuterContainer>
     );
 };
 
-const Container = styled.div`
+const OuterContainer = styled.div`
+    width: 360px;
+    height: 120px;
     margin-bottom: 8px;
+`;
+const Container = styled.div`
+    cursor: pointer;
     width: 360px;
     height: 120px;
     border: 4px solid var(--primary-500);
@@ -65,6 +120,10 @@ const Container = styled.div`
         > div > * {
             color: var(--liver-300);
         }
+    }
+
+    &.blur {
+        opacity: 40%;
     }
 `;
 
@@ -134,6 +193,19 @@ const TailBottom = styled.div`
     > span:first-of-type {
         color: var(--liver-300);
     }
+`;
+
+const ButtonWrapper = styled.div`
+    position: relative;
+    top: -120px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 999;
+    width: 360px;
+    height: 120px;
+    border-radius: 6px;
 `;
 
 export default Coupon;
