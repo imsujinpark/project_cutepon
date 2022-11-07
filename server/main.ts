@@ -1,4 +1,5 @@
 import Bao from "../../baojs/lib/index";
+import serveStatic from "./node_modules/serve-static-bun/src";
 import { User } from '../database/src/User';
 import { Coupon } from '../database/src/Coupon';
 import { Database, Statement } from 'bun:sqlite';
@@ -195,6 +196,8 @@ app.before((ctx) => {
     return ctx;
 });
 
+app.get("/public/*any", serveStatic("../client/public", { middlewareMode: "bao", stripFromPathname: "/public" }));
+
 app.get("/refresh_token", (ctx) => {
     const auth = ctx.headers.get("Authorization");
     if(!auth) {
@@ -316,4 +319,4 @@ app.get('/oauth2/google/callback', async function handle_google_oauth_callback (
 
 verify_environment();
 
-app.listen({ port: Number(process.env.APP_PORT), development: false, certFile: "./cert.pem", keyFile: "./key.pem" });
+app.listen({ port: Number(process.env.APP_PORT), development: false, /*certFile: "./cert.pem", keyFile: "./key.pem"*/ });

@@ -3,6 +3,7 @@
     "@types/jsonwebtoken": "^8.5.9",
     "jose": "^4.10.4",
     "jsonwebtoken": "^8.5.1",
-    "jwt-simple": "^0.5.6"
+    "jwt-simple": "^0.5.6",
+    "serve-static-bun": "^0.3.0"
   }
 }
