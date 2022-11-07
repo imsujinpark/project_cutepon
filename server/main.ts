@@ -223,7 +223,11 @@ app.get("/hello", (ctx) => {
     return ctx.sendText(`Hello world!`);
 });
 
-app.get('/oauth2/google', function handleGoogleLogin (ctx) {
+// GET /oauth2/google
+//
+// Redirects the user to an authorization form `https://accounts.google.com/o/oauth2/v2/auth`.
+// Completing the form will redirect the user, once again, to `/oauth2/google/callback`.
+app.get('/oauth2/google', function handleGoogleLogin(ctx) {
     const rootURL = 'https://accounts.google.com/o/oauth2/v2/auth';
     const options = {
         // Notes Oscar. REDIRECT_URI = http://localhost:3000/oauth2/redirect/google
@@ -244,8 +248,25 @@ app.get('/oauth2/google', function handleGoogleLogin (ctx) {
     return ctx.sendRaw(Response.redirect(url));
 });
 
-// https://developers.google.com/identity/protocols/oauth2/web-server#handlingresponse
+// GET /oauth2/google/callback
+//
+// URL Parameters:
+//     * code: number. Code set automatically by google auth form on completion.
+//
+// Response:
+//     * token: string. Short duration token for accessing the APIs that require identification.
+//     Put this token as is in the `Authorization` header of subsequent requests.
+//     * refreshToken: string. Long duration token used as a means of renewing your identification.
+//     If `token` expires, you can receive a new one by sending this `refreshToken` to the TODO API.
+//
+// This is the API that acts both as a "login" and a "register". The `token` and `refreshToken` 
+// returned will be subsequently used for accessing any API that requires authorization.
+// 
+// The client will never not manually access this API.When the client tries to login via oauth at
+// `/oauth2/google` and completes the form, google will redirect the client here, with the required
+// data already set.
 app.get('/oauth2/google/callback', async function handle_google_oauth_callback (ctx) {
+    // https://developers.google.com/identity/protocols/oauth2/web-server#handlingresponse
     const url = new URL(ctx.req.url);
     const error = url.searchParams.get('error');
     if (error) { throw new Error(error); }
@@ -283,7 +304,6 @@ app.get('/oauth2/google/callback', async function handle_google_oauth_callback (
     sessions_long.set(refresh_token, {internal_id: user.internal_id, token: refresh_token, expiration: expiration_long});
     const tokens = {token, refresh_token};
     user_sessions.set(user.internal_id, tokens);
-
     return ctx.sendJson(tokens);
 });
 
