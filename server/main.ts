@@ -1,9 +1,9 @@
-import Bao from "../../baojs/lib/index";
-import serveStatic from "./node_modules/serve-static-bun/src";
 import { User } from '../database/src/User';
 import { Coupon } from '../database/src/Coupon';
 import { Database, Statement } from 'bun:sqlite';
 import * as jose from 'jose';
+import * as express from 'express';
+import * as cors from 'cors';
 
 function database_start(): Database {
     const database = new Database("./data/database.sqlite3");
@@ -151,7 +151,9 @@ function get_or_register_user(data: user_data): User {
 ///////////////////////////////
 
 const database = database_start();
-const app = new Bao();
+const app = express();
+app.use(cors());
+app.use(express.static('../client/public'))
 
 /** token -> token_data */
 const sessions = new Map<string, token_data>();
@@ -160,46 +162,25 @@ const sessions_long = new Map<string, token_data>();
 /** internal_id -> user_tokens */
 const user_sessions = new Map<number, user_tokens>();
 
-app.errorHandler = (error: Error) => {
-    console.log(error);
-    if (process.env.NODE_ENV === 'development')
-        return new Response(`Oh no! An error has occurred...\n${error}`);
-    else
-        return new Response(`Oh no! An error has occurred...`);
-};
-
-app.notFoundHandler = () => {
-    return new Response(`Route not found...`);
-};
-
-app.after((ctx) => {
-    ctx.res.headers.append("Access-Control-Allow-Origin", "*");
-    ctx.res.headers.append("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-    return ctx;
-});
-
-app.before((ctx) => {
-    if (ctx.path.startsWith(`/li`)) {
-        const session = ctx.headers.get("Authorization");
-        if(!session) {
-            throw new Error("Authorization header is missing!");
-        }
-        const user_session = sessions.get(session);
-        if (!user_session) {
-            throw new Error("Authorization not recognized!");
-        }
-        if (Date.now().valueOf() > user_session.expiration) {
-            throw new Error("Authorization expired!");
-        }
-        ctx.extra['internal_id'] = user_session.internal_id;
+app.use('/li/*', (req, res, next) => {
+    const session = req.headers.authorization;
+    if(!session) {
+        throw new Error("Authorization header is missing!");
     }
-    return ctx;
+    // const token = authHeader.split(' ')[1];
+    const user_session = sessions.get(session);
+    if (!user_session) {
+        throw new Error("Authorization not recognized!");
+    }
+    if (Date.now().valueOf() > user_session.expiration) {
+        throw new Error("Authorization expired!");
+    }
+    req.params['internal_id'] = user_session.internal_id;
+    next();
 });
 
-app.get("/public/*any", serveStatic("../client/public", { middlewareMode: "bao", stripFromPathname: "/public" }));
-
-app.get("/refresh_token", (ctx) => {
-    const auth = ctx.headers.get("Authorization");
+app.get("/refresh_token", (req, res) => {
+    const auth = req.headers.authorization;
     if(!auth) {
         throw new Error("Authorization header is missing!");
     }
@@ -222,22 +203,22 @@ app.get("/refresh_token", (ctx) => {
     sessions.set(token, {internal_id: refresh_token.internal_id, token: token, expiration: expiration_short});
     const tokens = {token, refresh_token: refresh_token.token};
     user_sessions.set(refresh_token.internal_id, tokens);
-    return ctx.sendJson(tokens);
+    res.json(tokens);
 });
 
-app.get("/li/hello", (ctx) => {
-    return ctx.sendText(`Hello ${ctx.extra.internal_id}!`);
+app.get("/li/hello", (req, res) => {
+    res.send(`Hello ${req.params['internal_id']}!`)
 });
 
-app.get("/", (ctx) => {
-    return ctx.sendText(`Hello world!`);
+app.get("/", (req, res) => {
+    res.send(`Hello World!`)
 });
 
 // GET /oauth2/google
 // 
 // Redirects the user to an authorization form `https://accounts.google.com/o/oauth2/v2/auth`.
 // Completing the form will redirect the user, once again, to `/oauth2/google/callback`.
-app.get('/oauth2/google', function handleGoogleLogin(ctx) {
+app.get('/oauth2/google', function handleGoogleLogin(req, res) {
     const rootURL = 'https://accounts.google.com/o/oauth2/v2/auth';
     const options = {
         // Notes Oscar. REDIRECT_URI = http://localhost:3000/oauth2/redirect/google
@@ -255,7 +236,7 @@ app.get('/oauth2/google', function handleGoogleLogin(ctx) {
     };
     const queryString = new URLSearchParams(options);
     const url = `${rootURL}?${queryString.toString()}`;
-    return ctx.sendRaw(Response.redirect(url));
+    res.redirect(301, url);
 });
 
 // GET /oauth2/google/callback
@@ -275,12 +256,11 @@ app.get('/oauth2/google', function handleGoogleLogin(ctx) {
 // The client will never not manually access this API.When the client tries to login via oauth at
 // `/oauth2/google` and completes the form, google will redirect the client here, with the required
 // data already set.
-app.get('/oauth2/google/callback', async function handle_google_oauth_callback (ctx) {
+app.get('/oauth2/google/callback', async function handle_google_oauth_callback (req, res) {
     // https://developers.google.com/identity/protocols/oauth2/web-server#handlingresponse
-    const url = new URL(ctx.req.url);
-    const error = url.searchParams.get('error');
+    const error = req.params['error'];
     if (error) { throw new Error(error); }
-    const code = url.searchParams.get('code');
+    const code = req.params['code'];
     if (!code) throw new Error("No code found on oauth callback");
     const api_access = await googleapi_token(code) ;
     const user_details = await googleapi_oauth2_v2_userinfo(api_access.access_token);
@@ -314,7 +294,7 @@ app.get('/oauth2/google/callback', async function handle_google_oauth_callback (
     sessions_long.set(refresh_token, {internal_id: user.internal_id, token: refresh_token, expiration: expiration_long});
     const tokens = {token, refresh_token};
     user_sessions.set(user.internal_id, tokens);
-    return ctx.sendJson(tokens);
+    res.json(tokens);
 });
 
 verify_environment();
