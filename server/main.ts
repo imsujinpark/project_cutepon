@@ -80,11 +80,12 @@ interface g_token {
     expires_in: number,
     token_type: string,
     scope: string,
-    refresh_token: string
+    refresh_token: string,
+    id_token: string
 };
 
 // https://developers.google.com/identity/protocols/oauth2/web-server#exchange-authorization-code
-async function googleapi_token(code: string): Promise<g_token> {
+async function googleapi_token(code: string): Promise<any> {
     const url = 'https://oauth2.googleapis.com/token';
     const values = {
         code,
@@ -100,7 +101,7 @@ async function googleapi_token(code: string): Promise<g_token> {
     // Google responds to this request by returning a JSON object that contains a short-lived access token
     // and a refresh token. Note that the refresh token is only returned if your application set the
     // access_type parameter to offline in the initial request to Google's authorization server.
-    const token = await response.json<g_token>();
+    const token = await response.json<any>(); // NOTE if I use g_token it gives me a segmentation fault ffs bun!!!!!
     return token;
 }
 
@@ -117,14 +118,14 @@ interface g_userinfo {
 };
   
 // https://developers.google.com/identity/protocols/oauth2/web-server#callinganapi
-async function googleapi_oauth2_v2_userinfo(access_token: string): Promise<g_userinfo> {
+async function googleapi_oauth2_v2_userinfo(access_token: string): Promise<any> {
     const url = 'https://www.googleapis.com/oauth2/v2/userinfo'
     const response = await fetch(url, {
         headers: {
             'Authorization': `Bearer ${access_token}`
         }
     });
-    const userinfo = await response.json<g_userinfo>();
+    const userinfo = await response.json<any>();
     return userinfo;
 }
 
