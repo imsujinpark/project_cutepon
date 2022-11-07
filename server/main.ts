@@ -171,6 +171,12 @@ app.notFoundHandler = () => {
     return new Response(`Route not found...`);
 };
 
+app.after((ctx) => {
+    ctx.res.headers.append("Access-Control-Allow-Origin", "*");
+    ctx.res.headers.append("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    return ctx;
+});
+
 app.before((ctx) => {
     if (ctx.path.startsWith(`/li`)) {
         const session = ctx.headers.get("Authorization");
@@ -220,12 +226,12 @@ app.get("/li/hello", (ctx) => {
     return ctx.sendText(`Hello ${ctx.extra.internal_id}!`);
 });
 
-app.get("/hello", (ctx) => {
+app.get("/", (ctx) => {
     return ctx.sendText(`Hello world!`);
 });
 
 // GET /oauth2/google
-//
+// 
 // Redirects the user to an authorization form `https://accounts.google.com/o/oauth2/v2/auth`.
 // Completing the form will redirect the user, once again, to `/oauth2/google/callback`.
 app.get('/oauth2/google', function handleGoogleLogin(ctx) {
@@ -250,16 +256,16 @@ app.get('/oauth2/google', function handleGoogleLogin(ctx) {
 });
 
 // GET /oauth2/google/callback
-//
+// 
 // URL Parameters:
 //     * code: number. Code set automatically by google auth form on completion.
-//
+// 
 // Response:
 //     * token: string. Short duration token for accessing the APIs that require identification.
 //     Put this token as is in the `Authorization` header of subsequent requests.
 //     * refreshToken: string. Long duration token used as a means of renewing your identification.
 //     If `token` expires, you can receive a new one by sending this `refreshToken` to the TODO API.
-//
+// 
 // This is the API that acts both as a "login" and a "register". The `token` and `refreshToken` 
 // returned will be subsequently used for accessing any API that requires authorization.
 // 
