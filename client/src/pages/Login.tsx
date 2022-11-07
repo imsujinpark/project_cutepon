@@ -1,51 +1,25 @@
-import { ReactElement } from 'react';
 import styled from 'styled-components';
-import axios from 'axios';
 import googleLogo from '../assets/google_logo.png';
+import LoginButton from '../components/layout/LoginButton';
 
-const Login = (): ReactElement => {
-    const loginHandler = async (): Promise<void> => {
-        console.log('one');
-
-        try {
-            console.log('two');
-            const res = await axios.get(`/oauth2/google`);
-            console.log({ res });
-        } catch (error) {
-            console.log('three');
-            console.log({ error });
-        }
-    };
+const Login = () => {
+    const googleLogin = { title: 'Sign in with Google', image: googleLogo };
 
     return (
         <Container>
-            <Button onClick={loginHandler}>
-                <Img src={googleLogo} alt="logo" />
-                <span>Sign in with Google</span>
-            </Button>
+            <h1>Login</h1>
+            <LoginButton loginButtonData={googleLogin} />
         </Container>
     );
 };
 
 const Container = styled.div`
     width: 100vw;
-    height: 100vh;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    justify-content: flex-start;
     align-items: center;
-`;
-
-const Button = styled.button`
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 8px 12px;
-    border-radius: 8px;
-`;
-
-const Img = styled.img`
-    width: 20px;
-    margin-right: 16px;
+    padding: 48px 0 0 0;
 `;
 
 export default Login;
