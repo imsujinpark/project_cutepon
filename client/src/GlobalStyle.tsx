@@ -6,7 +6,6 @@ const GlobalStyle = createGlobalStyle`
     * {
         box-sizing: border-box;
         font-family: 'GmarketSansMedium';
-        color: var(--black);
     }
 
     
@@ -16,6 +15,12 @@ const GlobalStyle = createGlobalStyle`
         width: 100%;
         font-family: 'GmarketSansMedium';
     } */
+
+    h1 {
+        color: var(--liver-500);
+        font-size: 16px;
+        margin-bottom: 28px;
+    }
 
     button {
         border: none;
