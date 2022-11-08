@@ -333,9 +333,9 @@ async function main() {
         const key = fs.readFileSync("key.pem");
         server = https.createServer({key, cert}, app)
             .listen(443, () => {
-                console.log(`https://localhost/`)
-                console.log(`https://localhost/oauth2/google`)
-                console.log(`https://localhost/hello`)
+                console.log(`https://cutepon.net/`)
+                console.log(`https://cutepon.net/oauth2/google`)
+                console.log(`https://cutepon.net/hello`)
             });
     }
     else {
@@ -355,7 +355,8 @@ async function main() {
     process.on('SIGTERM', close_server);
     process.on('SIGINT',  close_server);
     process.on('SIGILL',  close_server);
-    process.on('SIGKILL', close_server);
+    // This seems to not be something linux likes....
+    // process.on('SIGKILL', close_server);
 }
 
 main();
