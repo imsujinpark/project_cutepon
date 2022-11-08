@@ -1,20 +1,16 @@
 import { User } from './src/User.js';
 import { Coupon } from './src/Coupon.js';
-import sqlite3 from 'sqlite3';
+import { Database, Statement } from './src/sqlite-async.js';
 import * as jsonwebtoken from 'jsonwebtoken';
 import express, { Express, Request, Response } from 'express';
 import cors, {CorsOptions, CorsOptionsDelegate, CorsRequest} from 'cors';
 import * as dotenv from 'dotenv';
 import axios from 'axios';
 
-async function database_start(): Promise<sqlite3.Database> {
+async function database_start(): Promise<Database> {
     
-    const database = new sqlite3.Database("./data/database.sqlite3", (err) => {
-        if (err) {
-            throw err;
-        }
-        console.log("Open database ./data/database.sqlite3");
-    });
+    const database = await Database.open("./data/database.sqlite3");
+    console.log("Open database ./data/database.sqlite3");
 
     database.on("error", (err: Error) => {
         throw err;
@@ -28,7 +24,7 @@ async function database_start(): Promise<sqlite3.Database> {
     return Promise.resolve(database);
 }
 
-function database_close(database: sqlite3.Database) {
+function database_close(database: Database) {
     console.log("Closing " + {database});
     database.close();
 }
@@ -159,11 +155,13 @@ interface user_data {
 };
 
 async function get_or_register_user(data: user_data): Promise<User> {
-    let user = User.get_existing_user(data.unique_id);
-    if (!user) {
+    let user = await User.get_existing_user(data.unique_id);
+    if (user) {
+        return Promise.resolve(user);
+    }
+    else {
         return await User.create_new_user(data.unique_id, data.email);
     }
-    return Promise.resolve(user);
 }
 
 ///////////////////////////////
