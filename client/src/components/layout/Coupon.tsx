@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 import { CouponData } from '../../common/types';
 import Button from '../common/Button';
-import { useState, useRef, RefObject } from 'react';
+import { useRef } from 'react';
 import useDetectClickOutside from '../../hooks/useDetectClickOutside';
 
 type UserProps = {
