@@ -172,186 +172,191 @@ async function get_or_register_user(data: user_data): Promise<User> {
 // Application down below... //
 ///////////////////////////////
 
-dotenv.config();
-verify_environment();
-const database = await database_start();
-const app = express();
-const close_database = async () => {
-    console.log('Closing the database...');
-    await User.close();
-    await Coupon.close();
-    await database.close();
-};
+async function main() {
 
-app.use(cors());
-app.use(express.static('../client/build'));
-
-/** token -> token_data */
-const sessions = new Map<string, token_data>();
-/** refresh_token -> refresh_token_data */
-const sessions_long = new Map<string, token_data>();
-/** internal_id -> user_tokens */
-const user_sessions = new Map<number, user_tokens>();
-
-app.use('/li/*', (req, res, next) => {
-    const session = req.headers.authorization;
-    if(!session) {
-        throw new Error("Authorization header is missing!");
-    }
-    // const token = authHeader.split(' ')[1];
-    const user_session = sessions.get(session);
-    if (!user_session) {
-        throw new Error("Authorization not recognized!");
-    }
-    if (Date.now().valueOf() > user_session.expiration) {
-        throw new Error("Authorization expired!");
-    }
-    req.body['internal_id'] = user_session.internal_id;
-    next();
-});
-
-app.get("/refresh_token", (req, res) => {
-    const auth = req.headers.authorization;
-    if(!auth) {
-        throw new Error("Authorization header is missing!");
-    }
-    const refresh_token = sessions_long.get(auth);
-    if (!refresh_token) {
-        throw new Error("Authorization not recognized!");
-    }
-    if (Date.now().valueOf() > refresh_token.expiration) {
-        throw new Error("Authorization expired!");
-    }
-
-    const user_tokens = user_sessions.get(refresh_token.internal_id);
-    if (!user_tokens) {
-        throw new Error("Unreachable! The user somehow has a valid refresh token but not sessions?");
-    }
-    sessions.delete(user_tokens.token);
-    const hour_in_ms = 3600000;
-    const expiration_short = new Date().getTime() + hour_in_ms * 1;
-    const token = crypto.randomUUID();
-    sessions.set(token, {internal_id: refresh_token.internal_id, token: token, expiration: expiration_short});
-    const tokens = {token, refresh_token: refresh_token.token};
-    user_sessions.set(refresh_token.internal_id, tokens);
-    res.json(tokens);
-});
-
-app.get("/li/hello", (req, res) => {
-    res.send(`Hello ${req.body['internal_id']}!`)
-});
-
-// GET /oauth2/google
-// 
-// Redirects the user to an authorization form `https://accounts.google.com/o/oauth2/v2/auth`.
-// Completing the form will redirect the user, once again, to `/oauth2/google/callback`.
-app.get('/oauth2/google', function handleGoogleLogin(req, res) {
-    const rootURL = 'https://accounts.google.com/o/oauth2/v2/auth';
-    const options = {
-        // Notes Oscar. REDIRECT_URI = http://localhost:3000/oauth2/redirect/google
-        // After the user has gone through the google login page, google will redirect him to this URI
-        // that we provide him with in here.
-        redirect_uri: process.env.REDIRECT_URI ?? throw_expression("REDIRECT_URI"),
-        client_id: process.env.CLIENT_ID ?? throw_expression("CLIENT_ID"),
-        access_type: 'offline',
-        response_type: 'code',
-        prompt: 'consent',
-        scope: [
-            'https://www.googleapis.com/auth/userinfo.profile',
-            'https://www.googleapis.com/auth/userinfo.email',
-        ].join(' '),
+    dotenv.config();
+    verify_environment();
+    const database = await database_start();
+    const app = express();
+    const close_database = async () => {
+        console.log('Closing the database...');
+        await User.close();
+        await Coupon.close();
+        await database.close();
     };
-    const queryString = new URLSearchParams(options);
-    const url = `${rootURL}?${queryString.toString()}`;
-    res.redirect(301, url);
-});
 
-// GET /oauth2/google/callback
-// 
-// URL Parameters:
-//     * code: number. Code set automatically by google auth form on completion.
-// 
-// Response:
-//     * token: string. Short duration token for accessing the APIs that require identification.
-//     Put this token as is in the `Authorization` header of subsequent requests.
-//     * refreshToken: string. Long duration token used as a means of renewing your identification.
-//     If `token` expires, you can receive a new one by sending this `refreshToken` to the TODO API.
-// 
-// This is the API that acts both as a "login" and a "register". The `token` and `refreshToken` 
-// returned will be subsequently used for accessing any API that requires authorization.
-// 
-// The client will never not manually access this API.When the client tries to login via oauth at
-// `/oauth2/google` and completes the form, google will redirect the client here, with the required
-// data already set.
-app.get('/oauth2/google/callback', async function handle_google_oauth_callback (req, res) {
-    // https://developers.google.com/identity/protocols/oauth2/web-server#handlingresponse
-    const error = req.query.error;
-    if (error) { throw new Error(error.toString()); }
-    const code = req.query.code;
-    if (!code) throw new Error("No code found on oauth callback");
-    const api_access = await googleapi_token(code.toString()) ;
-    const user_details = await googleapi_oauth2_v2_userinfo(api_access.access_token);
-    if(!user_details.verified_email) {
-        throw new Error('User has not a verified email!');
-    }
-    const user_data: user_data = {
-        name: user_details.name,
-        email: user_details.email,
-        unique_id: user_details.id,
-        pciture: user_details.picture,
-    }
-    const user: User = await get_or_register_user(user_data);
+    app.use(cors());
+    app.use(express.static('../client/build'));
 
-    // TODO fix the issues with jwt stuff...
-    // https://medium.com/@Flowlet/a-quick-introduction-to-json-web-tokens-jwt-and-jose-95f6e06b7bf7
-    // const jwt_token = await generate_user_token(user.internal_id, user.public_id)
-    // const jwt_refresh_token = await generate_user_token_long(user.internal_id, user.public_id)
+    /** token -> token_data */
+    const sessions = new Map<string, token_data>();
+    /** refresh_token -> refresh_token_data */
+    const sessions_long = new Map<string, token_data>();
+    /** internal_id -> user_tokens */
+    const user_sessions = new Map<number, user_tokens>();
 
-    const old_sessions = user_sessions.get(user.internal_id);
-    if (old_sessions) {
-        sessions_long.delete(old_sessions.refresh_token);
-        sessions.delete(old_sessions.token);
+    app.use('/li/*', (req, res, next) => {
+        const session = req.headers.authorization;
+        if(!session) {
+            throw new Error("Authorization header is missing!");
+        }
+        // const token = authHeader.split(' ')[1];
+        const user_session = sessions.get(session);
+        if (!user_session) {
+            throw new Error("Authorization not recognized!");
+        }
+        if (Date.now().valueOf() > user_session.expiration) {
+            throw new Error("Authorization expired!");
+        }
+        req.body['internal_id'] = user_session.internal_id;
+        next();
+    });
+
+    app.get("/refresh_token", (req, res) => {
+        const auth = req.headers.authorization;
+        if(!auth) {
+            throw new Error("Authorization header is missing!");
+        }
+        const refresh_token = sessions_long.get(auth);
+        if (!refresh_token) {
+            throw new Error("Authorization not recognized!");
+        }
+        if (Date.now().valueOf() > refresh_token.expiration) {
+            throw new Error("Authorization expired!");
+        }
+
+        const user_tokens = user_sessions.get(refresh_token.internal_id);
+        if (!user_tokens) {
+            throw new Error("Unreachable! The user somehow has a valid refresh token but not sessions?");
+        }
+        sessions.delete(user_tokens.token);
+        const hour_in_ms = 3600000;
+        const expiration_short = new Date().getTime() + hour_in_ms * 1;
+        const token = crypto.randomUUID();
+        sessions.set(token, {internal_id: refresh_token.internal_id, token: token, expiration: expiration_short});
+        const tokens = {token, refresh_token: refresh_token.token};
+        user_sessions.set(refresh_token.internal_id, tokens);
+        res.json(tokens);
+    });
+
+    app.get("/li/hello", (req, res) => {
+        res.send(`Hello ${req.body['internal_id']}!`)
+    });
+
+    // GET /oauth2/google
+    // 
+    // Redirects the user to an authorization form `https://accounts.google.com/o/oauth2/v2/auth`.
+    // Completing the form will redirect the user, once again, to `/oauth2/google/callback`.
+    app.get('/oauth2/google', function handleGoogleLogin(req, res) {
+        const rootURL = 'https://accounts.google.com/o/oauth2/v2/auth';
+        const options = {
+            // Notes Oscar. REDIRECT_URI = http://localhost:3000/oauth2/redirect/google
+            // After the user has gone through the google login page, google will redirect him to this URI
+            // that we provide him with in here.
+            redirect_uri: process.env.REDIRECT_URI ?? throw_expression("REDIRECT_URI"),
+            client_id: process.env.CLIENT_ID ?? throw_expression("CLIENT_ID"),
+            access_type: 'offline',
+            response_type: 'code',
+            prompt: 'consent',
+            scope: [
+                'https://www.googleapis.com/auth/userinfo.profile',
+                'https://www.googleapis.com/auth/userinfo.email',
+            ].join(' '),
+        };
+        const queryString = new URLSearchParams(options);
+        const url = `${rootURL}?${queryString.toString()}`;
+        res.redirect(301, url);
+    });
+
+    // GET /oauth2/google/callback
+    // 
+    // URL Parameters:
+    //     * code: number. Code set automatically by google auth form on completion.
+    // 
+    // Response:
+    //     * token: string. Short duration token for accessing the APIs that require identification.
+    //     Put this token as is in the `Authorization` header of subsequent requests.
+    //     * refreshToken: string. Long duration token used as a means of renewing your identification.
+    //     If `token` expires, you can receive a new one by sending this `refreshToken` to the TODO API.
+    // 
+    // This is the API that acts both as a "login" and a "register". The `token` and `refreshToken` 
+    // returned will be subsequently used for accessing any API that requires authorization.
+    // 
+    // The client will never not manually access this API.When the client tries to login via oauth at
+    // `/oauth2/google` and completes the form, google will redirect the client here, with the required
+    // data already set.
+    app.get('/oauth2/google/callback', async function handle_google_oauth_callback (req, res) {
+        // https://developers.google.com/identity/protocols/oauth2/web-server#handlingresponse
+        const error = req.query.error;
+        if (error) { throw new Error(error.toString()); }
+        const code = req.query.code;
+        if (!code) throw new Error("No code found on oauth callback");
+        const api_access = await googleapi_token(code.toString()) ;
+        const user_details = await googleapi_oauth2_v2_userinfo(api_access.access_token);
+        if(!user_details.verified_email) {
+            throw new Error('User has not a verified email!');
+        }
+        const user_data: user_data = {
+            name: user_details.name,
+            email: user_details.email,
+            unique_id: user_details.id,
+            pciture: user_details.picture,
+        }
+        const user: User = await get_or_register_user(user_data);
+
+        // TODO fix the issues with jwt stuff...
+        // https://medium.com/@Flowlet/a-quick-introduction-to-json-web-tokens-jwt-and-jose-95f6e06b7bf7
+        // const jwt_token = await generate_user_token(user.internal_id, user.public_id)
+        // const jwt_refresh_token = await generate_user_token_long(user.internal_id, user.public_id)
+
+        const old_sessions = user_sessions.get(user.internal_id);
+        if (old_sessions) {
+            sessions_long.delete(old_sessions.refresh_token);
+            sessions.delete(old_sessions.token);
+        }
+        const hour_in_ms = 3600000;
+        const expiration_short = new Date().getTime() + hour_in_ms * 1;
+        const expiration_long = new Date().getTime() + hour_in_ms * 2;
+        const token = crypto.randomUUID();
+        sessions.set(token, {internal_id: user.internal_id, token: token, expiration: expiration_short});
+        const refresh_token = crypto.randomUUID();
+        sessions_long.set(refresh_token, {internal_id: user.internal_id, token: refresh_token, expiration: expiration_long});
+        const tokens = {token, refresh_token};
+        user_sessions.set(user.internal_id, tokens);
+        res.json(tokens);
+    });
+    
+    let server: any;
+    if (fs.existsSync("cert.pem") && fs.existsSync("key.pem")) {
+    
+        const cert = fs.readFileSync("cert.pem");
+        const key = fs.readFileSync("key.pem");
+        server = https.createServer({key, cert}, app)
+            .listen(443, () => {
+                console.log(`https://localhost/`)
+                console.log(`https://localhost/oauth2/google`)
+                console.log(`https://localhost/hello`)
+            });
     }
-    const hour_in_ms = 3600000;
-    const expiration_short = new Date().getTime() + hour_in_ms * 1;
-    const expiration_long = new Date().getTime() + hour_in_ms * 2;
-    const token = crypto.randomUUID();
-    sessions.set(token, {internal_id: user.internal_id, token: token, expiration: expiration_short});
-    const refresh_token = crypto.randomUUID();
-    sessions_long.set(refresh_token, {internal_id: user.internal_id, token: refresh_token, expiration: expiration_long});
-    const tokens = {token, refresh_token};
-    user_sessions.set(user.internal_id, tokens);
-    res.json(tokens);
-});
- 
-let server: any;
-if (fs.existsSync("cert.pem") && fs.existsSync("key.pem")) {
-  
-    const cert = fs.readFileSync("cert.pem");
-    const key = fs.readFileSync("key.pem");
-    server = https.createServer({key, cert}, app)
-        .listen(443, () => {
-            console.log(`https://localhost/`)
-            console.log(`https://localhost/oauth2/google`)
-            console.log(`https://localhost/hello`)
-        });
+    else {
+        server = http.createServer(app)
+            .listen(80, () => {
+                console.log(`http://localhost/`)
+                console.log(`http://localhost/oauth2/google`)
+                console.log(`http://localhost/hello`)
+            });
+    }
+
+    const close_server = async () => {
+        await close_database();
+        server.close();
+    };
+
+    process.on('SIGTERM', close_server);
+    process.on('SIGINT',  close_server);
+    process.on('SIGILL',  close_server);
+    process.on('SIGKILL', close_server);
 }
-else {
-    server = http.createServer(app)
-        .listen(80, () => {
-            console.log(`http://localhost/`)
-            console.log(`http://localhost/oauth2/google`)
-            console.log(`http://localhost/hello`)
-        });
-}
 
-const close_server = async () => {
-    await close_database();
-    server.close();
-};
-
-process.on('SIGTERM', close_server);
-process.on('SIGINT',  close_server);
-process.on('SIGILL',  close_server);
-process.on('SIGKILL', close_server);
+main();
 
