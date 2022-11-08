@@ -26,6 +26,14 @@ const GlobalStyle = createGlobalStyle`
         border: none;
         cursor: pointer;
     }
+
+    li {
+        text-decoration: none;
+    }
+
+    a {
+        text-decoration: none;
+    }
 `;
 
 export default GlobalStyle;

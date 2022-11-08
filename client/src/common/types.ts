@@ -15,3 +15,8 @@ export type CouponData = {
     expirationDate: number;
     status: "active" | "expired" | "redeemed" | "deleted";
 };
+
+export type DropdownMenuData = {
+    name: string;
+    path: string;
+};
