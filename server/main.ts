@@ -6,10 +6,14 @@ import express, { Express, Request, Response } from 'express';
 import cors, {CorsOptions, CorsOptionsDelegate, CorsRequest} from 'cors';
 import * as dotenv from 'dotenv';
 import axios from 'axios';
+import crypto from 'crypto';
+import https from 'https';
+import http from 'http';
+import fs from 'fs';
 
 async function database_start(): Promise<Database> {
     
-    const database = await Database.open("./data/database.sqlite3");
+    const database:Database = await Database.open("./data/database.sqlite3");
     console.log("Open database ./data/database.sqlite3");
 
     database.on("error", (err: Error) => {
@@ -21,7 +25,7 @@ async function database_start(): Promise<Database> {
     await User.initialize_statements(database);
     await Coupon.initialize_statements(database);
 
-    return Promise.resolve(database);
+    return database;
 }
 
 function database_close(database: Database) {
@@ -169,11 +173,18 @@ async function get_or_register_user(data: user_data): Promise<User> {
 ///////////////////////////////
 
 dotenv.config();
-const database = database_start();
+verify_environment();
+const database = await database_start();
 const app = express();
+const close_database = async () => {
+    console.log('Closing the database...');
+    await User.close();
+    await Coupon.close();
+    await database.close();
+};
+
 app.use(cors());
 app.use(express.static('../client/build'));
-verify_environment();
 
 /** token -> token_data */
 const sessions = new Map<string, token_data>();
@@ -312,8 +323,35 @@ app.get('/oauth2/google/callback', async function handle_google_oauth_callback (
     user_sessions.set(user.internal_id, tokens);
     res.json(tokens);
 });
+ 
+let server: any;
+if (fs.existsSync("cert.pem") && fs.existsSync("key.pem")) {
+  
+    const cert = fs.readFileSync("cert.pem");
+    const key = fs.readFileSync("key.pem");
+    server = https.createServer({key, cert}, app)
+        .listen(443, () => {
+            console.log(`https://localhost/`)
+            console.log(`https://localhost/oauth2/google`)
+            console.log(`https://localhost/hello`)
+        });
+}
+else {
+    server = http.createServer(app)
+        .listen(80, () => {
+            console.log(`http://localhost/`)
+            console.log(`http://localhost/oauth2/google`)
+            console.log(`http://localhost/hello`)
+        });
+}
 
-console.log(`http://localhost:80/`)
-console.log(`http://localhost:80/oauth2/google`)
-console.log(`http://localhost:80/hello`)
-app.listen({ port: Number(process.env.APP_PORT), /*certFile: "./cert.pem", keyFile: "./key.pem"*/ });
+const close_server = async () => {
+    await close_database();
+    server.close();
+};
+
+process.on('SIGTERM', close_server);
+process.on('SIGINT',  close_server);
+process.on('SIGILL',  close_server);
+process.on('SIGKILL', close_server);
+
