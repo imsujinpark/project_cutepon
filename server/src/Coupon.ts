@@ -44,6 +44,11 @@ export class Coupon {
         Coupon.initialized = true;
         Promise.resolve();
     }
+
+    static async close() {
+        await Coupon.query_all_statement?.finalize();
+        return;
+    }
     
     /** Resets the User table to an empty table */
     static async reset_table(db: Database): Promise<void> {
@@ -111,12 +116,17 @@ export class Coupon {
 
     static async all(): Promise<Coupon[]> {
         Coupon.require_initialized();
-        let result = await Coupon.query_all_statement?.all();
-        let coupons: Array<Coupon> = new Array();
-        for (let i = 0; i < result.length; i++) {
-            coupons.push(await Coupon.parse_object(result[i]));
+        try {
+            let result = await Coupon.query_all_statement?.all();
+            let coupons: Array<Coupon> = new Array();
+            for (let i = 0; i < result.length; i++) {
+                coupons.push(await Coupon.parse_object(result[i]));
+            }
+            return coupons;
         }
-        return coupons;
+        finally {
+            await Coupon.query_all_statement?.reset();
+        }
     }
 
     static require_initialized() {

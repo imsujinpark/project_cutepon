@@ -30,11 +30,9 @@ export class User {
     
     /** Resets the User table to an empty table */
     static async reset_table(db: Database): Promise<void> {
-        console.log("a");
         await db.run(`
             drop table if exists user;
         `);
-        console.log("b");
         await db.run(`
             create table user (
                 internal_id integer unique primary key autoincrement not null,
@@ -42,16 +40,21 @@ export class User {
                 public_id text not null
             );
         `);
-        console.log("c");
         await db.run(`
             create trigger readonly_user before update on user
             begin
                 select raise(abort, 'user is readonly!');
             end;
         `);
-        console.log("d");
         Promise.resolve();
-        console.log("e");
+    }
+
+    static async close() {
+        await User.query_insert_statement?.finalize()
+        await User.query_get_statement?.finalize()
+        await User.query_all_statement?.finalize()
+        await User.query_get_by_internal_statement?.finalize()
+        return
     }
 
     static initialized: boolean = false;
@@ -78,38 +81,58 @@ export class User {
 
     static async create_new_user(unique_id: string, public_id: string): Promise<User> {
         User.require_initialized();
-        let result = await User.query_insert_statement?.get(unique_id, public_id);
-        const user = new User(result.internal_id, unique_id, public_id);
-        user.log();
-        return user;
+        try {
+            let result = await User.query_insert_statement?.get(unique_id, public_id);
+            const user = new User(result.internal_id, unique_id, public_id);
+            return user;
+        }
+        finally {
+            await User.query_insert_statement?.reset();
+        }
     }
 
     static async get_existing_user_internal(internal_id: number): Promise<User|null> {
         User.require_initialized();
-        const result = await User.query_get_by_internal_statement?.get(internal_id);
-        if (!result) return null;
-        const user = new User(internal_id, result.unique_id, result.public_id);
-        user.log();
-        return user;
+        try {
+            const result = await User.query_get_by_internal_statement?.get(internal_id);
+            if (!result) return null;
+            const user = new User(internal_id, result.unique_id, result.public_id);
+            // user.log();
+            return user;
+        }
+        finally {
+            await User.query_get_by_internal_statement?.reset();
+        }
     }
     
     static async get_existing_user(unique_id: string): Promise<User|null> {
         User.require_initialized();
-        const result = await User.query_get_statement?.get(unique_id);
-        if (!result) return null;
-        const user = new User(result.internal_id, unique_id, result.public_id);
-        user.log();
-        return user;
+        try {
+            const result = await User.query_get_statement?.get(unique_id);
+            if (!result) return null;
+            const user = new User(result.internal_id, unique_id, result.public_id);
+            // user.log();
+            return user;
+        }
+        finally {
+            await User.query_get_statement?.reset();
+        }
     }
 
     static async all(): Promise<User[]> {
         User.require_initialized();
-        let result = await User.query_all_statement?.all();
-        let users: Array<User> = new Array();
-        for (let i = 0; i < result.length; i++) {
-            users.push(User.parse_object(result[i]));
+        try {
+
+            let result = await User.query_all_statement?.all();
+            let users: Array<User> = new Array();
+            for (let i = 0; i < result.length; i++) {
+                users.push(User.parse_object(result[i]));
+            }
+            return users;
         }
-        return users;
+        finally {
+            await User.query_all_statement?.reset();
+        }
     }
 
     static require_initialized() {
