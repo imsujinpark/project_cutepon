@@ -1,5 +1,6 @@
 import { RefObject, useEffect, useState } from 'react';
 
+// this is a custom hook to detect click event outside of the selected element
 const useDetectClickOutside = (
     insideRef: RefObject<HTMLDivElement>,
     initialState: boolean
@@ -24,7 +25,7 @@ const useDetectClickOutside = (
         };
     }, [isClicked, insideRef]);
 
-    return [isClicked, setIsClicked] as const;
+    return [isClicked, setIsClicked] as const; // const assertion
 };
 
 export default useDetectClickOutside;
