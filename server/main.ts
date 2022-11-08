@@ -6,10 +6,10 @@ import express, { Express, Request, Response } from 'express';
 import cors, {CorsOptions, CorsOptionsDelegate, CorsRequest} from 'cors';
 import * as dotenv from 'dotenv';
 import axios from 'axios';
-import crypto from 'crypto';
 import https from 'https';
 import http from 'http';
 import fs from 'fs';
+import * as uuid from 'uuid';
 
 async function database_start(): Promise<Database> {
     
@@ -232,7 +232,7 @@ async function main() {
         sessions.delete(user_tokens.token);
         const hour_in_ms = 3600000;
         const expiration_short = new Date().getTime() + hour_in_ms * 1;
-        const token = crypto.randomUUID();
+        const token = uuid.v4();
         sessions.set(token, {internal_id: refresh_token.internal_id, token: token, expiration: expiration_short});
         const tokens = {token, refresh_token: refresh_token.token};
         user_sessions.set(refresh_token.internal_id, tokens);
@@ -317,9 +317,9 @@ async function main() {
         const hour_in_ms = 3600000;
         const expiration_short = new Date().getTime() + hour_in_ms * 1;
         const expiration_long = new Date().getTime() + hour_in_ms * 2;
-        const token = crypto.randomUUID();
+        const token = uuid.v4();
         sessions.set(token, {internal_id: user.internal_id, token: token, expiration: expiration_short});
-        const refresh_token = crypto.randomUUID();
+        const refresh_token = uuid.v4();
         sessions_long.set(refresh_token, {internal_id: user.internal_id, token: refresh_token, expiration: expiration_long});
         const tokens = {token, refresh_token};
         user_sessions.set(user.internal_id, tokens);
