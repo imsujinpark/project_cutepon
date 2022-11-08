@@ -1,24 +1,35 @@
-import { User } from '../database/src/User';
-import { Coupon } from '../database/src/Coupon';
-import { Database, Statement } from 'bun:sqlite';
-import * as jose from 'jose';
-import * as express from 'express';
-import * as cors from 'cors';
+import { User } from './src/User.js';
+import { Coupon } from './src/Coupon.js';
+import sqlite3 from 'sqlite3';
+import * as jsonwebtoken from 'jsonwebtoken';
+import express, { Express, Request, Response } from 'express';
+import cors, {CorsOptions, CorsOptionsDelegate, CorsRequest} from 'cors';
+import * as dotenv from 'dotenv';
+import axios from 'axios';
 
-function database_start(): Database {
-    const database = new Database("./data/database.sqlite3");
-    console.log("Opening " + database.filename);
-    if (process.env.NODE_ENV === 'development') {
-        User.reset_table(database);
-        Coupon.reset_table(database);
-    }
-    User.initialize_statements(database);
-    Coupon.initialize_statements(database);
-    return database;
+async function database_start(): Promise<sqlite3.Database> {
+    
+    const database = new sqlite3.Database("./data/database.sqlite3", (err) => {
+        if (err) {
+            throw err;
+        }
+        console.log("Open database ./data/database.sqlite3");
+    });
+
+    database.on("error", (err: Error) => {
+        throw err;
+    });
+
+    await User.reset_table(database);
+    await Coupon.reset_table(database);
+    await User.initialize_statements(database);
+    await Coupon.initialize_statements(database);
+
+    return Promise.resolve(database);
 }
 
-function database_close(database: Database) {
-    console.log("Closing " + database.filename);
+function database_close(database: sqlite3.Database) {
+    console.log("Closing " + {database});
     database.close();
 }
 
@@ -38,7 +49,6 @@ function require_not_null(object: any): void {
 }
 
 function verify_environment(): void {
-    require_not_null(process.env.NODE_ENV);
     require_not_null(process.env.APP_PORT);
     require_not_null(process.env.JWT_SECRET);
     require_not_null(process.env.REFRESH_JWT_SECRET);
@@ -54,24 +64,26 @@ function throw_expression(msg: string): never {
 // TODO not working for now...
 // https://medium.com/@Flowlet/a-quick-introduction-to-json-web-tokens-jwt-and-jose-95f6e06b7bf7
 async function generate_user_token(internal_id: number, public_id: string): Promise<string> {
-    const secret = process.env.JWT_SECRET;
+    const secret = process.env.JWT_SECRET ?? throw_expression("JWT_SECRET");
     const data = { internal_id, public_id };
-    const jwt = await new jose.SignJWT(data)
-        .setProtectedHeader({ alg: 'ES256' })
-        .setExpirationTime('5h')
-        .sign(Buffer.from(secret));
+    const jwt = jsonwebtoken.sign(data, secret, {expiresIn: '5h'});
+    // const jwt = await new jose.SignJWT(data)
+    //     .setProtectedHeader({ alg: 'ES256' })
+    //     .setExpirationTime('5h')
+    //     .sign(Buffer.from(secret));
     return jwt;
 }
 
 // TODO not working for now...
 // https://medium.com/@Flowlet/a-quick-introduction-to-json-web-tokens-jwt-and-jose-95f6e06b7bf7
 async function generate_user_token_long(internal_id: number, public_id: string): Promise<string> {
-    const secret = process.env.REFRESH_JWT_SECRET;
+    const secret = process.env.REFRESH_JWT_SECRET ?? throw_expression("REFRESH_JWT_SECRET");
     const data = { internal_id, public_id };
-    const jwt = await new jose.SignJWT(data)
-        .setProtectedHeader({ alg: 'ES256' })
-        .setExpirationTime('150d')
-        .sign(Buffer.from(secret));
+    const jwt = jsonwebtoken.sign(data, secret, {expiresIn: '150d'});
+    // const jwt = await new jose.SignJWT(data)
+    //     .setProtectedHeader({ alg: 'ES256' })
+    //     .setExpirationTime('150d')
+    //     .sign(Buffer.from(secret));
     return jwt;
 }
 
@@ -95,14 +107,22 @@ async function googleapi_token(code: string): Promise<any> {
         redirect_uri: process.env.REDIRECT_URI,
         grant_type: 'authorization_code'
     };
-    const response = await fetch(url, {
+    const response = await axios({
+        url,
         method: 'POST',
-        body: JSON.stringify(values)
-    });
+        data: values
+        // headers: {
+        //     'Authorization': `Bearer ${access_token}`
+        // }
+    })
+    // await axios(url, {
+    //     method: 'POST',
+    //     data: values
+    // });
     // Google responds to this request by returning a JSON object that contains a short-lived access token
     // and a refresh token. Note that the refresh token is only returned if your application set the
     // access_type parameter to offline in the initial request to Google's authorization server.
-    const token = await response.json<any>(); // NOTE if I use g_token it gives me a segmentation fault ffs bun!!!!!
+    const token = await response.data; // NOTE if I use g_token it gives me a segmentation fault ffs bun!!!!!
     return token;
 }
 
@@ -121,12 +141,12 @@ interface g_userinfo {
 // https://developers.google.com/identity/protocols/oauth2/web-server#callinganapi
 async function googleapi_oauth2_v2_userinfo(access_token: string): Promise<any> {
     const url = 'https://www.googleapis.com/oauth2/v2/userinfo'
-    const response = await fetch(url, {
+    const response = await axios(url, {
         headers: {
             'Authorization': `Bearer ${access_token}`
         }
     });
-    const userinfo = await response.json<any>();
+    const userinfo = await response.data;
     return userinfo;
 }
 
@@ -138,22 +158,24 @@ interface user_data {
     pciture: string,
 };
 
-function get_or_register_user(data: user_data): User {
+async function get_or_register_user(data: user_data): Promise<User> {
     let user = User.get_existing_user(data.unique_id);
     if (!user) {
-        user = User.create_new_user(data.unique_id, data.email);
+        return await User.create_new_user(data.unique_id, data.email);
     }
-    return user;
+    return Promise.resolve(user);
 }
 
 ///////////////////////////////
 // Application down below... //
 ///////////////////////////////
 
+dotenv.config();
 const database = database_start();
 const app = express();
 app.use(cors());
-app.use(express.static('../client/public'))
+app.use(express.static('../client/build'));
+verify_environment();
 
 /** token -> token_data */
 const sessions = new Map<string, token_data>();
@@ -175,7 +197,7 @@ app.use('/li/*', (req, res, next) => {
     if (Date.now().valueOf() > user_session.expiration) {
         throw new Error("Authorization expired!");
     }
-    req.params['internal_id'] = user_session.internal_id;
+    req.body['internal_id'] = user_session.internal_id;
     next();
 });
 
@@ -207,11 +229,7 @@ app.get("/refresh_token", (req, res) => {
 });
 
 app.get("/li/hello", (req, res) => {
-    res.send(`Hello ${req.params['internal_id']}!`)
-});
-
-app.get("/", (req, res) => {
-    res.send(`Hello World!`)
+    res.send(`Hello ${req.body['internal_id']}!`)
 });
 
 // GET /oauth2/google
@@ -224,8 +242,8 @@ app.get('/oauth2/google', function handleGoogleLogin(req, res) {
         // Notes Oscar. REDIRECT_URI = http://localhost:3000/oauth2/redirect/google
         // After the user has gone through the google login page, google will redirect him to this URI
         // that we provide him with in here.
-        redirect_uri: process.env.REDIRECT_URI,
-        client_id: process.env.CLIENT_ID,
+        redirect_uri: process.env.REDIRECT_URI ?? throw_expression("REDIRECT_URI"),
+        client_id: process.env.CLIENT_ID ?? throw_expression("CLIENT_ID"),
         access_type: 'offline',
         response_type: 'code',
         prompt: 'consent',
@@ -258,11 +276,11 @@ app.get('/oauth2/google', function handleGoogleLogin(req, res) {
 // data already set.
 app.get('/oauth2/google/callback', async function handle_google_oauth_callback (req, res) {
     // https://developers.google.com/identity/protocols/oauth2/web-server#handlingresponse
-    const error = req.params['error'];
-    if (error) { throw new Error(error); }
-    const code = req.params['code'];
+    const error = req.query.error;
+    if (error) { throw new Error(error.toString()); }
+    const code = req.query.code;
     if (!code) throw new Error("No code found on oauth callback");
-    const api_access = await googleapi_token(code) ;
+    const api_access = await googleapi_token(code.toString()) ;
     const user_details = await googleapi_oauth2_v2_userinfo(api_access.access_token);
     if(!user_details.verified_email) {
         throw new Error('User has not a verified email!');
@@ -273,7 +291,7 @@ app.get('/oauth2/google/callback', async function handle_google_oauth_callback (
         unique_id: user_details.id,
         pciture: user_details.picture,
     }
-    const user: User = get_or_register_user(user_data);
+    const user: User = await get_or_register_user(user_data);
 
     // TODO fix the issues with jwt stuff...
     // https://medium.com/@Flowlet/a-quick-introduction-to-json-web-tokens-jwt-and-jose-95f6e06b7bf7
@@ -297,6 +315,7 @@ app.get('/oauth2/google/callback', async function handle_google_oauth_callback (
     res.json(tokens);
 });
 
-verify_environment();
-
-app.listen({ port: Number(process.env.APP_PORT), development: false, /*certFile: "./cert.pem", keyFile: "./key.pem"*/ });
+console.log(`http://localhost:80/`)
+console.log(`http://localhost:80/oauth2/google`)
+console.log(`http://localhost:80/hello`)
+app.listen({ port: Number(process.env.APP_PORT), /*certFile: "./cert.pem", keyFile: "./key.pem"*/ });

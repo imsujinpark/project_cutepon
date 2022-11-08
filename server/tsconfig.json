@@ -1,14 +1,22 @@
 {
   "compilerOptions": {
-    "lib": ["ESNext"],
-    "module": "esnext",
-    "target": "esnext",
-    "moduleResolution": "node",
-
-    // so that if your project isn't using TypeScript, it still has autocomplete
     "allowJs": true,
+    // Allows us to specify the target JavaScript version that the compiler will output
+    "target": "es2016",
+    // Allows us to use a module manager in the compiled JavaScript code. CommonJS is supported and is a standard in Node.js
+    // "module": "commonjs",
+    "moduleResolution": "node",
+    // An option that enables strict type-checking options
+    "strict": true,
+    // Allows us to compile ES6 modules to CommonJS modules
+    "esModuleInterop": true,
+    // If set to true, skips type-checking of default library declaration files
+    "skipLibCheck": true,
+    // When set to true, enables case sensitive file naming
+    "forceConsistentCasingInFileNames": true,
+    // specifies where the output will be located after the compilation step
+    "outDir": "./dist"
+  },
+  "include": ["src/**/*", "main.ts", "tests.ts"],
 
-    // "bun-types" is the important part
-    "types": ["bun-types"]
-  }
 }

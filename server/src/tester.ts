@@ -1,16 +1,15 @@
-export interface tester_on_start { (): any };
-export interface tester_on_end { (user_data: any) };
-export interface tester_all_tests { (tester: Tester, user_data: any) };
+export interface tester_on_start { (): Promise<any> };
+export interface tester_on_end { (user_data: any):void };
+export interface tester_all_tests { (tester: Tester, user_data: any):void };
 export class Tester {
 
-    // behold my testing library:
     readonly name: string;
     readonly on_start: tester_on_start|null;
     readonly on_end: tester_on_end|null;
     readonly all_tests: tester_all_tests;
     
     user_data: any;
-    current_test_name: string;
+    current_test_name: string|null = null;
 
     constructor(name: string, on_start: tester_on_start|null, on_end: tester_on_end|null, all_tests: tester_all_tests) {
         this.name = name;
@@ -23,18 +22,11 @@ export class Tester {
         if (!thing) throw new Error("Lower your expectations!");
     }
 
-    expect_throw(f: any, expectation: (error: Error) => any) {
+    async expect_throw(f: {():Promise<void>}, expectation: (error: Error) => any) {
         
-        let has_thrown = false;
-        try {
-            f();
-        }
-        catch (e) {
-            has_thrown = true;
-            expectation(e);
-        }
+        f() .then(() => { throw new Error("Expected to throw, but it didn't!"); } )
+            .catch((e) => expectation(e as Error))
         
-        if (!has_thrown) throw new Error("Expected to throw, but it didn't!");
     }
 
     success() {
@@ -51,12 +43,12 @@ export class Tester {
         try {
             await testing_function();
             this.success();
-        } catch (e) { this.failed(e); }
+        } catch (e) { this.failed(e as Error); }
     }
 
-    run() {
+    async run() {
         
-        if (this.on_start != null) { this.user_data = this.on_start(); }
+        if (this.on_start != null) { this.user_data = await this.on_start(); }
 
         try {
             this.all_tests(this, this.user_data);
