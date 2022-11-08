@@ -1,8 +1,13 @@
+import { useState } from 'react';
 import styled from 'styled-components';
-import { CouponData } from '../common/types';
+import { CouponData, CouponOption } from '../common/types';
 import Coupon from '../components/layout/Coupon';
+import OptionTab from '../components/layout/OptionTab';
+import Description from '../components/layout/Description';
+import { faArrowPointer } from '@fortawesome/free-solid-svg-icons';
 
 const ReceivedCoupons = () => {
+    const [optionMode, setOptionMode] = useState<CouponOption>('active');
     const dummyData: CouponData[] = [
         {
             id: 1,
@@ -25,7 +30,7 @@ const ReceivedCoupons = () => {
         },
         {
             id: 999,
-            target: 'sujinparkova',
+            origin: 'sujinparkova',
             title: 'Belly Buruburu',
             description:
                 'description of the coupon description of the coupon description of the coupon description of',
@@ -44,7 +49,7 @@ const ReceivedCoupons = () => {
         },
         {
             id: 4,
-            target: 'sujinparkova',
+            origin: 'sujinparkova',
             title: 'Belly Buruburu',
             description:
                 'description of the coupon description of the coupon description of the coupon description of',
@@ -54,7 +59,7 @@ const ReceivedCoupons = () => {
         },
         {
             id: 5,
-            target: 'sujinparkova',
+            origin: 'sujinparkova',
             title: 'Belly Buruburu',
             description:
                 'description of the coupon description of the coupon description of the coupon description of',
@@ -66,6 +71,18 @@ const ReceivedCoupons = () => {
     return (
         <Container>
             <h1>Received Coupons</h1>
+            <OptionTab optionMode={optionMode} setOptionMode={setOptionMode} />
+            {optionMode === 'active' ? (
+                <Description
+                    text="Click the coupon to redeem, delete, or send a copy"
+                    icon={faArrowPointer}
+                />
+            ) : (
+                <Description
+                    text="Click the coupon to delete or send a copy"
+                    icon={faArrowPointer}
+                />
+            )}
             {dummyData.map((el, idx) => {
                 return <Coupon key={idx} data={el} />;
             })}
