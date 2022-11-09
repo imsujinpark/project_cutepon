@@ -22,8 +22,8 @@ async function database_start(): Promise<Database> {
         throw err;
     });
 
-    await User.reset_table(database);
-    await Coupon.reset_table(database);
+    // await User.reset_table(database);
+    // await Coupon.reset_table(database);
     await User.initialize_statements(database);
     await Coupon.initialize_statements(database);
 
@@ -180,13 +180,6 @@ async function main() {
     verify_environment();
     const database = await database_start();
     const app = express();
-    const close_database = async () => {
-        console.log('Closing the database...');
-        await User.close();
-        await Coupon.close();
-        await database.close();
-    };
-
     app.use(cors());
     app.use(express.static('../client/build'));
 
@@ -197,23 +190,60 @@ async function main() {
     /** internal_id -> user_tokens */
     const user_sessions = new Map<number, user_tokens>();
 
-    app.use('/li/*', (req, res, next) => {
-        const session = req.headers.authorization;
-        if(!session) {
+    app.use('/api/*', (req, res, next) => {
+        const token = req.headers.authorization;
+        if(!token) {
             throw new Error("Authorization header is missing!");
         }
-        // const token = authHeader.split(' ')[1];
-        const user_session = sessions.get(session);
+        const user_session = sessions.get(token);
         if (!user_session) {
             throw new Error("Authorization not recognized!");
         }
         if (Date.now().valueOf() > user_session.expiration) {
             throw new Error("Authorization expired!");
         }
-        req.body['internal_id'] = user_session.internal_id;
+        // TODO: This is pretty ugly... is there a better way?
+        (req as any).internal_id = user_session.internal_id;
         next();
     });
 
+    // token=f62bb265-224d-4cd9-ae5d-159704c377e8&refresh_token=2bef8a93-b18f-47ce-8b33-53d7af7358aa
+
+    // GET /refresh_token
+    // 
+    // Input, Headers:
+    // 
+    //     * Authorization: string. Set the token you got on `/oauth2/google` or on `refresh_token` as the Authorization header.
+    // 
+    // Response text: `Hello ${user.public_id}!`
+    //     
+    //     ex: Hello amazing.email@gmail.com!
+    // 
+    // Use this API to test that Authorization is working as intended
+    app.get("/api/hello", async (req, res) => {
+        const user = await User.get_existing_user_internal((req as any).internal_id) ?? throw_expression(`Unreachable, user ${req.body['internal_id']} is null?`);
+        res.send(`Hello ${user?.public_id}!`)
+    });
+
+    // GET /refresh_token
+    // 
+    // Input, Headers:
+    // 
+    //     * Authorization: string. Set the refresh_token you got on login as the Authorization header.
+    // 
+    // Response body json:
+    //     
+    //     * token: string. Short duration token for accessing the APIs that require identification.
+    //     Put this token as is in the `Authorization` header of subsequent requests.
+    //     * refresh_token: string. Long duration token used as a means of renewing your identification.
+    //     If `token` expires, you can receive a new one by sending this `refresh_token` to the `refresh_token` API.
+    // 
+    //     ex: { token: d4800779-b9b1-4e4d-bb00-d2579f3f9cdb, refresh_token: fd38d2f6-6cad-4495-8280-a5b033e27abb }
+    // 
+    // The idea is that if you have no token (or it has been rejected on an API request), you use this API.
+    // If you have no refresh_token, you login again via `/oauth2/google`.
+    // 
+    // TODO document errors and decided how to communicate errors.
     app.get("/refresh_token", (req, res) => {
         const auth = req.headers.authorization;
         if(!auth) {
@@ -241,18 +271,18 @@ async function main() {
         res.json(tokens);
     });
 
-    app.get("/li/hello", (req, res) => {
-        res.send(`Hello ${req.body['internal_id']}!`)
-    });
-
     // GET /oauth2/google
+    // 
+    // Response: Redirection to google auth form
     // 
     // This is the API that acts both as a "login" and a "register".
     // Redirects the user to an authorization form `https://accounts.google.com/o/oauth2/v2/auth`.
     // Completing the form will redirect the user, once again, to `/oauth2/google/callback`.
+    // Finally, the client will be redirected to '/?token=#####&refresh_token=#####'. Check
+    // `/oauth2/google/callback` for more information.
     // 
-    // Notes: Aparently, for how redirections work, the client is expected to "move" to this location
-    // rather than make a GET request.
+    // Because of how redirections work, the client is expected to "go" to
+    // this location rather than make a GET request.
     app.get('/oauth2/google', function handleGoogleLogin(req, res) {
         const rootURL = 'https://accounts.google.com/o/oauth2/v2/auth';
         const options = {
@@ -276,19 +306,25 @@ async function main() {
 
     // GET /oauth2/google/callback
     // 
-    // URL Parameters:
-    //     * code: number. Code set automatically by google auth form on completion.
+    // Input, URL Parameters:
+    //     * code: number. Code set automatically by google on auth form completion.
     // 
     // Response:
+    //     
+    //     Redirection to '/' with 2 URL parameters:
     //     * token: string. Short duration token for accessing the APIs that require identification.
     //     Put this token as is in the `Authorization` header of subsequent requests.
-    //     * refreshToken: string. Long duration token used as a means of renewing your identification.
-    //     If `token` expires, you can receive a new one by sending this `refreshToken` to the TODO API.
+    //     * refresh_token: string. Long duration token used as a means of renewing your identification.
+    //     If `token` expires, you can receive a new one by sending this `refresh_token` to the `refresh_token` API.
     // 
-    // returned will be subsequently used for accessing any API that requires authorization.
-    // The client will never not manually access this API. When the client tries to login via oauth at
-    // `/oauth2/google` and completes the form, google will redirect the client here, with the required
-    // data already set.
+    //     ex: https://cutepon.net/?token=d4800779-b9b1-4e4d-bb00-d2579f3f9cdb&refresh_token=fd38d2f6-6cad-4495-8280-a5b033e27abb
+    // 
+    // The tokens returned will be subsequently used for accessing any API that requires authorization.
+    // The client will never manually access this API.
+    // When the client tries to login via oauth at `/oauth2/google` and completes the form,
+    // google will redirect the client here, with the required data already set.
+    // 
+    // TODO: This is not secure but for now its what it is.
     app.get('/oauth2/google/callback', async function handle_google_oauth_callback (req, res) {
         // https://developers.google.com/identity/protocols/oauth2/web-server#handlingresponse
         const error = req.query.error;
@@ -327,15 +363,14 @@ async function main() {
         sessions_long.set(refresh_token, {internal_id: user.internal_id, token: refresh_token, expiration: expiration_long});
         const tokens = {token, refresh_token};
         user_sessions.set(user.internal_id, tokens);
-        res.json(tokens);
+        res.redirect(`/?${new URLSearchParams(tokens).toString()}`);
     });
     
-    let server: any;
     if (fs.existsSync("cert.pem") && fs.existsSync("key.pem")) {
     
         const cert = fs.readFileSync("cert.pem");
         const key = fs.readFileSync("key.pem");
-        server = https.createServer({key, cert}, app)
+        const server = https.createServer({key, cert}, app)
             .listen(443, () => {
                 console.log(`https://cutepon.net/`)
                 console.log(`https://cutepon.net/oauth2/google`)
@@ -343,25 +378,13 @@ async function main() {
             });
     }
     else {
-        server = http.createServer(app)
+        const server = http.createServer(app)
             .listen(80, () => {
                 console.log(`http://localhost/`)
                 console.log(`http://localhost/oauth2/google`)
                 console.log(`http://localhost/hello`)
             });
     }
-
-    const close_server = async () => {
-        await close_database();
-        server.close();
-    };
-
-    // Notes: So aparently this is not required, there is no need to close the db as long as I keep closing my statements
-    // process.on('SIGTERM', close_server);
-    // process.on('SIGINT',  close_server);
-    // process.on('SIGILL',  close_server);
-    // Notes: This seems to not be something linux likes....
-    // process.on('SIGKILL', close_server);
 }
 
 soure_map_support();
