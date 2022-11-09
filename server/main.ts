@@ -10,6 +10,8 @@ import https from 'https';
 import http from 'http';
 import fs from 'fs';
 import * as uuid from 'uuid';
+// This is required for stack traces to refer to the original typescript code instead of the compiled js
+import { install as soure_map_support } from 'source-map-support';
 
 async function database_start(): Promise<Database> {
     
@@ -359,5 +361,6 @@ async function main() {
     // process.on('SIGKILL', close_server);
 }
 
+soure_map_support();
 main();
 

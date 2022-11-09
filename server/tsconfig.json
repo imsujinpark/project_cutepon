@@ -16,7 +16,8 @@
     "forceConsistentCasingInFileNames": true,
     // specifies where the output will be located after the compilation step
     "outDir": "./dist",
-    "module": "ES2022"
+    // "module": "ES2022",
+    "sourceMap": true
   },
   "include": ["src/**/*", "main.ts", "tests.ts"],
 
