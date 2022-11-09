@@ -170,6 +170,33 @@ async function get_or_register_user(data: user_data): Promise<User> {
     }
 }
 
+enum Errors {
+    AuthorizationMissing,
+    AuthorizationExpired,
+    AuthorizationInvalid,
+    RegistrationInvalidEmail,
+    Internal
+};
+
+function unreachable(msg?: string): never {
+    throw new Error("Unreachable: " + msg);
+}
+
+function response_error(res: Response, error: Errors): never {
+    let status: number = 500; // Internal error by default
+    switch(error) {
+        case Errors.AuthorizationExpired: status = 401; // Unauthorized
+        case Errors.AuthorizationMissing: status = 401; // Unauthorized
+        case Errors.AuthorizationInvalid: status = 401; // Unauthorized
+        case Errors.RegistrationInvalidEmail: status = 403; // Forbidden
+        case Errors.Internal: status = 500; // Forbidden
+    }
+    res.status(status).json({error: error, message: Errors[error]});
+    let err = new Error(error.toString());
+    (err as any).__handled__ = true;
+    throw err;
+}
+
 ///////////////////////////////
 // Application down below... //
 ///////////////////////////////
@@ -183,6 +210,14 @@ async function main() {
     app.use(cors());
     app.use(express.static('../client/build'));
 
+    app.use((err: any, req: Request, res: Response, next: express.NextFunction) => {
+        if (err  && err.message && err.stack) console.log(err as Error)
+        else console.log(err);
+        if (!(err as any).__handled__) {
+            res.status(Errors.Internal).json({error: Errors.Internal, message: Errors[Errors.Internal]});
+        }
+    });
+
     /** token -> token_data */
     const sessions = new Map<string, token_data>();
     /** refresh_token -> refresh_token_data */
@@ -190,18 +225,21 @@ async function main() {
     /** internal_id -> user_tokens */
     const user_sessions = new Map<number, user_tokens>();
 
+    // All routes starting with `/api/*` will have the `authorization` header check for a `token`.
+    // It will reply with any of the following errors in case something is wrong with the authorization:
+    // 
+    // * AuthorizationMissing
+    // * AuthorizationInvalid
+    // * AuthorizationExpired
     app.use('/api/*', (req, res, next) => {
         const token = req.headers.authorization;
-        if(!token) {
-            throw new Error("Authorization header is missing!");
-        }
+        if(!token) response_error(res, Errors.AuthorizationMissing);
+        
         const user_session = sessions.get(token);
-        if (!user_session) {
-            throw new Error("Authorization not recognized!");
-        }
-        if (Date.now().valueOf() > user_session.expiration) {
-            throw new Error("Authorization expired!");
-        }
+        if (!user_session) response_error(res, Errors.AuthorizationInvalid);
+        
+        if (Date.now().valueOf() > user_session.expiration) response_error(res, Errors.AuthorizationExpired);
+        
         // TODO: This is pretty ugly... is there a better way?
         (req as any).internal_id = user_session.internal_id;
         next();
@@ -219,8 +257,8 @@ async function main() {
     // 
     // Use this API to test that Authorization is working as intended
     app.get("/api/hello", async (req, res) => {
-        const user = await User.get_existing_user_internal((req as any).internal_id) ?? throw_expression(`Unreachable, user ${req.body['internal_id']} is null?`);
-        res.send(`Hello ${user?.public_id}!`)
+        const user: User = await User.get_existing_user_internal((req as any).internal_id) ?? unreachable();
+        res.send(`Hello ${user.public_id}!`)
     });
 
     // GET /refresh_token
@@ -238,26 +276,27 @@ async function main() {
     // 
     //     ex: { token: d4800779-b9b1-4e4d-bb00-d2579f3f9cdb, refresh_token: fd38d2f6-6cad-4495-8280-a5b033e27abb }
     // 
+    // Errors:
+    //     * AuthorizationMissing
+    //     * AuthorizationInvalid
+    //     * AuthorizationExpired
+    // 
     // The idea is that if you have no token (or it has been rejected on an API request), you use this API.
     // If you have no refresh_token, you login again via `/oauth2/google`.
     // 
-    // TODO document errors and decided how to communicate errors.
+    // 
     app.get("/refresh_token", (req, res) => {
+        
         const auth = req.headers.authorization;
-        if(!auth) {
-            throw new Error("Authorization header is missing!");
-        }
+        if(!auth) response_error(res, Errors.AuthorizationMissing);
+        
         const refresh_token = sessions_long.get(auth);
-        if (!refresh_token) {
-            throw new Error("Authorization not recognized!");
-        }
-        if (Date.now().valueOf() > refresh_token.expiration) {
-            throw new Error("Authorization expired!");
-        }
+        if (!refresh_token) response_error(res, Errors.AuthorizationInvalid);
+        if (Date.now().valueOf() > refresh_token.expiration) response_error(res, Errors.AuthorizationExpired);
 
         const user_tokens = user_sessions.get(refresh_token.internal_id);
         if (!user_tokens) {
-            throw new Error("Unreachable! The user somehow has a valid refresh token but not sessions?");
+            unreachable("Unreachable! The user somehow has a valid refresh token but not sessions?");
         }
         sessions.delete(user_tokens.token);
         const hour_in_ms = 3600000;
@@ -287,8 +326,8 @@ async function main() {
             // Notes Oscar. REDIRECT_URI = http://localhost:3000/oauth2/redirect/google
             // After the user has gone through the google login page, google will redirect him to this URI
             // that we provide him with in here.
-            redirect_uri: process.env.REDIRECT_URI ?? throw_expression("REDIRECT_URI"),
-            client_id: process.env.CLIENT_ID ?? throw_expression("CLIENT_ID"),
+            redirect_uri: process.env.REDIRECT_URI ?? unreachable(),
+            client_id: process.env.CLIENT_ID ?? unreachable(),
             access_type: 'offline',
             response_type: 'code',
             prompt: 'consent',
@@ -324,16 +363,19 @@ async function main() {
     // 
     // TODO: This is not secure but for now its what it is.
     app.get('/oauth2/google/callback', async function handle_google_oauth_callback (req, res) {
+        
         // https://developers.google.com/identity/protocols/oauth2/web-server#handlingresponse
         const error = req.query.error;
-        if (error) { throw new Error(error.toString()); }
+        if (error) throw new Error(error.toString());
+        
         const code = req.query.code;
-        if (!code) throw new Error("No code found on oauth callback");
+        if (!code) unreachable("No code found on oauth callback");
+        
         const api_access = await googleapi_token(code.toString()) ;
         const user_details = await googleapi_oauth2_v2_userinfo(api_access.access_token);
-        if(!user_details.verified_email) {
-            throw new Error('User has not a verified email!');
-        }
+        
+        if(!user_details.verified_email) response_error(res, Errors.RegistrationInvalidEmail);
+        
         const user_data: user_data = {
             name: user_details.name,
             email: user_details.email,

@@ -1,5 +1,44 @@
 # API
 
+## Error handling
+
+Possible errors that the server might send.
+
+```ts
+enum Errors {
+    AuthorizationMissing,
+    AuthorizationExpired,
+    AuthorizationInvalid,
+    RegistrationInvalidEmail,
+    Internal
+};
+```
+
+The errors sent will be of the following form:
+
+```ts
+{
+    error: number,
+    message: string
+}
+```
+
+You can use the `error: number` to branch your logic depending on the error as it will map 1:1 to the `enum Errors` defined above.
+
+In cases that an unexpected error happens you will receive an `Errors.Internal`.
+
+## Authorization
+
+All routes starting with `/api/*` will have the `authorization` header check for a `token`.  
+Those will reply with any of the following errors in case something is wrong with the authorization:
+
+* `AuthorizationMissing`
+* `AuthorizationInvalid`
+* `AuthorizationExpired`
+
+
+## Routes
+
 ```
 GET /api/hello
 
