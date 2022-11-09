@@ -207,9 +207,7 @@ async function main() {
         next();
     });
 
-    // token=f62bb265-224d-4cd9-ae5d-159704c377e8&refresh_token=2bef8a93-b18f-47ce-8b33-53d7af7358aa
-
-    // GET /refresh_token
+    // GET /api/hello
     // 
     // Input, Headers:
     // 
