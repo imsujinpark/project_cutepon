@@ -6,12 +6,12 @@ import OptionTab from '../components/layout/OptionTab';
 import Description from '../components/layout/Description';
 import { faArrowPointer } from '@fortawesome/free-solid-svg-icons';
 
-const ReceivedCoupons = () => {
+const SentCoupons = () => {
     const [optionMode, setOptionMode] = useState<CouponOption>('active');
     const dummyData: CouponData[] = [
         {
             id: 1,
-            origin: 'sujinparkova',
+            target: 'sujinparkova',
             title: 'Belly Buruburu',
             description: 'you can give buruburu on the belly for 3 seconds',
             receivedDate: 20202020,
@@ -20,7 +20,7 @@ const ReceivedCoupons = () => {
         },
         {
             id: 2,
-            origin: 'sujinparkova',
+            target: 'sujinparkova',
             title: 'Belly Buruburu',
             description:
                 'description of the coupon description of the coupon description of the coupon description of',
@@ -30,7 +30,7 @@ const ReceivedCoupons = () => {
         },
         {
             id: 999,
-            origin: 'sujinparkova',
+            target: 'sujinparkova',
             title: 'Belly Buruburu',
             description:
                 'description of the coupon description of the coupon description of the coupon description of',
@@ -40,7 +40,7 @@ const ReceivedCoupons = () => {
         },
         {
             id: 3,
-            origin: 'sujinparkova',
+            target: 'sujinparkova',
             title: 'Belly Buruburu',
             description: 'you can give buruburu on the belly for 3 seconds',
             receivedDate: 20202020,
@@ -49,7 +49,7 @@ const ReceivedCoupons = () => {
         },
         {
             id: 4,
-            origin: 'sujinparkova',
+            target: 'sujinparkova',
             title: 'Belly Buruburu',
             description:
                 'description of the coupon description of the coupon description of the coupon description of',
@@ -59,7 +59,7 @@ const ReceivedCoupons = () => {
         },
         {
             id: 5,
-            origin: 'sujinparkova',
+            target: 'sujinparkova',
             title: 'Belly Buruburu',
             description:
                 'description of the coupon description of the coupon description of the coupon description of',
@@ -70,7 +70,7 @@ const ReceivedCoupons = () => {
     ];
     return (
         <Container>
-            <h1>Received Coupons</h1>
+            <h1>Sent Coupons</h1>
             <OptionTab optionMode={optionMode} setOptionMode={setOptionMode} />
             {optionMode === 'active' ? (
                 <Description
@@ -99,4 +99,4 @@ const Container = styled.div`
     padding: 8px 0;
 `;
 
-export default ReceivedCoupons;
+export default SentCoupons;

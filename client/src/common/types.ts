@@ -20,3 +20,10 @@ export type DropdownMenuData = {
     name: string;
     path: string;
 };
+
+export type CouponOption = "active" | "disabled";
+
+export type OptionType = {
+    mode: CouponOption;
+    text: string;
+};

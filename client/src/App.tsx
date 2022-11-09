@@ -6,6 +6,7 @@ import GlobalStyle from './GlobalStyle';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import ReceivedCoupons from './pages/ReceivedCoupons';
+import SentCoupons from './pages/SentCoupons';
 
 const App: React.FunctionComponent = () => {
     return (
@@ -17,6 +18,7 @@ const App: React.FunctionComponent = () => {
                     <Route path="/" element={<Home />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/received" element={<ReceivedCoupons />} />
+                    <Route path="/sent" element={<SentCoupons />} />
                 </Routes>
             </Div>
         </BrowserRouter>
