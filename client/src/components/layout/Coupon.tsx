@@ -96,13 +96,15 @@ const Coupon = ({ data }: UserProps) => {
 };
 
 const OuterContainer = styled.div`
+    max-width: 98vw;
     width: 360px;
     height: 120px;
     margin-bottom: 8px;
 `;
 const Container = styled.div`
     cursor: pointer;
-    width: 360px;
+    max-width: 98vw;
+    width: 100%;
     height: 120px;
     border: 4px solid var(--primary-500);
     border-left: 20px solid var(--primary-500);
@@ -128,6 +130,7 @@ const Container = styled.div`
 `;
 
 const InnerContainer = styled.div`
+    max-width: 92vw;
     width: 336px;
     height: 112px;
     border-left: 2px dashed var(--primary-500);
@@ -137,6 +140,7 @@ const InnerContainer = styled.div`
     padding: 8px 10px 8px 8px;
     > * {
         width: 318px;
+        max-width: 86vw;
     }
 `;
 
@@ -203,7 +207,7 @@ const ButtonWrapper = styled.div`
     justify-content: space-around;
     align-items: center;
     z-index: 999;
-    width: 360px;
+    width: 100%;
     height: 120px;
     border-radius: 6px;
 `;

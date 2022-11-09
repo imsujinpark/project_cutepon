@@ -5,6 +5,7 @@ import { faBars, faRightToBracket } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate, Link, NavLink } from 'react-router-dom';
 import { DropdownMenuData } from '../../common/types';
 import useDetectClickOutside from '../../hooks/useDetectClickOutside';
+import logo from '../../assets/logo.png';
 
 const Nav = () => {
     const navigate = useNavigate();
@@ -47,24 +48,28 @@ const Nav = () => {
     return (
         <OuterContainer>
             <Container>
-                <StyledFontAwesomeIcon
-                    icon={faBars}
-                    title="menu"
-                    ref={menuRef}
-                    onClick={handleMenuClick}
-                />
+                <IconWrapper>
+                    <StyledFontAwesomeIcon
+                        icon={faBars}
+                        title="menu"
+                        ref={menuRef}
+                        onClick={handleMenuClick}
+                    />
+                </IconWrapper>
                 <Logo
                     onClick={() => {
                         navigate('/');
                     }}
                 >
-                    <strong>CUTE</strong>PON
+                    <img src={logo} alt="logo"></img>
                 </Logo>
                 <Link to="/login">
-                    <StyledFontAwesomeIcon
-                        icon={faRightToBracket}
-                        title="login"
-                    />
+                    <IconWrapper>
+                        <StyledFontAwesomeIcon
+                            icon={faRightToBracket}
+                            title="login"
+                        />
+                    </IconWrapper>
                 </Link>
             </Container>
             <DropDown className={menuAnimation}>
@@ -156,15 +161,28 @@ const Container = styled.nav`
     }
 `;
 
+const IconWrapper = styled.div`
+    width: 24px;
+    height: 24px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 24px;
+`;
 const StyledFontAwesomeIcon = styled(FontAwesomeIcon)`
     font-size: 24px;
-    margin: 0 24px;
     cursor: pointer;
 `;
 
-const Logo = styled.span`
+const Logo = styled.div`
     cursor: pointer;
     font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    > img {
+        width: 88px;
+    }
 `;
 
 const DropDown = styled.nav`
