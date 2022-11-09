@@ -247,8 +247,12 @@ async function main() {
 
     // GET /oauth2/google
     // 
+    // This is the API that acts both as a "login" and a "register".
     // Redirects the user to an authorization form `https://accounts.google.com/o/oauth2/v2/auth`.
     // Completing the form will redirect the user, once again, to `/oauth2/google/callback`.
+    // 
+    // Notes: Aparently, for how redirections work, the client is expected to "move" to this location
+    // rather than make a GET request.
     app.get('/oauth2/google', function handleGoogleLogin(req, res) {
         const rootURL = 'https://accounts.google.com/o/oauth2/v2/auth';
         const options = {
@@ -281,10 +285,8 @@ async function main() {
     //     * refreshToken: string. Long duration token used as a means of renewing your identification.
     //     If `token` expires, you can receive a new one by sending this `refreshToken` to the TODO API.
     // 
-    // This is the API that acts both as a "login" and a "register". The `token` and `refreshToken` 
     // returned will be subsequently used for accessing any API that requires authorization.
-    // 
-    // The client will never not manually access this API.When the client tries to login via oauth at
+    // The client will never not manually access this API. When the client tries to login via oauth at
     // `/oauth2/google` and completes the form, google will redirect the client here, with the required
     // data already set.
     app.get('/oauth2/google/callback', async function handle_google_oauth_callback (req, res) {
