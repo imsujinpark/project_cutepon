@@ -1,3 +1,7 @@
+// This is required for stack traces to refer to the original typescript code instead of the compiled js
+import { install as soure_map_support } from 'source-map-support';
+soure_map_support();
+
 import { User } from './src/User.js';
 import { Coupon } from './src/Coupon.js';
 import { Database, Statement } from './src/sqlite-async.js';

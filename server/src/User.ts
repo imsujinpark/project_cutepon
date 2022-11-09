@@ -29,7 +29,7 @@ export class User {
     }
     
     /** Resets the User table to an empty table */
-    static async reset_table(db: Database): Promise<void> {
+    static async reset_table(db: Database) {
         await db.run(`
             drop table if exists user;
         `);
@@ -46,7 +46,6 @@ export class User {
                 select raise(abort, 'user is readonly!');
             end;
         `);
-        Promise.resolve();
     }
 
     static async close() {
@@ -97,7 +96,6 @@ export class User {
             const result = await User.query_get_by_internal_statement?.get(internal_id);
             if (!result) return null;
             const user = new User(internal_id, result.unique_id, result.public_id);
-            // user.log();
             return user;
         }
         finally {
@@ -111,7 +109,6 @@ export class User {
             const result = await User.query_get_statement?.get(unique_id);
             if (!result) return null;
             const user = new User(result.internal_id, unique_id, result.public_id);
-            // user.log();
             return user;
         }
         finally {

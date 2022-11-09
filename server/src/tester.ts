@@ -47,13 +47,12 @@ export class Tester {
 
     }
 
-    async test(name: string, testing_function: () => Promise<void>) {
+    async test(name: string, test_function: () => Promise<void>) {
         this.current_test_name = name;
         try {
-            await testing_function();
+            await test_function();
             this.success();
         } catch (e) { this.failed(e as Error); }
-        return;
     }
 
     async run() {

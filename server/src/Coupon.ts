@@ -1,10 +1,6 @@
 import { Database, Statement } from './sqlite-async.js';
 import { User } from './User.js';
 
-function throw_expression(msg: string): never {
-    throw new Error(msg);
-}
-
 export enum CouponStatus {
     Active, Redeemed, Deleted, Expired
 }
@@ -39,19 +35,17 @@ export class Coupon {
     }
 
     /** Initializes the static methods used for interacting with the User table */
-    static async initialize_statements(db: Database): Promise<void> {
+    static async initialize_statements(db: Database) {
         Coupon.query_all_statement = await db.prepare(Coupon.query_all);
         Coupon.initialized = true;
-        Promise.resolve();
     }
 
     static async close() {
         await Coupon.query_all_statement?.finalize();
-        return;
     }
     
     /** Resets the User table to an empty table */
-    static async reset_table(db: Database): Promise<void> {
+    static async reset_table(db: Database) {
         await db.run(`
             drop table if exists coupon;
         `);
@@ -89,7 +83,6 @@ export class Coupon {
         await db.run(`
             create index by_origin_user_index on coupon (origin_user);
         `);
-        Promise.resolve();
     }
 
     static initialized: boolean = false;
@@ -99,8 +92,10 @@ export class Coupon {
     static query_all_statement: Statement | null = null;
 
     static async parse_object(object: any): Promise<Coupon> {
-        let origin_user = await User.get_existing_user_internal(object.origin_user) ?? throw_expression("invalid user! " + object.origin_user);
-        let target_user = await User.get_existing_user_internal(object.target_user) ?? throw_expression("invalid user! " + object.target_user);
+        let origin_user = await User.get_existing_user_internal(object.origin_user);
+        if (!origin_user) throw new Error(`Unreachable: user ${object.origin_user} must exist, but it doesn't!`)
+        let target_user = await User.get_existing_user_internal(object.target_user);
+        if (!target_user) throw new Error(`Unreachable: user ${object.target_user} must exist, but it doesn't!`)
         return new Coupon(
             object.id,
             object.title,
@@ -130,10 +125,10 @@ export class Coupon {
     }
 
     static require_initialized() {
-        if (!Coupon.initialized) throw "Not initialized!";
+        if (!Coupon.initialized) throw new Error("Not initialized!");
     }
 
-    static async log_all(): Promise<void> {
+    static async log_all() {
         let all_users = await Coupon.all();
         for (let i = 0; i < all_users.length; i += 1) {
             all_users[i].log();
