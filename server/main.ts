@@ -354,10 +354,11 @@ async function main() {
         server.close();
     };
 
-    process.on('SIGTERM', close_server);
-    process.on('SIGINT',  close_server);
-    process.on('SIGILL',  close_server);
-    // This seems to not be something linux likes....
+    // Notes: So aparently this is not required, there is no need to close the db as long as I keep closing my statements
+    // process.on('SIGTERM', close_server);
+    // process.on('SIGINT',  close_server);
+    // process.on('SIGILL',  close_server);
+    // Notes: This seems to not be something linux likes....
     // process.on('SIGKILL', close_server);
 }
 

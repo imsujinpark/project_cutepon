@@ -39,7 +39,7 @@ export class Database {
         }
         return new Promise((resolve, reject) => {
             if (this.db) {
-                return reject(new Error('Database.open: database is already open'));
+                reject(new Error('Database.open: database is already open'));
             }
             let db = new sqlite.Database(filename, mode, (err) => {
                 if (err) {

@@ -6,6 +6,7 @@ import { User } from './src/User.js';
 import { Coupon } from './src/Coupon.js';
 import { Database, Statement } from './src/sqlite-async.js';
 import { Tester } from './src/tester.js';
+import fs from 'fs';
 
 async function main () {
     
@@ -222,6 +223,96 @@ async function main () {
             });
         }
     ).run();
+
+    await new Tester(
+        "Tests SQLite", null, null, async (t) => {
+
+            await t.test("As long as statements are reset or finalized, changes are commited", async () => {
+
+                { // Start with an empty db
+                    let db:Database = await Database.open('./data/dbtest.sqlite3');
+                    await User.reset_table(db);
+                    await db.close();
+                }
+
+                // Open the database, which is empty, and add a user
+                const same_db_1 = await Database.open('./data/dbtest.sqlite3') as Database;
+                await User.initialize_statements(same_db_1);
+                const user = await User.create_new_user("Pepe", "xXx_Pepe_xXx");
+
+                // Without closing the connection, open a new one and see if the data has been commited
+                const same_db_2 = await Database.open('./data/dbtest.sqlite3') as Database;
+                await User.initialize_statements(same_db_2);
+                const same_user = await User.get_existing_user_internal(user.internal_id);
+                t.expect(same_user !== null);
+                t.expect(user.internal_id === same_user?.internal_id);
+
+            });
+
+            await t.test("Not resetting or finalizing a statement means that changes are not commited", async () => {
+
+                { // Start with an empty db
+                    let db:Database = await Database.open('./data/dbtest.sqlite3');
+                    await User.reset_table(db);
+                    await db.close();
+                }
+
+                // Open the database, which is empty, and add a user
+                const same_db_1 = await Database.open('./data/dbtest.sqlite3') as Database;
+                await User.initialize_statements(same_db_1);
+                const statement: Statement = await same_db_1.prepare('insert into user (unique_id, public_id) values (?, ?) returning internal_id');
+                const user = await statement.get("abc", "def");
+
+                // Without closing the connection, open a new one and see if the data has been commited
+                const same_db_2 = await Database.open('./data/dbtest.sqlite3') as Database;
+                await User.initialize_statements(same_db_2);
+                const same_user = await User.get_existing_user_internal(user.internal_id);
+                t.expect(same_user === null);
+
+                await t.expect_throw(
+                    async () => {
+                        // This will fail cause the database still has an open statement
+                        await User.reset_table(same_db_1);
+                    },
+                    (err) => {
+                        t.expect(err.message === 'SQLITE_LOCKED: database table is locked');
+                    }
+                );
+
+                await statement.finalize();
+                // This wont throw this time tho cause we just closed the statement
+                await User.reset_table(same_db_1);
+                t.expect(true);
+            });
+
+            await t.test("Resetting or finalizing a statement means that changes are not commited", async () => {
+
+                { // Start with an empty db
+                    let db:Database = await Database.open('./data/dbtest.sqlite3');
+                    await User.reset_table(db);
+                    await db.close();
+                }
+                
+                // Open the database, which is empty, and add a user
+                const same_db_1 = await Database.open('./data/dbtest.sqlite3') as Database;
+                await User.initialize_statements(same_db_1);
+                const statement: Statement = await same_db_1.prepare('insert into user (unique_id, public_id) values (?, ?) returning internal_id');
+                const row = await statement.get("abc", "def");
+                const user = new User(row.internal_id, "abc", "def")
+                await statement.finalize();
+
+                // Without closing the connection, open a new one and see if the data has been commited
+                const same_db_2 = await Database.open('./data/dbtest.sqlite3') as Database;
+                await User.initialize_statements(same_db_2);
+                const same_user = await User.get_existing_user_internal(user.internal_id);
+                t.expect(same_user !== null);
+                t.expect(user.internal_id === same_user?.internal_id);
+
+            });
+
+        }
+    ).run();
+    
 }
 
 main();

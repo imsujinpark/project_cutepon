@@ -23,15 +23,6 @@ export class Tester {
         if (!thing) throw new Error("Lower your expectations!");
     }
 
-    success() {
-        console.log("Test OK! " + this.current_test_name);
-    }
-
-    failed(error: Error) {
-        console.log("Test FAIL! " + this.current_test_name);
-        console.log(error);
-    }
-
     async expect_throw(throwing_function: () => Promise<void>, error_checker: (error: any) => void) {
         
         let has_thrown = false;
@@ -48,11 +39,18 @@ export class Tester {
     }
 
     async test(name: string, test_function: () => Promise<void>) {
+        console.log(`Starting test ${name}`)
         this.current_test_name = name;
         try {
             await test_function();
-            this.success();
-        } catch (e) { this.failed(e as Error); }
+            console.log("Test OK!");
+        } catch (e) { 
+            console.log("Test FAILED with exception:");
+            if (typeof e === typeof Error)
+                console.log(e as Error);
+            else
+                console.log(e);
+        }
     }
 
     async run() {
