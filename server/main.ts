@@ -398,7 +398,6 @@ async function main() {
             unreachable("Unreachable! The user somehow has a valid refresh token but not sessions?");
         }
         sessions.delete(user_tokens.token);
-        const hour_in_ms = 3600000;
         const expiration_short = new Date().getTime() + hour_in_ms * 1;
         const token = uuid.v4();
         sessions.set(token, {internal_id: refresh_token.internal_id, token: token, expiration: expiration_short});
