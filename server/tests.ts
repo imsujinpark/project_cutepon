@@ -3,7 +3,7 @@ import { install as soure_map_support } from 'source-map-support';
 soure_map_support();
 
 import { User } from './src/User.js';
-import { Coupon } from './src/Coupon.js';
+import { Coupon, CouponStatus } from './src/Coupon.js';
 import { Database, Statement } from './src/sqlite-async.js';
 import { Tester } from './src/tester.js';
 import fs from 'fs';
@@ -184,7 +184,7 @@ async function main () {
         "Coupon tests",
         async function on_start() {
             // Always run the tests on a test database that has been reset already
-            const db = await Database.open("./data/test_db.db");
+            const db = await Database.open("./data/test_coupon.db");
             console.log("opened " + db.filename);
             await User.reset_table(db);
             await User.initialize_statements(db);
@@ -221,6 +221,54 @@ async function main () {
                 await statement2.finalize();
 
             });
+
+            await t.test("Create coupon", async () => {
+
+                const usera = await User.create_new_user("usera1", "Paco");
+                const userb = await User.create_new_user("userb1", "Pepe");
+
+                const title = "Super coupon!";
+                const description = "Redeem this coupon for a mistery gift!";
+                const expiration_date = new Date("July 4 2034 12:30");
+                const coupon = await Coupon.create_new_coupon(
+                    title, description, expiration_date,
+                    /* A sends a coupon to B */
+                    usera, userb
+                );
+
+                t.expect(coupon.description === description);
+                t.expect(coupon.expiration_date.getTime() === expiration_date.getTime());
+                t.expect(coupon.title === title);
+                t.expect(coupon.origin_user.internal_id === usera.internal_id);
+                t.expect(coupon.target_user.internal_id === userb.internal_id);
+                t.expect(coupon.created_date && coupon.created_date.getTime() !== 0);
+                t.expect(coupon.finish_date === null); // since it defaults to null
+                t.expect(typeof coupon.id === 'number');
+                t.expect(coupon.id >= 0);
+                t.expect(coupon.status === CouponStatus.Active);
+            });
+
+
+            await t.test("A sends coupon to B", async () => {
+
+                const usera = await User.create_new_user("usera2", "Paco");
+                const userb = await User.create_new_user("userb2", "Pepe");
+
+                const coupon = await Coupon.create_new_coupon("Name of coupon~",
+                    "Redeem this coupon for a mistery gift!",
+                    new Date("July 4 2034 12:30"),
+                    /* A sends a coupon to B */
+                    usera, userb
+                );
+
+                const usera_available_coupons = await Coupon.get_available(usera);
+                t.expect(usera_available_coupons.length === 0);
+                
+                const userb_available_coupons = await Coupon.get_available(userb);
+                t.expect(userb_available_coupons.length === 1);
+
+            });
+
         }
     ).run();
 
@@ -298,15 +346,15 @@ async function main () {
                 await User.initialize_statements(same_db_1);
                 const statement: Statement = await same_db_1.prepare('insert into user (unique_id, public_id) values (?, ?) returning internal_id');
                 const row = await statement.get("abc", "def");
-                const user = new User(row.internal_id, "abc", "def")
+                const user_internal_id = row.internal_id;
                 await statement.finalize();
 
                 // Without closing the connection, open a new one and see if the data has been commited
                 const same_db_2 = await Database.open('./data/dbtest.sqlite3') as Database;
                 await User.initialize_statements(same_db_2);
-                const same_user = await User.get_existing_user_internal(user.internal_id);
+                const same_user = await User.get_existing_user_internal(user_internal_id);
                 t.expect(same_user !== null);
-                t.expect(user.internal_id === same_user?.internal_id);
+                t.expect(user_internal_id === same_user?.internal_id);
 
             });
 

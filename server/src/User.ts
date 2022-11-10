@@ -9,7 +9,7 @@ export class User {
     /** The public id used and visible by the users */
     readonly public_id: string;
 
-    constructor(internal_id: number, unique_id: string, public_id: string) {
+    private constructor(internal_id: number, unique_id: string, public_id: string) {
         this.internal_id = internal_id;
         this.unique_id = unique_id;
         this.public_id = public_id;
