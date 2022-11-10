@@ -11,6 +11,7 @@ import http from 'http';
 import fs from 'fs';
 import * as uuid from 'uuid';
 import * as path from 'path';
+import * as bodyparser from 'body-parser';
 // This is required for stack traces to refer to the original typescript code instead of the compiled js
 import { install as soure_map_support } from 'source-map-support';
 
@@ -276,7 +277,7 @@ async function main() {
         res.send(`Hello ${user.public_id}!`)
     });
 
-    app.post("/api/send", async (req, res) => {
+    app.post("/api/send", bodyparser.json(), async (req, res) => {
         const user: User = await User.get_existing_user_internal((req as any).internal_id) ?? unreachable();
         const target: User = await User.get_existing_user_public(req.body.target_user ?? response_error(res, Errors.SendCouponTargetMissing)) ?? response_error(res, Errors.SendCouponTargetUnknown); 
         const expiration_date = req.body.expiration_date ? new Date(req.body.expiration_date) : new Date(Date.now() + day_in_ms * 30)
