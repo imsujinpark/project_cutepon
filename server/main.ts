@@ -52,12 +52,10 @@ function require_not_null(object: any): void {
 }
 
 function verify_environment(): void {
-    require_not_null(process.env.APP_PORT);
     require_not_null(process.env.APP_DOMAIN);
     require_not_null(process.env.JWT_SECRET);
     require_not_null(process.env.REFRESH_JWT_SECRET);
     require_not_null(process.env.CLIENT_ID);
-    require_not_null(process.env.CLIENT_SECRET);
     require_not_null(process.env.CLIENT_SECRET);
     require_not_null(process.env.NODE_ENV);
     require_not_null(process.env.NODE_ROOT);
@@ -215,6 +213,7 @@ async function main() {
     const hour_in_ms = 3600000;
     const day_in_ms = hour_in_ms * 24;
 
+    verify_environment();
     const database = await database_start();
     const app = express();
     app.use((req, res, next) => { // redirect http to https
@@ -540,6 +539,5 @@ async function main() {
 
 soure_map_support();
 dotenv.config();
-verify_environment();
 main();
 
