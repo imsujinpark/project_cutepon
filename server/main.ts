@@ -203,8 +203,6 @@ function response_error(res: Response, error: Errors): never {
 
 async function main() {
 
-    dotenv.config();
-    verify_environment();
     const database = await database_start();
     const app = express();
     app.use(cors());
@@ -403,7 +401,7 @@ async function main() {
         sessions_long.set(refresh_token, {internal_id: user.internal_id, token: refresh_token, expiration: expiration_long});
         const tokens = {token, refresh_token};
         user_sessions.set(user.internal_id, tokens);
-        res.redirect(`/?${new URLSearchParams(tokens).toString()}`);
+        res.redirect(`/oauth2/tokens?${new URLSearchParams(tokens).toString()}`);
     });
     
     if (fs.existsSync("cert.pem") && fs.existsSync("key.pem")) {
@@ -428,5 +426,7 @@ async function main() {
 }
 
 soure_map_support();
+dotenv.config();
+verify_environment();
 main();
 
