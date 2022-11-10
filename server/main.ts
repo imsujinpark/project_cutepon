@@ -277,9 +277,6 @@ async function main() {
         res.send(`Hello ${user.public_id}!`)
     });
 
-    // TODO http to https redirection.
-    // TODO render react apps properly.
-
     // POST /api/send
     // 
     // Request:
