@@ -5,6 +5,7 @@ import Nav from './components/layout/Nav';
 import GlobalStyle from './GlobalStyle';
 import Home from './pages/Home';
 import Login from './pages/Login';
+import NewCoupon from './pages/NewCoupon';
 import ReceivedCoupons from './pages/ReceivedCoupons';
 import SentCoupons from './pages/SentCoupons';
 
@@ -19,6 +20,7 @@ const App: React.FunctionComponent = () => {
                     <Route path="/login" element={<Login />} />
                     <Route path="/received" element={<ReceivedCoupons />} />
                     <Route path="/sent" element={<SentCoupons />} />
+                    <Route path="/new" element={<NewCoupon />} />
                 </Routes>
             </Div>
         </BrowserRouter>
