@@ -10,6 +10,7 @@ import https from 'https';
 import http from 'http';
 import fs from 'fs';
 import * as uuid from 'uuid';
+import * as path from 'path';
 // This is required for stack traces to refer to the original typescript code instead of the compiled js
 import { install as soure_map_support } from 'source-map-support';
 
@@ -59,6 +60,7 @@ function verify_environment(): void {
     require_not_null(process.env.CLIENT_SECRET);
     require_not_null(process.env.CLIENT_SECRET);
     require_not_null(process.env.NODE_ENV);
+    require_not_null(process.env.NODE_ROOT);
 }
 
 function throw_expression(msg: string): never {
@@ -197,8 +199,9 @@ function response_error(res: Response, error: Errors): never {
         case Errors.SendCouponTargetMissing: status = 400; // Bad Request
         case Errors.Internal: status = 500; // Forbidden
     }
-    res.status(status).json({error: error, message: Errors[error]});
-    let err = new Error(error.toString());
+    const error_object = {error: error, message: Errors[error]}
+    res.status(status).json(error_object);
+    let err = new Error(JSON.stringify(error_object));
     (err as any).__handled__ = true;
     throw err;
 }
@@ -215,7 +218,6 @@ async function main() {
     const database = await database_start();
     const app = express();
     app.use((req, res, next) => { // redirect http to https
-        
         if (process.env.NODE_ENV != 'development' && !req.secure) {
             // return res.redirect(`https://${process.env.APP_DOMAIN}`);
             return res.redirect("https://" + req.headers.host + req.url);
@@ -224,13 +226,6 @@ async function main() {
     });
     app.use(cors());
     app.use(express.static('../client/build'));
-    app.use((err: any, req: Request, res: Response, next: express.NextFunction) => {
-        if (err  && err.message && err.stack) console.log(err as Error)
-        else console.log(err);
-        if (!(err as any).__handled__) {
-            res.status(Errors.Internal).json({error: Errors.Internal, message: Errors[Errors.Internal]});
-        }
-    });
 
     /** token -> token_data */
     const sessions = new Map<string, token_data>();
@@ -238,6 +233,14 @@ async function main() {
     const sessions_long = new Map<string, token_data>();
     /** internal_id -> user_tokens */
     const user_sessions = new Map<number, user_tokens>();
+
+    app.use((err: any, req: Request, res: Response, next: express.NextFunction) => {
+        if (err  && err.message && err.stack) console.log(err as Error)
+        else console.log(err);
+        if (!(err as any).__handled__) {
+            res.status(Errors.Internal).json({error: Errors.Internal, message: Errors[Errors.Internal]});
+        }
+    });
 
     // All routes starting with `/api/*` will have the `authorization` header check for a `token`.
     // It will reply with any of the following errors in case something is wrong with the authorization:
@@ -501,9 +504,15 @@ async function main() {
         sessions.set(token, {internal_id: user.internal_id, token: token, expiration: expiration_short});
         const refresh_token = uuid.v4();
         sessions_long.set(refresh_token, {internal_id: user.internal_id, token: refresh_token, expiration: expiration_long});
-        const tokens = {token, refresh_token};
-        user_sessions.set(user.internal_id, tokens);
-        res.redirect(`/oauth2/tokens?${new URLSearchParams(tokens).toString()}`);
+        const authorized_tokens = {token, refresh_token};
+        user_sessions.set(user.internal_id, authorized_tokens);
+        console.log({tokens: authorized_tokens});
+        res.redirect(`/oauth2/tokens?${new URLSearchParams(authorized_tokens).toString()}`);
+    });
+
+    // Anything not recognized, send it to the react application and let it route it
+    app.get('*', (req, res) => {
+        res.sendFile('./client/build/index.html', { root: process.env.NODE_ROOT });
     });
     
     console.log(`NODE_ENV ${process.env.NODE_ENV}`)
