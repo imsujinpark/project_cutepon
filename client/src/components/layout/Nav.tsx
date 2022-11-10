@@ -172,6 +172,9 @@ const IconWrapper = styled.div`
 const StyledFontAwesomeIcon = styled(FontAwesomeIcon)`
     font-size: 24px;
     cursor: pointer;
+    &:active {
+        font-size: 22px;
+    }
 `;
 
 const Logo = styled.div`
@@ -195,6 +198,7 @@ const DropDown = styled.nav`
     color: var(--liver-500);
     box-shadow: var(--shadow-low);
     z-index: 9998;
+    opacity: 0;
 
     &.open {
         animation: ${slideIn} 0.5s ease-in-out 0s 1 normal forwards;

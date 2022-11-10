@@ -41,6 +41,11 @@ const Button = styled.button`
     > span {
         font-size: 12px;
     }
+
+    &:active {
+        background-color: var(--liver-200);
+        transform: translateY(2px);
+    }
 `;
 
 const Img = styled.img`
