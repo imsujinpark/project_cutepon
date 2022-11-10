@@ -5,6 +5,8 @@ import Nav from './components/layout/Nav';
 import GlobalStyle from './GlobalStyle';
 import Home from './pages/Home';
 import Login from './pages/Login';
+import NewCoupon from './pages/NewCoupon';
+import OAuth2RedirectHandler from './pages/OAuth2RedirectHandler';
 import ReceivedCoupons from './pages/ReceivedCoupons';
 import SentCoupons from './pages/SentCoupons';
 
@@ -17,8 +19,13 @@ const App: React.FunctionComponent = () => {
                 <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/login" element={<Login />} />
+                    <Route
+                        path="/oauth2/tokens"
+                        element={<OAuth2RedirectHandler />}
+                    />
                     <Route path="/received" element={<ReceivedCoupons />} />
                     <Route path="/sent" element={<SentCoupons />} />
+                    <Route path="/new" element={<NewCoupon />} />
                 </Routes>
             </Div>
         </BrowserRouter>

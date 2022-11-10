@@ -8,11 +8,12 @@ import { faArrowPointer } from '@fortawesome/free-solid-svg-icons';
 
 const ReceivedCoupons = () => {
     const [optionMode, setOptionMode] = useState<CouponOption>('active');
+
     const dummyData: CouponData[] = [
         {
             id: 1,
             origin: 'sujinparkova',
-            title: 'Belly Buruburu',
+            title: 'Belly Buruburu Belly Burubr',
             description: 'you can give buruburu on the belly for 3 seconds',
             receivedDate: 20202020,
             expirationDate: 20202020,
@@ -23,7 +24,7 @@ const ReceivedCoupons = () => {
             origin: 'sujinparkova',
             title: 'Belly Buruburu',
             description:
-                'description of the coupon description of the coupon description of the coupon description of',
+                'description of the coupon description of the coupon description of the coupon description of description of the coupon description of the coupon description of the coupon description of',
             receivedDate: 20202020,
             expirationDate: 20202020,
             status: 'active',
@@ -33,7 +34,7 @@ const ReceivedCoupons = () => {
             origin: 'sujinparkova',
             title: 'Belly Buruburu',
             description:
-                'description of the coupon description of the coupon description of the coupon description of',
+                'adaadfafadaadfafadaadfafadaadfafadaadfafadaadfafadaadfafadaadfafadaadfafadaadfafadaadfafadaadfafadaa',
             receivedDate: 20202020,
             expirationDate: 20202020,
             status: 'active',
@@ -61,8 +62,7 @@ const ReceivedCoupons = () => {
             id: 5,
             origin: 'sujinparkova',
             title: 'Belly Buruburu',
-            description:
-                'description of the coupon description of the coupon description of the coupon description of',
+            description: '',
             receivedDate: 20202020,
             expirationDate: 20202020,
             status: 'expired',

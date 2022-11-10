@@ -25,6 +25,9 @@ const GlobalStyle = createGlobalStyle`
     button {
         border: none;
         cursor: pointer;
+        &:hover {
+            box-shadow: var(--shadow-medium);
+        }
     }
 
     li {

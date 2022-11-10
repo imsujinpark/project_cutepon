@@ -60,7 +60,8 @@ const Coupon = ({ data }: UserProps) => {
                                 : `to. ${target}`}
                         </span>
                     </Head>
-                    <Body>{description}</Body>
+                    {/* title is to show the full text when it's cut by ellipsis */}
+                    <Body title={description}>{description}</Body>
                     <TailTop>{status}</TailTop>
                     <TailBottom>
                         <span>
@@ -96,23 +97,27 @@ const Coupon = ({ data }: UserProps) => {
 };
 
 const OuterContainer = styled.div`
+    max-width: 98vw;
     width: 360px;
     height: 120px;
-    margin-bottom: 8px;
+    margin: 4px 0;
 `;
 const Container = styled.div`
     cursor: pointer;
-    width: 360px;
-    height: 120px;
-    border: 4px solid var(--primary-500);
-    border-left: 20px solid var(--primary-500);
+    max-width: 98vw;
+    width: 100%;
+    height: 100%;
+    border: 4px solid var(--primary-400);
+    border-left: 20px solid var(--primary-400);
     background-color: var(--ecru-200);
     border-radius: 6px;
 
+    // disabled coupons
     :not(&.active) {
         background-color: var(--liver-050);
         border: 4px solid var(--liver-200);
         border-left: 20px solid var(--liver-200);
+
         // InnerContainer
         > div {
             border-left: 2px dashed var(--liver-200);
@@ -125,18 +130,40 @@ const Container = styled.div`
     &.blur {
         opacity: 40%;
     }
+
+    &:hover {
+        border: 4px solid var(--primary-500);
+        border-left: 20px solid var(--primary-500);
+        background-color: var(--ecru-300);
+        // disabled coupons
+        :not(&.active) {
+            background-color: var(--liver-100);
+            border: 4px solid var(--liver-300);
+            border-left: 20px solid var(--liver-300);
+
+            // InnerContainer
+            > div {
+                border-left: 2px dashed var(--liver-300);
+            }
+        }
+    }
 `;
 
 const InnerContainer = styled.div`
+    max-width: 92vw;
     width: 336px;
     height: 112px;
-    border-left: 2px dashed var(--primary-500);
+    border-left: 2px dashed var(--primary-400);
     display: flex;
     flex-direction: column;
     color: var(--liver-600);
     padding: 8px 10px 8px 8px;
     > * {
         width: 318px;
+        max-width: 86vw;
+    }
+    &:hover {
+        border-left: 2px dashed var(--primary-500);
     }
 `;
 
@@ -167,10 +194,15 @@ const Head = styled.div`
 `;
 
 const Body = styled.div`
-    display: flex;
+    width: 100%;
     height: 30px;
     font-size: 12px;
-    overflow-wrap: break-word;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    text-overflow: ellipsis;
     margin-bottom: 12px;
     color: var(--liver-500);
 `;
@@ -203,7 +235,7 @@ const ButtonWrapper = styled.div`
     justify-content: space-around;
     align-items: center;
     z-index: 999;
-    width: 360px;
+    width: 100%;
     height: 120px;
     border-radius: 6px;
 `;

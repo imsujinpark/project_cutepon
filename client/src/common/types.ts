@@ -21,9 +21,22 @@ export type DropdownMenuData = {
     path: string;
 };
 
+// types for coupon mode selecting tab
 export type CouponOption = "active" | "disabled";
 
 export type OptionType = {
     mode: CouponOption;
     text: string;
 };
+
+// for redux toolkit initial state for userSlice
+export type userType = {
+    isLoggedIn: boolean;
+    token: string | null;
+    refreshToken: string | null;
+};
+
+// interface for redux toolkit useSelector
+export interface RootState {
+    user: userType;
+}
