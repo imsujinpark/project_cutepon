@@ -3,3 +3,4 @@ run.sh
 .env
 dist
 env.ps1
+compile_and_run.sh
