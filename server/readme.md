@@ -41,21 +41,24 @@ Those will reply with any of the following errors in case something is wrong wit
 
 ## Routes
 
-### GET /api/hello
+### GET `/api/hello`
 
 **Response**: Plain text string `Hello ${user.public_id}!`
-    
-    ex: Hello amazing.email@gmail.com!
+
+Example:
+
+```
+Hello amazing.email@gmail.com!
+```
 
 Use this API to test that `Authorization` is working as intended.
 
-### POST /api/send
+### POST `/api/send`
 
-**Request**:
+**Request**: Json string in the body.
 
 ```ts
-body: json string = {
-
+{
     target_user: string, /** The unique_id of the coupon's target user. */
     expiration_date: number?, /** The timetamp where the coupon expires. */
                               /** If null, default to 30 days. */
@@ -65,10 +68,10 @@ body: json string = {
 }
 ```
 
-**Response**:
+**Response**: Json string in the body.
    
 ```ts
-body: json string = {
+{
     id: number, /** Coupon identifier */
     title: string, /** The coupon title */
     description: string, /** The coupon description */
@@ -88,16 +91,14 @@ body: json string = {
 
 Creates a new `coupon` and sends it to the `target_user`.
 
-### GET /api/available
+### GET `/api/available`
 
-**Response**:
+**Response**: Json string in the body.
    
 ```ts
-body: json string = {
-
+{
     /** A list of Coupons with status == Active */
     coupons: Coupon[] = [
-
         {
             id: number, /** Coupon identifier */
             title: string, /** The coupon title */
@@ -109,7 +110,7 @@ body: json string = {
             status: int,  /** The status of the coupon. Maps directly to the `enum CouponStatus` */
             finish_date: number | null /** The date a coupon was finished, (expired, used, or removed) */
         },
-        /** ... */
+        ...
     ]
 }
 ```
@@ -117,16 +118,16 @@ body: json string = {
 Returns a list of all the available (coupon.status === Active) coupons of the sender.
 Authorization header is used to identify the user.
 
-### GET /refresh_token
+### GET `/refresh_token`
 
 **Request**:
 
 * Header `Authorization`. Set the `refresh_token` you got on login as the Authorization header.
 
-**Response**:
+**Response**: Json string in the body.
     
 ```ts
-body: json string = {
+{
     token: string, /** Short duration token for accessing the APIs that require identification. */
                    /** Put this token as is in the `Authorization` header of subsequent requests. */
     refresh_token: string, /** Long duration token used as a means of renewing your identification. */
@@ -134,8 +135,10 @@ body: json string = {
                            /** to the `refresh_token` API. */
 }
 ```
+
 Example:
-```json
+
+```ts
 { token: "d4800779-b9b1-4e4d-bb00-d2579f3f9cdb", refresh_token: "fd38d2f6-6cad-4495-8280-a5b033e27abb" }
 ```
 
@@ -147,7 +150,7 @@ Example:
 The idea is that if you have no token (or it has been rejected on an API request), you use this API.  
 If you have no `refresh_token`, you login again via `/oauth2/google`.
 
-### GET /oauth2/google
+### GET `/oauth2/google`
 
 **Response**: Redirection to google auth form
 
@@ -160,18 +163,20 @@ Finally, the client will be redirected to `/?token=#####&refresh_token=#####`. C
 Because of how redirections work, the client is expected to "go" to
 this location rather than make a GET request.
 
-### GET /oauth2/google/callback
+### GET `/oauth2/google/callback`
 
 **Request**:
+
+URL parameters:
 
 * `code`: number. Code set automatically by google on auth form completion.
 
 **Response**:
     
 Redirection to `/oauth2/tokens` with 2 URL parameters:
-* token: string. Short duration token for accessing the APIs that require identification.
+* `token`: string. Short duration token for accessing the APIs that require identification.
 Put this token as is in the `Authorization` header of subsequent requests.
-* refresh_token: string. Long duration token used as a means of renewing your identification.
+* `refresh_token`: string. Long duration token used as a means of renewing your identification.
 If `token` expires, you can receive a new one by sending this `refresh_token` to the `refresh_token` API.
 
 Example:
