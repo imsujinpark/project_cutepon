@@ -175,6 +175,8 @@ enum Errors {
     AuthorizationExpired,
     AuthorizationInvalid,
     RegistrationInvalidEmail,
+    SendCouponTargetUnknown,
+    SendCouponTargetMissing,
     Internal
 };
 
@@ -189,6 +191,8 @@ function response_error(res: Response, error: Errors): never {
         case Errors.AuthorizationMissing: status = 401; // Unauthorized
         case Errors.AuthorizationInvalid: status = 401; // Unauthorized
         case Errors.RegistrationInvalidEmail: status = 403; // Forbidden
+        case Errors.SendCouponTargetUnknown: status = 400; // Bad Request
+        case Errors.SendCouponTargetMissing: status = 400; // Bad Request
         case Errors.Internal: status = 500; // Forbidden
     }
     res.status(status).json({error: error, message: Errors[error]});
@@ -203,10 +207,15 @@ function response_error(res: Response, error: Errors): never {
 
 async function main() {
 
+    const hour_in_ms = 3600000;
+    const day_in_ms = hour_in_ms * 24;
+
     const database = await database_start();
     const app = express();
     app.use(cors());
     app.use(express.static('../client/build'));
+    app.use(express.static("public"));
+
 
     app.use((err: any, req: Request, res: Response, next: express.NextFunction) => {
         if (err  && err.message && err.stack) console.log(err as Error)
@@ -259,13 +268,100 @@ async function main() {
         res.send(`Hello ${user.public_id}!`)
     });
 
+    // TODO http to https redirection.
+    // TODO render react apps properly.
+
+
+    // POST /api/send
+    // 
+    // Request:
+    //
+    //     body: json string = {
+    //         target_user: string, /** The unique_id of the coupon's target user. */
+    //         expiration_date: number?, /** The timetamp where the coupon expires. */
+    //                                   /** If null, default to 30 days. */
+    //                                   /** example: new Date("July 4 2034 12:30").getTime() */
+    //         title: string?, /** The title of the coupon. If null, will default to "Coupon". */
+    //         description: string?, /** The description of the coupon. If null, will default to an empty string "". */
+    //     }
+    // 
+    // Response:
+    //    
+    //     body: json string = {
+    //         id: number, /** Coupon identifier */
+    //         title: string, /** The coupon title */
+    //         description: string, /** The coupon description */
+    //         created_date: number, /** The exact date the coupon was sent */
+    //         expiration_date: number, /** The date the coupon expires */
+    //         origin_user: string, /** The internal_id of the user who sent the coupon */
+    //         target_user: string, /** The internal_id of the user who received the coupon */
+    //         status: int,  /** The status of the coupon. Maps directly to the `enum CouponStatus` */
+    //         finish_date: number | null /** The date a coupon was finished, (expired, used, or removed) */
+    //     }
+    //
+    // Possible errors:
+    //     * SendCouponTargetMissing: When the target_user is missing.
+    //     * SendCouponTargetUnknown: When the target_user is not a known user in our database.
+    // 
+    // Creates a new `coupon` and sends it to the `target_user`.
+    app.post("/api/send", async (req, res) => {
+        const user: User = await User.get_existing_user_internal((req as any).internal_id) ?? unreachable();
+        
+        const target: User = await User.get_existing_user(req.body.target_user ?? response_error(res, Errors.SendCouponTargetMissing)) ?? response_error(res, Errors.SendCouponTargetUnknown); 
+        const expiration_date = req.body.expiration_date ? new Date(req.body.expiration_date) : new Date(Date.now() + day_in_ms * 30)
+        const coupon = await Coupon.create_new_coupon(
+            req.body.title ?? "Coupon",
+            req.body.description ?? "",
+            expiration_date,
+            user,
+            target
+        );
+        res.json(coupon.primitive());
+    });
+
+    // GET /api/available
+    // 
+    // Request: -
+    // 
+    // Response:
+    //    
+    //     body: json string = {
+    //     
+    //         /** A list of Coupons with status == Active */
+    //         coupons: Coupon[] = [
+    //     
+    //             {
+    //                 id: number, /** Coupon identifier */
+    //                 title: string, /** The coupon title */
+    //                 description: string, /** The coupon description */
+    //                 created_date: number, /** The exact date the coupon was sent */
+    //                 expiration_date: number, /** The date the coupon expires */
+    //                 origin_user: string, /** The internal_id of the user who sent the coupon */
+    //                 target_user: string, /** The internal_id of the user who received the coupon */
+    //                 status: int,  /** The status of the coupon. Maps directly to the `enum CouponStatus` */
+    //                 finish_date: number | null /** The date a coupon was finished, (expired, used, or removed) */
+    //             },
+    //             /** ... */
+    //         ]
+    //     }
+    //
+    // Possible errors: -
+    // 
+    // Returns a list of all the available (coupon.status === Active) coupons of the sender.
+    // Authorization header is used to identify the user.
+    app.post("/api/available", async (req, res) => {
+        const user: User = await User.get_existing_user_internal((req as any).internal_id) ?? unreachable();
+        const available = await Coupon.get_available(user);
+        res.json(Coupon.primitivize(available));
+    });
+
     // GET /refresh_token
     // 
     // Input, Headers:
     // 
     //     * Authorization: string. Set the refresh_token you got on login as the Authorization header.
     // 
-    // Response body json:
+    // Response body (json):
     //     
     //     * token: string. Short duration token for accessing the APIs that require identification.
     //     Put this token as is in the `Authorization` header of subsequent requests.
