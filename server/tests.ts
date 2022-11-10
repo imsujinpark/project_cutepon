@@ -259,6 +259,20 @@ async function main () {
                 t.expect(typeof coupon.id === 'number');
                 t.expect(coupon.id >= 0);
                 t.expect(coupon.status === CouponStatus.Active);
+
+                // I call it primitve cause it uses primitive types, but its basically the
+                // "public view" of the coupon object
+                const coupon_primitive = coupon.primitive();
+
+                t.expect(coupon_primitive.title === title);
+                t.expect(coupon_primitive.description === description);
+                t.expect(coupon_primitive.expiration_date === expiration_date.getTime());
+                t.expect(coupon_primitive.origin_user === usera.public_id);
+                t.expect(coupon_primitive.target_user === userb.public_id);
+                t.expect(coupon_primitive.created_date === coupon.created_date.getTime());
+                t.expect(coupon_primitive.finish_date === null); // since it defaults to null
+                t.expect(coupon_primitive.id === coupon.id);
+                t.expect(coupon_primitive.status === CouponStatus.Active);
             });
 
 

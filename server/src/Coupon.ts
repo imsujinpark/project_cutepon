@@ -42,8 +42,8 @@ export class Coupon {
             description: this.description,
             created_date: this.created_date.getTime(),
             expiration_date: this.expiration_date.getTime() ,
-            origin_user: this.origin_user.internal_id,
-            target_user: this.target_user.internal_id,
+            origin_user: this.origin_user.public_id,
+            target_user: this.target_user.public_id,
             status: this.status,
             finish_date: this.finish_date ? this.finish_date.getTime() : null,
         }

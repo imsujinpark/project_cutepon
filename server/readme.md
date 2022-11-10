@@ -59,7 +59,7 @@ Use this API to test that `Authorization` is working as intended.
 
 ```ts
 {
-    target_user: string, /** The unique_id of the coupon's target user. */
+    target_user: string, /** The public_id of the coupon's target user. */
     expiration_date: number?, /** The timetamp where the coupon expires. */
                               /** If null, default to 30 days. */
                               /** example: new Date("July 4 2034 12:30").getTime() */
@@ -77,8 +77,8 @@ Use this API to test that `Authorization` is working as intended.
     description: string, /** The coupon description */
     created_date: number, /** The exact date the coupon was sent */
     expiration_date: number, /** The date the coupon expires */
-    origin_user: string, /** The internal_id of the user who sent the coupon */
-    target_user: string, /** The internal_id of the user who received the coupon */
+    origin_user: string, /** The public_id of the user who sent the coupon */
+    target_user: string, /** The public_id of the user who received the coupon */
     status: int,  /** The status of the coupon. Maps directly to the `enum CouponStatus` */
     finish_date: number | null /** The date a coupon was finished, (expired, used, or removed) */
 }
@@ -105,8 +105,8 @@ Creates a new `coupon` and sends it to the `target_user`.
             description: string, /** The coupon description */
             created_date: number, /** The exact date the coupon was sent */
             expiration_date: number, /** The date the coupon expires */
-            origin_user: string, /** The internal_id of the user who sent the coupon */
-            target_user: string, /** The internal_id of the user who received the coupon */
+            origin_user: string, /** The public_id of the user who sent the coupon */
+            target_user: string, /** The public_id of the user who received the coupon */
             status: int,  /** The status of the coupon. Maps directly to the `enum CouponStatus` */
             finish_date: number | null /** The date a coupon was finished, (expired, used, or removed) */
         },
@@ -115,7 +115,7 @@ Creates a new `coupon` and sends it to the `target_user`.
 }
 ```
 
-Returns a list of all the available (coupon.status === Active) coupons of the sender.
+Returns a list of all the available (coupon.status === Active) coupons that the sender has received (target_user === sender).
 Authorization header is used to identify the user.
 
 ### GET `/refresh_token`
