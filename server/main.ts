@@ -52,11 +52,13 @@ function require_not_null(object: any): void {
 
 function verify_environment(): void {
     require_not_null(process.env.APP_PORT);
+    require_not_null(process.env.APP_DOMAIN);
     require_not_null(process.env.JWT_SECRET);
     require_not_null(process.env.REFRESH_JWT_SECRET);
     require_not_null(process.env.CLIENT_ID);
     require_not_null(process.env.CLIENT_SECRET);
-    require_not_null(process.env.REDIRECT_URI);
+    require_not_null(process.env.CLIENT_SECRET);
+    require_not_null(process.env.NODE_ENV);
 }
 
 function throw_expression(msg: string): never {
@@ -212,11 +214,16 @@ async function main() {
 
     const database = await database_start();
     const app = express();
+    app.use((req, res, next) => { // redirect http to https
+        
+        if (process.env.NODE_ENV != 'development' && !req.secure) {
+            // return res.redirect(`https://${process.env.APP_DOMAIN}`);
+            return res.redirect("https://" + req.headers.host + req.url);
+        }
+        next();
+    });
     app.use(cors());
     app.use(express.static('../client/build'));
-    app.use(express.static("public"));
-
-
     app.use((err: any, req: Request, res: Response, next: express.NextFunction) => {
         if (err  && err.message && err.stack) console.log(err as Error)
         else console.log(err);
@@ -270,7 +277,6 @@ async function main() {
 
     // TODO http to https redirection.
     // TODO render react apps properly.
-
 
     // POST /api/send
     // 
@@ -500,23 +506,25 @@ async function main() {
         res.redirect(`/oauth2/tokens?${new URLSearchParams(tokens).toString()}`);
     });
     
-    if (fs.existsSync("cert.pem") && fs.existsSync("key.pem")) {
+    console.log(`NODE_ENV ${process.env.NODE_ENV}`)
     
+    // Start a server on http:80
+    const server = http.createServer(app)
+        .listen(80, () => {
+            console.log(`http://${process.env.APP_DOMAIN}/`)
+            console.log(`http://${process.env.APP_DOMAIN}/oauth2/google`)
+            console.log(`http://${process.env.APP_DOMAIN}/hello`)
+        });
+    
+    // Start a server on https:443
+    if (fs.existsSync("cert.pem") && fs.existsSync("key.pem")) {
         const cert = fs.readFileSync("cert.pem");
         const key = fs.readFileSync("key.pem");
         const server = https.createServer({key, cert}, app)
             .listen(443, () => {
-                console.log(`https://cutepon.net/`)
-                console.log(`https://cutepon.net/oauth2/google`)
-                console.log(`https://cutepon.net/hello`)
-            });
-    }
-    else {
-        const server = http.createServer(app)
-            .listen(80, () => {
-                console.log(`http://localhost/`)
-                console.log(`http://localhost/oauth2/google`)
-                console.log(`http://localhost/hello`)
+                console.log(`https://${process.env.APP_DOMAIN}/`)
+                console.log(`https://${process.env.APP_DOMAIN}/oauth2/google`)
+                console.log(`https://${process.env.APP_DOMAIN}/hello`)
             });
     }
 }
