@@ -163,7 +163,7 @@ interface user_data {
 };
 
 async function get_or_register_user(data: user_data): Promise<User> {
-    let user = await User.get_existing_user(data.unique_id);
+    let user = await User.get_existing_user_unique(data.unique_id);
     if (user) {
         return Promise.resolve(user);
     }
@@ -278,7 +278,7 @@ async function main() {
 
     app.post("/api/send", async (req, res) => {
         const user: User = await User.get_existing_user_internal((req as any).internal_id) ?? unreachable();
-        const target: User = await User.get_existing_user(req.body.target_user ?? response_error(res, Errors.SendCouponTargetMissing)) ?? response_error(res, Errors.SendCouponTargetUnknown); 
+        const target: User = await User.get_existing_user_unique(req.body.target_user ?? response_error(res, Errors.SendCouponTargetMissing)) ?? response_error(res, Errors.SendCouponTargetUnknown); 
         const expiration_date = req.body.expiration_date ? new Date(req.body.expiration_date) : new Date(Date.now() + day_in_ms * 30)
         const coupon = await Coupon.create_new_coupon(
             req.body.title ?? "Coupon",

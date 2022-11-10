@@ -22,9 +22,10 @@ export class User {
     /** Initializes the static methods used for interacting with the User table */
     static async initialize_statements(db: Database) {
         User.query_insert_statement = await db.prepare(User.query_insert);
-        User.query_get_statement = await db.prepare(User.query_get);
+        User.query_get_by_unique_statement = await db.prepare(User.query_get_by_unique);
         User.query_all_statement = await db.prepare(User.query_all);
         User.query_get_by_internal_statement = await db.prepare(User.query_get_by_internal);
+        User.query_get_by_public_statement = await db.prepare(User.query_get_by_public);
         User.initialized = true;
     }
     
@@ -50,9 +51,10 @@ export class User {
 
     static async close() {
         await User.query_insert_statement?.finalize()
-        await User.query_get_statement?.finalize()
+        await User.query_get_by_unique_statement?.finalize()
         await User.query_all_statement?.finalize()
         await User.query_get_by_internal_statement?.finalize()
+        await User.query_get_by_public_statement?.finalize()
         return
     }
 
@@ -63,12 +65,15 @@ export class User {
     static query_insert_statement: Statement | null = null;
 
     /** Query that creates a new user in the database and returns the autoincremented internal_id */
-    static query_get = 'select internal_id, public_id from user where unique_id = ?';
-    static query_get_statement: Statement | null = null;
+    static query_get_by_unique = 'select internal_id, public_id from user where unique_id = ?';
+    static query_get_by_unique_statement: Statement | null = null;
 
     /** Query that creates a new user in the database and returns the autoincremented internal_id */
     static query_get_by_internal = 'select unique_id, public_id from user where internal_id = ?';
     static query_get_by_internal_statement: Statement | null = null;
+    
+    static query_get_by_public = 'select unique_id, internal_id from user where public_id = ?';
+    static query_get_by_public_statement: Statement | null = null;
 
     /** Query that creates a new user in the database and returns the autoincremented internal_id */
     static query_all = 'select * from user';
@@ -103,16 +108,29 @@ export class User {
         }
     }
     
-    static async get_existing_user(unique_id: string): Promise<User|null> {
+    static async get_existing_user_unique(unique_id: string): Promise<User|null> {
         User.require_initialized();
         try {
-            const result = await User.query_get_statement?.get(unique_id);
+            const result = await User.query_get_by_unique_statement?.get(unique_id);
             if (!result) return null;
             const user = new User(result.internal_id, unique_id, result.public_id);
             return user;
         }
         finally {
-            await User.query_get_statement?.reset();
+            await User.query_get_by_unique_statement?.reset();
+        }
+    }
+
+    static async get_existing_user_public(public_id: string): Promise<User|null> {
+        User.require_initialized();
+        try {
+            const result = await User.query_get_by_public_statement?.get(public_id);
+            if (!result) return null;
+            const user = new User(result.internal_id, result.unique_id, public_id);
+            return user;
+        }
+        finally {
+            await User.query_get_by_public_statement?.reset();
         }
     }
 

@@ -59,15 +59,28 @@ async function main () {
 
             await t.test("create user", async () => {
                 let newUser = await User.create_new_user("some-unique-id", "nickname");
-                let existingUser = await User.get_existing_user("some-unique-id");
+                let existing_user_unique_id = await User.get_existing_user_unique("some-unique-id");
                 
-                t.expect(newUser.internal_id === existingUser?.internal_id);
-                t.expect(newUser.public_id === existingUser?.public_id);
-                t.expect(newUser.unique_id === existingUser?.unique_id);
+                t.expect(newUser.internal_id === existing_user_unique_id?.internal_id);
+                t.expect(newUser.public_id === existing_user_unique_id?.public_id);
+                t.expect(newUser.unique_id === existing_user_unique_id?.unique_id);
+
+                let existing_user_internal_id = await User.get_existing_user_internal(newUser.internal_id);
+
+                t.expect(newUser.internal_id === existing_user_internal_id?.internal_id);
+                t.expect(newUser.public_id === existing_user_internal_id?.public_id);
+                t.expect(newUser.unique_id === existing_user_internal_id?.unique_id);
+
+                let existing_user_public_id = await User.get_existing_user_public("nickname");
+
+                t.expect(newUser.internal_id === existing_user_public_id?.internal_id);
+                t.expect(newUser.public_id === existing_user_public_id?.public_id);
+                t.expect(newUser.unique_id === existing_user_public_id?.unique_id);
+
             });
 
             await t.test("non existing user", async () => {
-                let existingUser = await User.get_existing_user("non-existing-user");
+                let existingUser = await User.get_existing_user_unique("non-existing-user");
                 t.expect(existingUser === null);
             });
             
