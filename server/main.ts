@@ -216,14 +216,17 @@ async function main() {
     verify_environment();
     const database = await database_start();
     const app = express();
-    app.use((req, res, next) => { // redirect http to https
+    
+    /** redirect http to https */
+    app.use((req, res, next) => {
         if (process.env.NODE_ENV != 'development' && !req.secure) {
-            // return res.redirect(`https://${process.env.APP_DOMAIN}`);
             return res.redirect("https://" + req.headers.host + req.url);
         }
         next();
     });
     app.use(cors());
+
+    /** serve all the files where the react app will be */
     app.use(express.static('../client/build'));
 
     /** token -> token_data */
@@ -233,20 +236,27 @@ async function main() {
     /** internal_id -> user_tokens */
     const user_sessions = new Map<number, user_tokens>();
 
+    /** Handle errors on the Express app globally */
     app.use((err: any, req: Request, res: Response, next: express.NextFunction) => {
-        if (err  && err.message && err.stack) console.log(err as Error)
-        else console.log(err);
+        
+        // check if err instanceof Error, or something else that has been thrown
+        if (err  && err.message && err.stack) {
+            console.log(err as Error)
+        }
+        else {
+            console.log(err);
+        }
+            
+        // __handled__ is an internal paremeter set to errors that are intentionally thrown by the server
+        // and the client is already notified of beforehand, hence there is no need to do it again.
+        // But unexpected errors still need to be notified to the client
         if (!(err as any).__handled__) {
             res.status(Errors.Internal).json({error: Errors.Internal, message: Errors[Errors.Internal]});
         }
+
     });
 
-    // All routes starting with `/api/*` will have the `authorization` header check for a `token`.
-    // It will reply with any of the following errors in case something is wrong with the authorization:
-    // 
-    // * AuthorizationMissing
-    // * AuthorizationInvalid
-    // * AuthorizationExpired
+    /** Anything in the path /api/* is a protected route and needs to be accessed with proper authorization */
     app.use('/api/*', (req, res, next) => {
         const token = req.headers.authorization;
         if(!token) response_error(res, Errors.AuthorizationMissing);
@@ -261,57 +271,13 @@ async function main() {
         next();
     });
 
-    // GET /api/hello
-    // 
-    // Input, Headers:
-    // 
-    //     * Authorization: string. Set the token you got on `/oauth2/google` or on `refresh_token` as the Authorization header.
-    // 
-    // Response text: `Hello ${user.public_id}!`
-    //     
-    //     ex: Hello amazing.email@gmail.com!
-    // 
-    // Use this API to test that Authorization is working as intended
     app.get("/api/hello", async (req, res) => {
         const user: User = await User.get_existing_user_internal((req as any).internal_id) ?? unreachable();
         res.send(`Hello ${user.public_id}!`)
     });
 
-    // POST /api/send
-    // 
-    // Request:
-    //
-    //     body: json string = {
-    //         target_user: string, /** The unique_id of the coupon's target user. */
-    //         expiration_date: number?, /** The timetamp where the coupon expires. */
-    //                                   /** If null, default to 30 days. */
-    //                                   /** example: new Date("July 4 2034 12:30").getTime() */
-    //         title: string?, /** The title of the coupon. If null, will default to "Coupon". */
-    //         description: string?, /** The description of the coupon. If null, will default to an empty string "". */
-    //     }
-    // 
-    // Response:
-    //    
-    //     body: json string = {
-    //         id: number, /** Coupon identifier */
-    //         title: string, /** The coupon title */
-    //         description: string, /** The coupon description */
-    //         created_date: number, /** The exact date the coupon was sent */
-    //         expiration_date: number, /** The date the coupon expires */
-    //         origin_user: string, /** The internal_id of the user who sent the coupon */
-    //         target_user: string, /** The internal_id of the user who received the coupon */
-    //         status: int,  /** The status of the coupon. Maps directly to the `enum CouponStatus` */
-    //         finish_date: number | null /** The date a coupon was finished, (expired, used, or removed) */
-    //     }
-    //
-    // Possible errors:
-    //     * SendCouponTargetMissing: When the target_user is missing.
-    //     * SendCouponTargetUnknown: When the target_user is not a known user in our database.
-    // 
-    // Creates a new `coupon` and sends it to the `target_user`.
     app.post("/api/send", async (req, res) => {
         const user: User = await User.get_existing_user_internal((req as any).internal_id) ?? unreachable();
-        
         const target: User = await User.get_existing_user(req.body.target_user ?? response_error(res, Errors.SendCouponTargetMissing)) ?? response_error(res, Errors.SendCouponTargetUnknown); 
         const expiration_date = req.body.expiration_date ? new Date(req.body.expiration_date) : new Date(Date.now() + day_in_ms * 30)
         const coupon = await Coupon.create_new_coupon(
@@ -324,75 +290,18 @@ async function main() {
         res.json(coupon.primitive());
     });
 
-    // GET /api/available
-    // 
-    // Request: -
-    // 
-    // Response:
-    //    
-    //     body: json string = {
-    //     
-    //         /** A list of Coupons with status == Active */
-    //         coupons: Coupon[] = [
-    //     
-    //             {
-    //                 id: number, /** Coupon identifier */
-    //                 title: string, /** The coupon title */
-    //                 description: string, /** The coupon description */
-    //                 created_date: number, /** The exact date the coupon was sent */
-    //                 expiration_date: number, /** The date the coupon expires */
-    //                 origin_user: string, /** The internal_id of the user who sent the coupon */
-    //                 target_user: string, /** The internal_id of the user who received the coupon */
-    //                 status: int,  /** The status of the coupon. Maps directly to the `enum CouponStatus` */
-    //                 finish_date: number | null /** The date a coupon was finished, (expired, used, or removed) */
-    //             },
-    //             /** ... */
-    //         ]
-    //     }
-    //
-    // Possible errors: -
-    // 
-    // Returns a list of all the available (coupon.status === Active) coupons of the sender.
-    // Authorization header is used to identify the user.
     app.post("/api/available", async (req, res) => {
         const user: User = await User.get_existing_user_internal((req as any).internal_id) ?? unreachable();
         const available = await Coupon.get_available(user);
         res.json(Coupon.primitivize(available));
     });
 
-    // GET /refresh_token
-    // 
-    // Input, Headers:
-    // 
-    //     * Authorization: string. Set the refresh_token you got on login as the Authorization header.
-    // 
-    // Response body (json):
-    //     
-    //     * token: string. Short duration token for accessing the APIs that require identification.
-    //     Put this token as is in the `Authorization` header of subsequent requests.
-    //     * refresh_token: string. Long duration token used as a means of renewing your identification.
-    //     If `token` expires, you can receive a new one by sending this `refresh_token` to the `refresh_token` API.
-    // 
-    //     ex: { token: d4800779-b9b1-4e4d-bb00-d2579f3f9cdb, refresh_token: fd38d2f6-6cad-4495-8280-a5b033e27abb }
-    // 
-    // Errors:
-    //     * AuthorizationMissing
-    //     * AuthorizationInvalid
-    //     * AuthorizationExpired
-    // 
-    // The idea is that if you have no token (or it has been rejected on an API request), you use this API.
-    // If you have no refresh_token, you login again via `/oauth2/google`.
-    // 
-    // 
     app.get("/refresh_token", (req, res) => {
-        
         const auth = req.headers.authorization;
         if(!auth) response_error(res, Errors.AuthorizationMissing);
-        
         const refresh_token = sessions_long.get(auth);
         if (!refresh_token) response_error(res, Errors.AuthorizationInvalid);
         if (Date.now().valueOf() > refresh_token.expiration) response_error(res, Errors.AuthorizationExpired);
-
         const user_tokens = user_sessions.get(refresh_token.internal_id);
         if (!user_tokens) {
             unreachable("Unreachable! The user somehow has a valid refresh token but not sessions?");
@@ -406,18 +315,6 @@ async function main() {
         res.json(tokens);
     });
 
-    // GET /oauth2/google
-    // 
-    // Response: Redirection to google auth form
-    // 
-    // This is the API that acts both as a "login" and a "register".
-    // Redirects the user to an authorization form `https://accounts.google.com/o/oauth2/v2/auth`.
-    // Completing the form will redirect the user, once again, to `/oauth2/google/callback`.
-    // Finally, the client will be redirected to '/?token=#####&refresh_token=#####'. Check
-    // `/oauth2/google/callback` for more information.
-    // 
-    // Because of how redirections work, the client is expected to "go" to
-    // this location rather than make a GET request.
     app.get('/oauth2/google', function handleGoogleLogin(req, res) {
         const rootURL = 'https://accounts.google.com/o/oauth2/v2/auth';
         const options = {
@@ -439,41 +336,15 @@ async function main() {
         res.redirect(301, url);
     });
 
-    // GET /oauth2/google/callback
-    // 
-    // Input, URL Parameters:
-    //     * code: number. Code set automatically by google on auth form completion.
-    // 
-    // Response:
-    //     
-    //     Redirection to '/' with 2 URL parameters:
-    //     * token: string. Short duration token for accessing the APIs that require identification.
-    //     Put this token as is in the `Authorization` header of subsequent requests.
-    //     * refresh_token: string. Long duration token used as a means of renewing your identification.
-    //     If `token` expires, you can receive a new one by sending this `refresh_token` to the `refresh_token` API.
-    // 
-    //     ex: https://cutepon.net/?token=d4800779-b9b1-4e4d-bb00-d2579f3f9cdb&refresh_token=fd38d2f6-6cad-4495-8280-a5b033e27abb
-    // 
-    // The tokens returned will be subsequently used for accessing any API that requires authorization.
-    // The client will never manually access this API.
-    // When the client tries to login via oauth at `/oauth2/google` and completes the form,
-    // google will redirect the client here, with the required data already set.
-    // 
-    // TODO: This is not secure but for now its what it is.
     app.get('/oauth2/google/callback', async function handle_google_oauth_callback (req, res) {
-        
         // https://developers.google.com/identity/protocols/oauth2/web-server#handlingresponse
         const error = req.query.error;
         if (error) throw new Error(error.toString());
-        
         const code = req.query.code;
         if (!code) unreachable("No code found on oauth callback");
-        
         const api_access = await googleapi_token(code.toString()) ;
         const user_details = await googleapi_oauth2_v2_userinfo(api_access.access_token);
-        
         if(!user_details.verified_email) response_error(res, Errors.RegistrationInvalidEmail);
-        
         const user_data: user_data = {
             name: user_details.name,
             email: user_details.email,
@@ -481,12 +352,10 @@ async function main() {
             pciture: user_details.picture,
         }
         const user: User = await get_or_register_user(user_data);
-
         // TODO fix the issues with jwt stuff...
         // https://medium.com/@Flowlet/a-quick-introduction-to-json-web-tokens-jwt-and-jose-95f6e06b7bf7
         // const jwt_token = await generate_user_token(user.internal_id, user.public_id)
         // const jwt_refresh_token = await generate_user_token_long(user.internal_id, user.public_id)
-
         const old_sessions = user_sessions.get(user.internal_id);
         if (old_sessions) {
             sessions_long.delete(old_sessions.refresh_token);
@@ -505,14 +374,15 @@ async function main() {
         res.redirect(`/oauth2/tokens?${new URLSearchParams(authorized_tokens).toString()}`);
     });
 
-    // Anything not recognized, send it to the react application and let it route it
+    /** Any route that has not been recognized, send it to the react application and let it route it */
     app.get('*', (req, res) => {
         res.sendFile('./client/build/index.html', { root: process.env.NODE_ROOT });
     });
     
     console.log(`NODE_ENV ${process.env.NODE_ENV}`)
     
-    // Start a server on http:80
+    // Start a server on http:80 for the sole purpose of redirecting to https in production
+    // Or in development, for testing
     const server = http.createServer(app)
         .listen(80, () => {
             console.log(`http://${process.env.APP_DOMAIN}/`)
@@ -536,4 +406,3 @@ async function main() {
 soure_map_support();
 dotenv.config();
 main();
-
