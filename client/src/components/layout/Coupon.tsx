@@ -11,12 +11,12 @@ type UserProps = {
 const Coupon = ({ data }: UserProps) => {
     const {
         id,
-        origin,
-        target,
+        origin_user,
+        target_user,
         title,
         description,
-        receivedDate,
-        expirationDate,
+        created_date,
+        expiration_date,
         status,
     } = data;
 
@@ -52,12 +52,12 @@ const Coupon = ({ data }: UserProps) => {
                 <InnerContainer>
                     <Head>
                         <h2>{title}</h2>
-                        {/* from 정보가 있으면 받는 쿠폰으로 origin 표시, 없으면 보내는 쿠폰으로 to 표시 */}
+                        {/* from 정보가 있으면 받는 쿠폰으로 origin_user 표시, 없으면 보내는 쿠폰으로 to 표시 */}
                         {/* 추후 유저 정보에 따라 from 이 내 아이디인지 to가 내 아이디인지 확인 예정 */}
                         <span>
-                            {origin !== undefined
-                                ? `from. ${origin}`
-                                : `to. ${target}`}
+                            {origin_user !== undefined
+                                ? `from. ${origin_user}`
+                                : `to. ${target_user}`}
                         </span>
                     </Head>
                     {/* title is to show the full text when it's cut by ellipsis */}
@@ -65,7 +65,7 @@ const Coupon = ({ data }: UserProps) => {
                     <TailTop>{status}</TailTop>
                     <TailBottom>
                         <span>
-                            #{receivedDate}-{id}
+                            #{created_date}-{id}
                         </span>
                         <span>Expiration D-2100</span>
                     </TailBottom>

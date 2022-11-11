@@ -7,13 +7,14 @@ export interface LoginButtonRule {
 
 export type CouponData = {
     id: number;
-    origin?: string;
-    target?: string;
     title: string;
     description: string;
-    receivedDate: number;
-    expirationDate: number;
+    created_date: number;
+    expiration_date: number;
+    origin_user?: string;
+    target_user?: string;
     status: "active" | "expired" | "redeemed" | "deleted";
+    // finish_date: number | null;
 };
 
 export type DropdownMenuData = {

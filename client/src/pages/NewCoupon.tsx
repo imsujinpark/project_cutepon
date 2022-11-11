@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import styled from 'styled-components';
+import axios from 'axios';
+
 import { useForm, SubmitHandler, useWatch, Control } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import Button from '../components/common/Button';
 
 const schema = yup.object().shape({
-    target: yup
+    target_user: yup
         .string()
         .email('invalid email format')
         .required('receiver cannot be empty'),
@@ -16,14 +18,14 @@ const schema = yup.object().shape({
         .max(27, 'title cannot be over 27 characters')
         .required('title cannot be empty'),
     description: yup.string().max(100, 'title cannot be over 92 characters'),
-    expiration: yup.date().required(),
+    expiration_date: yup.date().required(),
 });
 
 type FormValues = {
-    target: string;
+    target_user: string;
     title: string;
     description: string;
-    expiration: string;
+    expiration_date: Date | number;
 };
 
 // creating styled-components outside function IsolateReRenderTitle & IsolateReRenderDescription will resolve below warning
@@ -70,22 +72,31 @@ const NewCoupon = () => {
         resolver: yupResolver(schema),
     });
 
-    const submitForm: SubmitHandler<FormValues> = (data) => {
+    const submitForm: SubmitHandler<FormValues> = async (data) => {
         // will be replaced by an actual http request
+        if (typeof data.expiration_date !== 'number') {
+            data.expiration_date = data.expiration_date.getTime();
+        }
         console.log(data);
+        try {
+            const response = await axios.post(`/api/send`, data);
+            console.log(response);
+        } catch (error) {
+            console.log(error);
+        }
     };
     return (
         <Container>
             <h1>Send New Coupon</h1>
             <Form onSubmit={handleSubmit(submitForm)}>
-                <Label htmlFor="target">To *</Label>
+                <Label htmlFor="target_user">To *</Label>
                 <Input
                     type="text"
-                    id="target"
+                    id="target_user"
                     placeholder="email@gmail.com"
-                    {...register('target')}
+                    {...register('target_user')}
                 />
-                <ErrorMessage>{errors.target?.message}</ErrorMessage>
+                <ErrorMessage>{errors.target_user?.message}</ErrorMessage>
 
                 <Label htmlFor="title">Title *</Label>
                 <Input type="text" id="title" {...register('title')} />
@@ -99,15 +110,15 @@ const NewCoupon = () => {
                 <IsolateReRenderDescription control={control} />
                 <ErrorMessage>{errors.description?.message}</ErrorMessage>
 
-                <Label htmlFor="expiration">Expiration Date *</Label>
+                <Label htmlFor="expiration_date">Expiration Date *</Label>
                 <Input
                     type="date"
-                    id="expiration"
-                    {...register('expiration')}
+                    id="expiration_date"
+                    {...register('expiration_date')}
                     className="date"
                 />
                 <ErrorMessage>
-                    {errors.expiration?.message && 'invalid date format'}
+                    {errors.expiration_date?.message && 'invalid date format'}
                 </ErrorMessage>
 
                 <ButtonWrapper>
