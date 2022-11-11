@@ -16,6 +16,7 @@ import pkg from 'body-parser';
 const { json: body_as_json } = pkg;
 // This is required for stack traces to refer to the original typescript code instead of the compiled js
 import { install as soure_map_support } from 'source-map-support';
+import rateLimit from 'express-rate-limit'
 import * as util from './src/util.js';
 
 async function database_start(): Promise<Database> {
@@ -175,6 +176,7 @@ enum Errors {
     RegistrationInvalidEmail,
     SendCouponTargetUnknown,
     SendCouponTargetMissing,
+    RateLimitExceeded,
     Internal
 };
 
@@ -187,6 +189,7 @@ function response_error(res: Response, error: Errors, next: express.NextFunction
         case Errors.RegistrationInvalidEmail: status = 403; // Forbidden
         case Errors.SendCouponTargetUnknown: status = 400; // Bad Request
         case Errors.SendCouponTargetMissing: status = 400; // Bad Request
+        case Errors.RateLimitExceeded: status = 500; // Forbidden
         case Errors.Internal: status = 500; // Forbidden
     }
     const error_object = { error: error, message: Errors[error] }
@@ -216,6 +219,18 @@ async function main() {
         }
         next();
     });
+
+    // Rate limit `/api/*` to 250 request per 15 minutes
+    // Send `Errors.RateLimitExceeded` if exceeded
+    // Test with powershel:
+    // 
+    //     for ($i = 0; $i -lt 300; $i+=1) {Invoke-WebRequest http://localhost/api/hello}
+    // 
+    app.use('/api/*', rateLimit({
+        windowMs: 15 * 60 * 1000,
+        max: 250,
+        handler: (req, res, next, opt) => response_error(res, Errors.RateLimitExceeded, next),
+    }));
 
     /** cors configuration */
     app.use(cors());
