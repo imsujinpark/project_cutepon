@@ -18,5 +18,8 @@ export function log(obj: any): void {
         console.log(formatted)
     }
 }
+export function inspect(obj: any): string {
+    return util.inspect(obj, { showHidden: false, depth: null, colors: true })
+}
 export const hour_in_ms = 3600000;
 export const day_in_ms = hour_in_ms * 24;

@@ -178,7 +178,7 @@ enum Errors {
     Internal
 };
 
-function response_error(res: Response, error: Errors): never {
+function response_error(res: Response, error: Errors, next: express.NextFunction): void {
     let status: number = 500; // Internal error by default
     switch(error) {
         case Errors.AuthorizationExpired: status = 401; // Unauthorized
@@ -189,16 +189,14 @@ function response_error(res: Response, error: Errors): never {
         case Errors.SendCouponTargetMissing: status = 400; // Bad Request
         case Errors.Internal: status = 500; // Forbidden
     }
-    
     const error_object = { error: error, message: Errors[error] }
-    let err = new Error(JSON.stringify(error_object));
-    (err as any).__handled__ = true;
-    
-    util.log(`Sending user error: ${err}`);
     res.status(status).json(error_object);
-
-    // Throw to stop execution of request handler
-    throw err;
+    
+    let err = new Error(util.inspect(error_object));
+    util.log(`Error handled: ${util.inspect(err)}`);
+    
+    (err as any).__handled__ = true;
+    next(err);
 }
 
 ///////////////////////////////
@@ -218,10 +216,9 @@ async function main() {
         }
         next();
     });
-    app.use(cors());
 
-    /** serve all the files where the react app will be */
-    app.use(express.static('../client/build'));
+    /** cors configuration */
+    app.use(cors());
 
     /** token -> token_data */
     const sessions = new Map<string, token_data>();
@@ -230,45 +227,30 @@ async function main() {
     /** internal_id -> user_tokens */
     const user_sessions = new Map<number, user_tokens>();
 
-    /** Handle errors on the Express app globally */
-    app.use((err: any, req: Request, res: Response, next: express.NextFunction) => {
-        
-        // __handled__ is an internal paremeter set to errors that are intentionally thrown by the server
-        // and the client is already notified of beforehand, hence there is no need to do it again.
-        // But unexpected errors still need to be notified to the client
-        if (!(err as any).__handled__) {
-            
-            // If unexpected error, log it and send an Internal error to the client
-            util.log(err);
-            res.status(Errors.Internal).json({ error: Errors.Internal, message: Errors[Errors.Internal] });
-            
-        }
-
-    });
-
     /** Anything in the path /api/* is a protected route and needs to be accessed with proper authorization */
     app.use('/api/*', (req, res, next) => {
         const token = req.headers.authorization;
-        if(!token) response_error(res, Errors.AuthorizationMissing);
-        
+        if(!token) return response_error(res, Errors.AuthorizationMissing, next);
         const user_session = sessions.get(token);
-        if (!user_session) response_error(res, Errors.AuthorizationInvalid);
+        if (!user_session) return response_error(res, Errors.AuthorizationInvalid, next);
         
-        if (Date.now().valueOf() > user_session.expiration) response_error(res, Errors.AuthorizationExpired);
+        if (Date.now().valueOf() > user_session.expiration) return response_error(res, Errors.AuthorizationExpired, next);
         
         // TODO: This is pretty ugly... is there a better way?
         (req as any).internal_id = user_session.internal_id;
         next();
     });
 
-    app.get("/api/hello", async (req, res) => {
+    app.get("/api/hello", async (req, res, next) => {
         const user: User = await User.get_existing_user_internal((req as any).internal_id) ?? util.unreachable();
         res.send(`Hello ${user.public_id}!`)
     });
 
-    app.post("/api/send", body_as_json(), async (req, res) => {
+    app.post("/api/send", body_as_json(), async (req, res, next) => {
         const user: User = await User.get_existing_user_internal((req as any).internal_id) ?? util.unreachable();
-        const target: User = await User.get_existing_user_public(req.body.target_user ?? response_error(res, Errors.SendCouponTargetMissing)) ?? response_error(res, Errors.SendCouponTargetUnknown); 
+        if (!req.body.target_user) return response_error(res, Errors.SendCouponTargetMissing, next);
+        const target: User|null = await User.get_existing_user_public(req.body.target_user);
+        if (!target) return response_error(res, Errors.SendCouponTargetUnknown, next); 
         const expiration_date = req.body.expiration_date ? new Date(req.body.expiration_date) : new Date(Date.now() + util.day_in_ms * 30)
         const coupon = await Coupon.create_new_coupon(
             req.body.title ?? "Coupon",
@@ -286,12 +268,12 @@ async function main() {
         res.json(Coupon.primitivize(available));
     });
 
-    app.get("/refresh_token", (req, res) => {
+    app.get("/refresh_token", (req, res, next) => {
         const auth = req.headers.authorization;
-        if(!auth) response_error(res, Errors.AuthorizationMissing);
+        if(!auth) return response_error(res, Errors.AuthorizationMissing, next);
         const refresh_token = sessions_long.get(auth);
-        if (!refresh_token) response_error(res, Errors.AuthorizationInvalid);
-        if (Date.now().valueOf() > refresh_token.expiration) response_error(res, Errors.AuthorizationExpired);
+        if (!refresh_token) return response_error(res, Errors.AuthorizationInvalid, next);
+        if (Date.now().valueOf() > refresh_token.expiration) return response_error(res, Errors.AuthorizationExpired, next);
         const user_tokens = user_sessions.get(refresh_token.internal_id);
         if (!user_tokens) {
             util.unreachable("Unreachable! The user somehow has a valid refresh token but not sessions?");
@@ -326,7 +308,7 @@ async function main() {
         res.redirect(301, url);
     });
 
-    app.get('/oauth2/google/callback', async function handle_google_oauth_callback (req, res) {
+    app.get('/oauth2/google/callback', async function handle_google_oauth_callback (req, res, next) {
         // https://developers.google.com/identity/protocols/oauth2/web-server#handlingresponse
         const error = req.query.error;
         if (error) throw new Error(error.toString());
@@ -334,7 +316,7 @@ async function main() {
         if (!code) util.unreachable("No code found on oauth callback");
         const api_access = await googleapi_token(code.toString()) ;
         const user_details = await googleapi_oauth2_v2_userinfo(api_access.access_token);
-        if(!user_details.verified_email) response_error(res, Errors.RegistrationInvalidEmail);
+        if(!user_details.verified_email) response_error(res, Errors.RegistrationInvalidEmail, next);
         const user_data: user_data = {
             name: user_details.name,
             email: user_details.email,
@@ -364,9 +346,30 @@ async function main() {
         res.redirect(`/oauth2/tokens?${new URLSearchParams(authorized_tokens).toString()}`);
     });
 
+    /** serve all the files where the react app will be */
+    app.use(express.static('../client/build'));
+    
     /** Any route that has not been recognized, send it to the react application and let it route it */
     app.get('*', (req, res) => {
         res.sendFile('./client/build/index.html', { root: process.env.NODE_ROOT });
+    });
+
+    /** Handle errors on the Express app globally */
+    app.use((err: unknown, req: Request, res: Response, next: unknown) => {
+        
+        // __handled__ is an internal paremeter set to errors that are intentionally thrown by the server
+        // and the client is already notified of beforehand, hence there is no need to do it again.
+        // But unexpected errors still need to be notified to the client
+        if (!(err as any).__handled__) {
+            
+            // If unexpected error, log it and send an Internal error to the client
+            util.log(`:::: Unhandled error ::::\n${util.inspect(err)}`);
+            res.status(Errors.Internal).json({ error: Errors.Internal, message: Errors[Errors.Internal] });
+            
+        }
+        else {
+        }
+
     });
     
     console.log(`NODE_ENV ${process.env.NODE_ENV}`)
