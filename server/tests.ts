@@ -7,23 +7,24 @@ import { Coupon, CouponStatus } from './src/Coupon.js';
 import { Database, Statement } from './src/sqlite-async.js';
 import { Tester } from './src/tester.js';
 import fs from 'fs';
+import * as util from "./src/util.js";
 
 async function main () {
     
     await new Tester(
         "User tests",
-        async function on_start() {
+        async function on_start(t) {
             // Always run the tests on a test database that has been reset already
             const db = await Database.open("./data/test_db.db");
-            console.log("opened " + db.filename);
+            t.log("opened " + db.filename);
             await User.reset_table(db);
-            await User.initialize_statements(db);
             await Coupon.reset_table(db);
+            await User.initialize_statements(db);
             await Coupon.initialize_statements(db);
             return {db};
         },
-        async function on_end(udata) {
-            console.log("closing " + udata.db.filename);
+        async function on_end(t, udata) {
+            t.log("closing " + udata.db.filename);
             await User.close();
             await Coupon.close();
             await (udata.db as Database).close();
@@ -106,7 +107,7 @@ async function main () {
                         /** I do nothing */
                     },
                     (err) => {
-                        console.log("I shouldn't be here!");
+                        t.log("I shouldn't be here!");
                         throw new Error("I shouldn't be here!");
                     }
                 );
@@ -195,18 +196,18 @@ async function main () {
 
     await new Tester(
         "Coupon tests",
-        async function on_start() {
+        async function on_start(t) {
             // Always run the tests on a test database that has been reset already
             const db = await Database.open("./data/test_coupon.db");
-            console.log("opened " + db.filename);
+            t.log("opened " + db.filename);
             await User.reset_table(db);
             await User.initialize_statements(db);
             await Coupon.reset_table(db);
             await Coupon.initialize_statements(db);
             return {db};
         },
-        async function on_end(udata:any) {
-            console.log("closing " + udata.db.filename);
+        async function on_end(t, udata) {
+            t.log("closing " + udata.db.filename);
             await User.close();
             await Coupon.close();
             await (udata.db as Database).close();
@@ -273,6 +274,40 @@ async function main () {
                 t.expect(coupon_primitive.finish_date === null); // since it defaults to null
                 t.expect(coupon_primitive.id === coupon.id);
                 t.expect(coupon_primitive.status === CouponStatus.Active);
+
+                t.log(coupon)
+                t.log(coupon_primitive)
+            });
+
+            await t.test("Send coupon", async () => {
+                const sender = await User.create_new_user("sender1", "some@email.com");
+                const receiver = await User.create_new_user("receiver1", "some_different@email.com");
+
+                const expiration = new Date("July 4 2034 12:30").getTime();
+                const target_user = receiver.public_id;
+                const title = "coupon"
+                const description = "description"
+                
+                const user: User = await User.get_existing_user_internal(sender.internal_id) ?? util.unreachable();
+                const target: User = await User.get_existing_user_public(target_user) ?? util.unreachable(); 
+                const expiration_date = expiration ? new Date(expiration) : new Date(Date.now() + util.day_in_ms * 30)
+                const coupon = await Coupon.create_new_coupon(
+                    title ?? "Coupon",
+                    description ?? "",
+                    expiration_date,
+                    user,
+                    target
+                );
+                const coupon_primitive = coupon.primitive();
+                t.expect_equal(coupon_primitive.title, coupon.title);
+                t.expect_equal(coupon_primitive.description, coupon.description);
+                t.expect_equal(coupon_primitive.expiration_date, coupon.expiration_date.getTime());
+                t.expect_equal(coupon_primitive.origin_user, coupon.origin_user.public_id);
+                t.expect_equal(coupon_primitive.target_user, coupon.target_user.public_id);
+                t.expect_equal(coupon_primitive.created_date, coupon.created_date.getTime());
+                t.expect_equal(coupon_primitive.finish_date, `${null}`);
+                t.expect_equal(coupon_primitive.id, coupon.id);
+                t.expect_equal(coupon_primitive.status, coupon.status);
             });
 
 
@@ -294,6 +329,7 @@ async function main () {
                 const userb_available_coupons = await Coupon.get_available(userb);
                 t.expect(userb_available_coupons.length === 1);
 
+                t.log(coupon)
             });
 
         }
