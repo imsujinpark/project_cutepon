@@ -220,6 +220,7 @@ async function main() {
         next();
     });
 
+    // TODO Add error and explanations to docs
     // Rate limit `/api/*` to 250 request per 15 minutes
     // Send `Errors.RateLimitExceeded` if exceeded
     // Test with powershel:
@@ -296,6 +297,7 @@ async function main() {
         res.json(Coupon.primitivize(available));
     });
 
+    // TODO Add to docs as well as tests
     app.get("/api/sent", async (req, res) => {
         const user: User = await User.get_existing_user_internal((req as any).internal_id) ?? util.unreachable();
         const sent = await Coupon.get_sent(user);
