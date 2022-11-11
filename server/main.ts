@@ -275,7 +275,7 @@ async function main() {
         res.json(coupon.primitive());
     });
 
-    app.post("/api/available", async (req, res) => {
+    app.get("/api/available", async (req, res) => {
         const user: User = await User.get_existing_user_internal((req as any).internal_id) ?? util.unreachable();
         const available = await Coupon.get_available(user);
         res.json(Coupon.primitivize(available));
