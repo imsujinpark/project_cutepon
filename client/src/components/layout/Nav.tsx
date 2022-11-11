@@ -1,15 +1,29 @@
 import React, { useEffect, useState, useRef } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBars, faRightToBracket } from '@fortawesome/free-solid-svg-icons';
+import {
+    faBars,
+    faRightToBracket,
+    faBell,
+} from '@fortawesome/free-solid-svg-icons';
 import { useNavigate, Link, NavLink } from 'react-router-dom';
 import { DropdownMenuData } from '../../common/types';
 import useDetectClickOutside from '../../hooks/useDetectClickOutside';
 import logo from '../../assets/logo.png';
 
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
+
 const Nav = () => {
     const navigate = useNavigate();
     const menuRef = useRef(null);
+
+    // login status
+    const { isLoggedIn } = useSelector((state: RootState) => {
+        return state.user;
+    });
+
+    console.log({ isLoggedIn });
 
     const [isClicked, setIsClicked] = useDetectClickOutside(menuRef, false);
     const [isMenuActivated, setIsMenuActivated] = useState<boolean>(false);
@@ -63,14 +77,23 @@ const Nav = () => {
                 >
                     <img src={logo} alt="logo"></img>
                 </Logo>
-                <Link to="/login">
+                {isLoggedIn ? (
                     <IconWrapper>
                         <StyledFontAwesomeIcon
-                            icon={faRightToBracket}
-                            title="login"
+                            icon={faBell}
+                            title="notification"
                         />
                     </IconWrapper>
-                </Link>
+                ) : (
+                    <Link to="/login">
+                        <IconWrapper>
+                            <StyledFontAwesomeIcon
+                                icon={faRightToBracket}
+                                title="login"
+                            />
+                        </IconWrapper>
+                    </Link>
+                )}
             </Container>
             <DropDown className={menuAnimation}>
                 <ul>
