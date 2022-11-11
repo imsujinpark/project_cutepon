@@ -16,6 +16,7 @@ import pkg from 'body-parser';
 const { json: body_as_json } = pkg;
 // This is required for stack traces to refer to the original typescript code instead of the compiled js
 import { install as soure_map_support } from 'source-map-support';
+import * as util from './src/util.js';
 
 async function database_start(): Promise<Database> {
     
@@ -50,28 +51,20 @@ interface user_tokens {
     refresh_token: string,
 };
 
-function require_not_null(object: any): void {
-    if (!object) throw new Error("required non null!");
-}
-
 function verify_environment(): void {
-    require_not_null(process.env.APP_DOMAIN);
-    require_not_null(process.env.JWT_SECRET);
-    require_not_null(process.env.REFRESH_JWT_SECRET);
-    require_not_null(process.env.CLIENT_ID);
-    require_not_null(process.env.CLIENT_SECRET);
-    require_not_null(process.env.NODE_ENV);
-    require_not_null(process.env.NODE_ROOT);
-}
-
-function throw_expression(msg: string): never {
-    throw new Error(msg);
+    util.require_not_null(process.env.APP_DOMAIN);
+    util.require_not_null(process.env.JWT_SECRET);
+    util.require_not_null(process.env.REFRESH_JWT_SECRET);
+    util.require_not_null(process.env.CLIENT_ID);
+    util.require_not_null(process.env.CLIENT_SECRET);
+    util.require_not_null(process.env.NODE_ENV);
+    util.require_not_null(process.env.NODE_ROOT);
 }
 
 // TODO not working for now...
 // https://medium.com/@Flowlet/a-quick-introduction-to-json-web-tokens-jwt-and-jose-95f6e06b7bf7
 async function generate_user_token(internal_id: number, public_id: string): Promise<string> {
-    const secret = process.env.JWT_SECRET ?? throw_expression("JWT_SECRET");
+    const secret = process.env.JWT_SECRET ?? util.throw_expression("JWT_SECRET");
     const data = { internal_id, public_id };
     const jwt = jsonwebtoken.sign(data, secret, {expiresIn: '5h'});
     // const jwt = await new jose.SignJWT(data)
@@ -84,7 +77,7 @@ async function generate_user_token(internal_id: number, public_id: string): Prom
 // TODO not working for now...
 // https://medium.com/@Flowlet/a-quick-introduction-to-json-web-tokens-jwt-and-jose-95f6e06b7bf7
 async function generate_user_token_long(internal_id: number, public_id: string): Promise<string> {
-    const secret = process.env.REFRESH_JWT_SECRET ?? throw_expression("REFRESH_JWT_SECRET");
+    const secret = process.env.REFRESH_JWT_SECRET ?? util.throw_expression("REFRESH_JWT_SECRET");
     const data = { internal_id, public_id };
     const jwt = jsonwebtoken.sign(data, secret, {expiresIn: '150d'});
     // const jwt = await new jose.SignJWT(data)
@@ -185,10 +178,6 @@ enum Errors {
     Internal
 };
 
-function unreachable(msg?: string): never {
-    throw new Error("Unreachable: " + msg);
-}
-
 function response_error(res: Response, error: Errors): never {
     let status: number = 500; // Internal error by default
     switch(error) {
@@ -200,10 +189,15 @@ function response_error(res: Response, error: Errors): never {
         case Errors.SendCouponTargetMissing: status = 400; // Bad Request
         case Errors.Internal: status = 500; // Forbidden
     }
-    const error_object = {error: error, message: Errors[error]}
-    res.status(status).json(error_object);
+    
+    const error_object = { error: error, message: Errors[error] }
     let err = new Error(JSON.stringify(error_object));
     (err as any).__handled__ = true;
+    
+    util.log(`Sending user error: ${err}`);
+    res.status(status).json(error_object);
+
+    // Throw to stop execution of request handler
     throw err;
 }
 
@@ -212,9 +206,6 @@ function response_error(res: Response, error: Errors): never {
 ///////////////////////////////
 
 async function main() {
-
-    const hour_in_ms = 3600000;
-    const day_in_ms = hour_in_ms * 24;
 
     verify_environment();
     const database = await database_start();
@@ -242,19 +233,15 @@ async function main() {
     /** Handle errors on the Express app globally */
     app.use((err: any, req: Request, res: Response, next: express.NextFunction) => {
         
-        // check if err instanceof Error, or something else that has been thrown
-        if (err  && err.message && err.stack) {
-            console.log(err as Error)
-        }
-        else {
-            console.log(err);
-        }
-            
         // __handled__ is an internal paremeter set to errors that are intentionally thrown by the server
         // and the client is already notified of beforehand, hence there is no need to do it again.
         // But unexpected errors still need to be notified to the client
         if (!(err as any).__handled__) {
-            res.status(Errors.Internal).json({error: Errors.Internal, message: Errors[Errors.Internal]});
+            
+            // If unexpected error, log it and send an Internal error to the client
+            util.log(err);
+            res.status(Errors.Internal).json({ error: Errors.Internal, message: Errors[Errors.Internal] });
+            
         }
 
     });
@@ -275,14 +262,14 @@ async function main() {
     });
 
     app.get("/api/hello", async (req, res) => {
-        const user: User = await User.get_existing_user_internal((req as any).internal_id) ?? unreachable();
+        const user: User = await User.get_existing_user_internal((req as any).internal_id) ?? util.unreachable();
         res.send(`Hello ${user.public_id}!`)
     });
 
     app.post("/api/send", body_as_json(), async (req, res) => {
-        const user: User = await User.get_existing_user_internal((req as any).internal_id) ?? unreachable();
+        const user: User = await User.get_existing_user_internal((req as any).internal_id) ?? util.unreachable();
         const target: User = await User.get_existing_user_public(req.body.target_user ?? response_error(res, Errors.SendCouponTargetMissing)) ?? response_error(res, Errors.SendCouponTargetUnknown); 
-        const expiration_date = req.body.expiration_date ? new Date(req.body.expiration_date) : new Date(Date.now() + day_in_ms * 30)
+        const expiration_date = req.body.expiration_date ? new Date(req.body.expiration_date) : new Date(Date.now() + util.day_in_ms * 30)
         const coupon = await Coupon.create_new_coupon(
             req.body.title ?? "Coupon",
             req.body.description ?? "",
@@ -294,7 +281,7 @@ async function main() {
     });
 
     app.post("/api/available", async (req, res) => {
-        const user: User = await User.get_existing_user_internal((req as any).internal_id) ?? unreachable();
+        const user: User = await User.get_existing_user_internal((req as any).internal_id) ?? util.unreachable();
         const available = await Coupon.get_available(user);
         res.json(Coupon.primitivize(available));
     });
@@ -307,10 +294,10 @@ async function main() {
         if (Date.now().valueOf() > refresh_token.expiration) response_error(res, Errors.AuthorizationExpired);
         const user_tokens = user_sessions.get(refresh_token.internal_id);
         if (!user_tokens) {
-            unreachable("Unreachable! The user somehow has a valid refresh token but not sessions?");
+            util.unreachable("Unreachable! The user somehow has a valid refresh token but not sessions?");
         }
         sessions.delete(user_tokens.token);
-        const expiration_short = new Date().getTime() + hour_in_ms * 1;
+        const expiration_short = new Date().getTime() + util.hour_in_ms * 1;
         const token = uuid.v4();
         sessions.set(token, {internal_id: refresh_token.internal_id, token: token, expiration: expiration_short});
         const tokens = {token, refresh_token: refresh_token.token};
@@ -324,8 +311,8 @@ async function main() {
             // Notes Oscar. REDIRECT_URI = http://localhost:3000/oauth2/redirect/google
             // After the user has gone through the google login page, google will redirect him to this URI
             // that we provide him with in here.
-            redirect_uri: process.env.REDIRECT_URI ?? unreachable(),
-            client_id: process.env.CLIENT_ID ?? unreachable(),
+            redirect_uri: process.env.REDIRECT_URI ?? util.unreachable(),
+            client_id: process.env.CLIENT_ID ?? util.unreachable(),
             access_type: 'offline',
             response_type: 'code',
             prompt: 'consent',
@@ -344,7 +331,7 @@ async function main() {
         const error = req.query.error;
         if (error) throw new Error(error.toString());
         const code = req.query.code;
-        if (!code) unreachable("No code found on oauth callback");
+        if (!code) util.unreachable("No code found on oauth callback");
         const api_access = await googleapi_token(code.toString()) ;
         const user_details = await googleapi_oauth2_v2_userinfo(api_access.access_token);
         if(!user_details.verified_email) response_error(res, Errors.RegistrationInvalidEmail);
