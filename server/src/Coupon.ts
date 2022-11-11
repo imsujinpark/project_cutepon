@@ -63,6 +63,7 @@ export class Coupon {
         Coupon.query_all_statement = await db.prepare(Coupon.query_all);
         Coupon.query_create_statement = await db.prepare(Coupon.query_create);
         Coupon.query_get_coupons_1_statement = await db.prepare(Coupon.query_get_coupons_1);
+        Coupon.query_get_coupons_2_statement = await db.prepare(Coupon.query_get_coupons_2);
         Coupon.initialized = true;
     }
 
@@ -70,6 +71,7 @@ export class Coupon {
         await Coupon.query_all_statement?.finalize();
         await Coupon.query_create_statement?.finalize();
         await Coupon.query_get_coupons_1_statement?.finalize();
+        await Coupon.query_get_coupons_2_statement?.finalize();
     }
     
     /** Resets the User table to an empty table */
@@ -136,6 +138,12 @@ export class Coupon {
         select * from coupon where target_user = ? and status = 0
     `;
     static query_get_coupons_1_statement: Statement | null = null;
+
+    /** Get all the coupons sent by a user */
+    static query_get_coupons_2 = `
+        select * from coupon where origin_user = ? and status in (0, 1, 2, 3) 
+    `;
+    static query_get_coupons_2_statement: Statement | null = null;
 
     /** Pass origin and target user if you know for sure who they are, else just pass null and it will be check inside the function */
     static async parse_object(object: any, origin_user: User | null, target_user?: User | null): Promise<Coupon> {
@@ -210,6 +218,25 @@ export class Coupon {
         }
         finally {
             await Coupon.query_get_coupons_1_statement?.reset();
+        }
+    }
+
+    static async get_sent(user: User): Promise<Coupon[]> {
+        Coupon.require_initialized();
+        try {
+            
+            // We are getting the available for user, meaning target_user = user
+            let target_user = user;
+
+            let result: any[] = await Coupon.query_get_coupons_2_statement?.all(target_user.internal_id);
+            let coupons: Array<Coupon> = new Array();
+            for (let i = 0; i < result.length; i++) {
+                coupons.push(await Coupon.parse_object(result[i], null, target_user));
+            }
+            return coupons;
+        }
+        finally {
+            await Coupon.query_get_coupons_2_statement?.reset();
         }
     }
 

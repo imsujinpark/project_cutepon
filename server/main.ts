@@ -281,6 +281,12 @@ async function main() {
         res.json(Coupon.primitivize(available));
     });
 
+    app.get("/api/sent", async (req, res) => {
+        const user: User = await User.get_existing_user_internal((req as any).internal_id) ?? util.unreachable();
+        const sent = await Coupon.get_sent(user);
+        res.json(Coupon.primitivize(sent));
+    });
+
     app.get("/refresh_token", (req, res, next) => {
         const auth = req.headers.authorization;
         if(!auth) return response_error(res, Errors.AuthorizationMissing, next);
