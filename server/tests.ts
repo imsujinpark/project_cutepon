@@ -305,7 +305,7 @@ async function main () {
                 t.expect_equal(coupon_primitive.origin_user, coupon.origin_user.public_id);
                 t.expect_equal(coupon_primitive.target_user, coupon.target_user.public_id);
                 t.expect_equal(coupon_primitive.created_date, coupon.created_date.getTime());
-                t.expect_equal(coupon_primitive.finish_date, `${null}`);
+                t.expect_equal(coupon_primitive.finish_date, null);
                 t.expect_equal(coupon_primitive.id, coupon.id);
                 t.expect_equal(coupon_primitive.status, coupon.status);
             });

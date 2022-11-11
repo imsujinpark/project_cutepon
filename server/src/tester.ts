@@ -29,6 +29,7 @@ export class Tester {
 
     expect_equal(thing1: number, thing2: number): void;
     expect_equal(thing1: string, thing2: string): void;
+    expect_equal(thing1: any, thing2: any): void;
     expect_equal(thing1: any, thing2: any): void {
         if (thing1 !== thing2) {
             throw new Error(`Lower your expectations! ${thing1} is different from ${thing2}`);
