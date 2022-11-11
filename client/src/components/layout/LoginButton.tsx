@@ -20,7 +20,7 @@ const LoginButton = (props: LoginButtonRule) => {
 
     return (
         // <Button onClick={loginHandler}>
-        <a href="https://cutepon.net/oauth2/google">
+        <a href="/oauth2/google">
             <Button>
                 {image && <Img src={image} alt="logo" />}
                 <span>{title}</span>
