@@ -14,6 +14,7 @@ import axios from 'axios';
 
 import { useSelector } from 'react-redux';
 import { RootState } from './store';
+import { silentRefresh } from './common/utils';
 
 const App: React.FunctionComponent = () => {
     const [isAuthChecked, setIsAuthChecked] = useState<boolean>(false);
@@ -28,12 +29,13 @@ const App: React.FunctionComponent = () => {
 
     console.log({ isLoggedIn, token, refreshToken });
 
-    // useEffect(() => {
-    //     if (isLoggedIn) {
-    //         axios.defaults.headers.common['Authorization'] = token;
-    //     }
-    //     setIsAuthChecked(true);
-    // }, []);
+    // First rendered
+    useEffect(() => {
+        if (isLoggedIn && refreshToken !== null) {
+            silentRefresh(refreshToken);
+        }
+        setIsAuthChecked(true);
+    }, []);
 
     return (
         <BrowserRouter>
