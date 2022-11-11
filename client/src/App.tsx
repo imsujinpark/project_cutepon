@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import styled from 'styled-components';
+// external components and functions
 import Nav from './components/layout/Nav';
 import GlobalStyle from './GlobalStyle';
 import Home from './pages/Home';
@@ -9,16 +10,15 @@ import NewCoupon from './pages/NewCoupon';
 import OAuth2RedirectHandler from './pages/OAuth2RedirectHandler';
 import ReceivedCoupons from './pages/ReceivedCoupons';
 import SentCoupons from './pages/SentCoupons';
-
-import axios from 'axios';
-
+import { silentRefresh } from './common/utils';
+// redux related
 import { useSelector } from 'react-redux';
 import { RootState } from './store';
-import { silentRefresh } from './common/utils';
 
-const App: React.FunctionComponent = () => {
+const App = () => {
+    // this state is to prevent component rendering before default header is set for http request when logged in
+    // if the rendering takes too long, a loading component might be added in the future
     const [isAuthChecked, setIsAuthChecked] = useState<boolean>(false);
-    console.log({ isAuthChecked });
 
     // login status
     const { isLoggedIn, token, refreshToken } = useSelector(
@@ -29,12 +29,12 @@ const App: React.FunctionComponent = () => {
 
     console.log({ isLoggedIn, token, refreshToken });
 
-    // First rendered
     useEffect(() => {
+        // if the user is logged in and refresh token exists, call silent refresh function
         if (isLoggedIn && refreshToken !== null) {
             silentRefresh(refreshToken);
         }
-        setIsAuthChecked(true);
+        setIsAuthChecked(true); // we can now render the rest of the components
     }, []);
 
     return (

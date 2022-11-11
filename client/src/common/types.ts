@@ -1,3 +1,5 @@
+// these are all external types that are used/shared in each functions
+
 export interface LoginButtonRule {
     loginButtonData: {
         title: string;

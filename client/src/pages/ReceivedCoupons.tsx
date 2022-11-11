@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import styled from 'styled-components';
+
 import { CouponData, CouponOption } from '../common/types';
 import Coupon from '../components/layout/Coupon';
 import OptionTab from '../components/layout/OptionTab';
@@ -10,6 +11,7 @@ import axios from 'axios';
 
 const ReceivedCoupons = () => {
     const [optionMode, setOptionMode] = useState<CouponOption>('active');
+    const [couponData, setCouponData] = useState<CouponData[]>([]);
 
     useEffect(() => {
         getCoupons();
@@ -17,72 +19,14 @@ const ReceivedCoupons = () => {
 
     const getCoupons = async () => {
         try {
-            const response = await axios.get(`/api/available`);
-            console.log(response);
+            const { data } = await axios.get(`/api/available`);
+            console.log(data);
+            setCouponData(data);
         } catch (error) {
             console.log(error);
         }
     };
 
-    const dummyData: CouponData[] = [
-        {
-            id: 1,
-            origin_user: 'sujinparkova',
-            title: 'Belly Buruburu Belly Burubr',
-            description: 'you can give buruburu on the belly for 3 seconds',
-            created_date: 20202020,
-            expiration_date: 20202020,
-            status: 'active',
-        },
-        {
-            id: 2,
-            origin_user: 'sujinparkova',
-            title: 'Belly Buruburu',
-            description:
-                'description of the coupon description of the coupon description of the coupon description of description of the coupon description of the coupon description of the coupon description of',
-            created_date: 20202020,
-            expiration_date: 20202020,
-            status: 'active',
-        },
-        {
-            id: 999,
-            origin_user: 'sujinparkova',
-            title: 'Belly Buruburu',
-            description:
-                'adaadfafadaadfafadaadfafadaadfafadaadfafadaadfafadaadfafadaadfafadaadfafadaadfafadaadfafadaadfafadaa',
-            created_date: 20202020,
-            expiration_date: 20202020,
-            status: 'active',
-        },
-        {
-            id: 3,
-            origin_user: 'sujinparkova',
-            title: 'Belly Buruburu',
-            description: 'you can give buruburu on the belly for 3 seconds',
-            created_date: 20202020,
-            expiration_date: 20202020,
-            status: 'expired',
-        },
-        {
-            id: 4,
-            origin_user: 'sujinparkova',
-            title: 'Belly Buruburu',
-            description:
-                'description of the coupon description of the coupon description of the coupon description of',
-            created_date: 20202020,
-            expiration_date: 20202020,
-            status: 'expired',
-        },
-        {
-            id: 5,
-            origin_user: 'sujinparkova',
-            title: 'Belly Buruburu',
-            description: '',
-            created_date: 20202020,
-            expiration_date: 20202020,
-            status: 'expired',
-        },
-    ];
     return (
         <Container>
             <h1>Received Coupons</h1>
@@ -98,7 +42,7 @@ const ReceivedCoupons = () => {
                     icon={faArrowPointer}
                 />
             )}
-            {dummyData.map((el, idx) => {
+            {couponData.map((el, idx) => {
                 return <Coupon key={idx} data={el} />;
             })}
         </Container>

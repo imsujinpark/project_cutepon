@@ -1,76 +1,35 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import styled from 'styled-components';
+
 import { CouponData, CouponOption } from '../common/types';
 import Coupon from '../components/layout/Coupon';
 import OptionTab from '../components/layout/OptionTab';
 import Description from '../components/layout/Description';
 import { faArrowPointer } from '@fortawesome/free-solid-svg-icons';
 
+import axios from 'axios';
+
 const SentCoupons = () => {
     const [optionMode, setOptionMode] = useState<CouponOption>('active');
-    const dummyData: CouponData[] = [
-        {
-            id: 1,
-            target: 'sujinparkova',
-            title: 'Belly Buruburu',
-            description: 'you can give buruburu on the belly for 3 seconds',
-            receivedDate: 20202020,
-            expirationDate: 20202020,
-            status: 'active',
-        },
-        {
-            id: 2,
-            target: 'sujinparkova',
-            title: 'Belly Buruburu',
-            description:
-                'description of the coupon description of the coupon description of the coupon description of',
-            receivedDate: 20202020,
-            expirationDate: 20202020,
-            status: 'active',
-        },
-        {
-            id: 999,
-            target: 'sujinparkova',
-            title: 'Belly Buruburu',
-            description:
-                'description of the coupon description of the coupon description of the coupon description of',
-            receivedDate: 20202020,
-            expirationDate: 20202020,
-            status: 'active',
-        },
-        {
-            id: 3,
-            target: 'sujinparkova',
-            title: 'Belly Buruburu',
-            description: 'you can give buruburu on the belly for 3 seconds',
-            receivedDate: 20202020,
-            expirationDate: 20202020,
-            status: 'expired',
-        },
-        {
-            id: 4,
-            target: 'sujinparkova',
-            title: 'Belly Buruburu',
-            description:
-                'description of the coupon description of the coupon description of the coupon description of',
-            receivedDate: 20202020,
-            expirationDate: 20202020,
-            status: 'expired',
-        },
-        {
-            id: 5,
-            target: 'sujinparkova',
-            title: 'Belly Buruburu',
-            description:
-                'description of the coupon description of the coupon description of the coupon description of',
-            receivedDate: 20202020,
-            expirationDate: 20202020,
-            status: 'expired',
-        },
-    ];
+    const [couponData, setCouponData] = useState<CouponData[]>([]);
+
+    useEffect(() => {
+        getCoupons();
+    }, []);
+
+    const getCoupons = async () => {
+        try {
+            const { data } = await axios.get(`/api/send`);
+            console.log(data);
+            setCouponData(data);
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
     return (
         <Container>
-            <h1>Sent Coupons</h1>
+            <h1>Received Coupons</h1>
             <OptionTab optionMode={optionMode} setOptionMode={setOptionMode} />
             {optionMode === 'active' ? (
                 <Description
@@ -83,7 +42,7 @@ const SentCoupons = () => {
                     icon={faArrowPointer}
                 />
             )}
-            {dummyData.map((el, idx) => {
+            {couponData.map((el, idx) => {
                 return <Coupon key={idx} data={el} />;
             })}
         </Container>

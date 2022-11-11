@@ -1,16 +1,16 @@
 import React, { useEffect, useState, useRef } from 'react';
 import styled, { keyframes } from 'styled-components';
+import { useNavigate, Link, NavLink } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faBars,
     faRightToBracket,
     faBell,
 } from '@fortawesome/free-solid-svg-icons';
-import { useNavigate, Link, NavLink } from 'react-router-dom';
 import { DropdownMenuData } from '../../common/types';
 import useDetectClickOutside from '../../hooks/useDetectClickOutside';
 import logo from '../../assets/logo.png';
-
+// redux related
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 
@@ -23,17 +23,15 @@ const Nav = () => {
         return state.user;
     });
 
-    console.log({ isLoggedIn });
-
     const [isClicked, setIsClicked] = useDetectClickOutside(menuRef, false);
-    const [isMenuActivated, setIsMenuActivated] = useState<boolean>(false);
+    const [isMenuActivated, setIsMenuActivated] = useState<boolean>(false); // this state shows whether menu button has been clicked at least once
     const [menuAnimation, setMenuAnimation] = useState<'open' | 'close' | ''>(
         ''
     );
 
     // for dropdown open and close animation
     useEffect(() => {
-        // to prevent state being close when being rendered
+        // to prevent state being close when being rendered, check if menu button has ever been clicked
         if (isMenuActivated) {
             isClicked ? setMenuAnimation('open') : setMenuAnimation('close');
         }

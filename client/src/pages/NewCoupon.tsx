@@ -1,12 +1,13 @@
-import { useState } from 'react';
 import styled from 'styled-components';
 import axios from 'axios';
 
+import Button from '../components/common/Button';
+// react-hook-form & yup related
 import { useForm, SubmitHandler, useWatch, Control } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import Button from '../components/common/Button';
 
+// schema has the properties that are going to be in the database.
 const schema = yup.object().shape({
     target_user: yup
         .string()
@@ -36,7 +37,7 @@ const Div = styled.div`
     color: var(--liver-400);
 `;
 
-// Character Counter for Title
+// character counter for Title
 function IsolateReRenderTitle({ control }: { control: Control<FormValues> }) {
     const title = useWatch({
         control,
@@ -47,7 +48,7 @@ function IsolateReRenderTitle({ control }: { control: Control<FormValues> }) {
     return <Div>{title.length}/27</Div>;
 }
 
-// Character Counter for Description
+// character counter for Description
 function IsolateReRenderDescription({
     control,
 }: {
@@ -73,7 +74,7 @@ const NewCoupon = () => {
     });
 
     const submitForm: SubmitHandler<FormValues> = async (data) => {
-        // will be replaced by an actual http request
+        // change expiration date data's type from date to number
         if (typeof data.expiration_date !== 'number') {
             data.expiration_date = data.expiration_date.getTime();
         }
@@ -132,8 +133,8 @@ const NewCoupon = () => {
                     />
                     <Button
                         content="SUBMIT"
-                        className="primary"
-                        // className={`primary ${!isValid && 'invalid'}`}
+                        className={`primary ${!isValid && 'invalid'}`}
+                        // if the button is actually invalid, it won't let the error message appear, so it is only made visually-invalid
                         // disabled={!isValid}
                     />
                 </ButtonWrapper>

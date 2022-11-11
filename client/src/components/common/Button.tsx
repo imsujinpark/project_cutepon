@@ -70,12 +70,12 @@ const StyledButton = styled.button`
         transform: translateY(2px);
     }
 
-    /* &.invalid {
+    &.invalid {
         opacity: 60%;
         &:active {
             transform: translateY(0px);
         }
-    } */
+    }
 `;
 
 export default Button;

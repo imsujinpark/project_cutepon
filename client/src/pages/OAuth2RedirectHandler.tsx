@@ -1,18 +1,19 @@
+import { useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { silentRefresh } from '../common/utils';
 // redux related
 import { useDispatch } from 'react-redux';
 import { loginFulfilled } from '../features/userSlice';
-import { useEffect } from 'react';
-import { silentRefresh } from '../common/utils';
 
+// this is a component rendering when user is redirected after a successful Oauth login
 const OAuth2RedirectHandler = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
 
-    const tokenParam = searchParams.get('token'); //
-    const refreshTokenParam = searchParams.get('refresh_token');
+    const token = searchParams.get('token'); // token taken from redirected url
+    const refreshToken = searchParams.get('refresh_token'); // refresh token taken from redirected url
 
     useEffect(() => {
         OAuthRedirector();
@@ -21,13 +22,13 @@ const OAuth2RedirectHandler = () => {
     const OAuthRedirector = () => {
         dispatch(
             loginFulfilled({
-                token: tokenParam,
-                refreshToken: refreshTokenParam,
+                token: token,
+                refreshToken: refreshToken,
             })
         );
-        axios.defaults.headers.common['Authorization'] = tokenParam;
-        if (refreshTokenParam !== null) {
-            silentRefresh(refreshTokenParam);
+        axios.defaults.headers.common['Authorization'] = token;
+        if (refreshToken !== null) {
+            silentRefresh(refreshToken);
         }
         navigate('/');
     };

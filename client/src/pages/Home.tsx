@@ -1,24 +1,23 @@
 import styled from 'styled-components';
+import axios from 'axios';
+import { silentRefresh } from '../common/utils';
 // redux related
 import { useDispatch, useSelector } from 'react-redux';
 import { logoutFulfilled } from '../features/userSlice';
-import { RootState } from '../store';
 import { persistor } from '../index';
-import axios from 'axios';
-import { silentRefresh } from '../common/utils';
 
 const Home = () => {
     const dispatch = useDispatch();
 
-    // purge function to remove state from session storage
+    // purge function is to remove state from session storage
     const purge = async () => {
         await persistor.purge();
     };
 
     const logout = () => {
-        dispatch(logoutFulfilled());
-        setTimeout(() => purge(), 2000);
-        window.location.reload();
+        dispatch(logoutFulfilled()); // changes login state in redux slice
+        setTimeout(() => purge(), 1000); // will remove login info from session storage
+        window.location.reload(); // refresh to remove remaining silent refresh function timeout
     };
 
     const hello = async () => {
@@ -34,8 +33,7 @@ const Home = () => {
         <Container>
             <div>Home</div>
             <button onClick={logout}>Logout</button>
-            <button onClick={hello}>Hello</button>
-            <button onClick={() => silentRefresh('111')}>REFRESH</button>
+            <button onClick={hello}>Who am I?</button>
         </Container>
     );
 };
