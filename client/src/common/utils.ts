@@ -1,9 +1,11 @@
 import axios from 'axios';
+
 import { loginFulfilled } from '../features/userSlice';
 import store from '../store';
 
+// a function to ask server for new token every 30 min
 export const silentRefresh = async (refreshToken: string) => {
-    // Token expire time
+    // Token expire time (30 min)
     const TOKEN_EXPIRY_TIME = 30 * 60 * 1000;
 
     try {
@@ -13,11 +15,10 @@ export const silentRefresh = async (refreshToken: string) => {
                 Authorization: refreshToken,
             },
         });
-        // going to call itself again after 5 seconds
+        // going to call itself again after 30 min with updated refresh token as an auth header
         setTimeout(function () {
-            silentRefresh(refreshToken);
-        }, 5000);
-        // setTimeout(onSilentRefresh, JWT_EXPIRY_TIME - 60000);
+            silentRefresh(data.refresh_token);
+        }, TOKEN_EXPIRY_TIME);
 
         // set the new token in redux store + session storage 
         store.dispatch(loginFulfilled({
@@ -27,11 +28,10 @@ export const silentRefresh = async (refreshToken: string) => {
 
         // set the new token as default header for http request
         axios.defaults.headers.common['Authorization'] = data.token;
-
         return;
+
     } catch (error) {
         console.log(error);
-        return;
     }
 
 };
