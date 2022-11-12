@@ -1,5 +1,6 @@
 import { Database, Statement } from './sqlite-async.js';
 import { User } from './User.js';
+import * as util from './util.js';
 
 export enum CouponStatus {
     Active, Redeemed, Deleted, Expired
@@ -18,7 +19,7 @@ export class Coupon {
     status: CouponStatus;
     finish_date: Date | null;
 
-    private constructor(id: number, title: string, description: string, created_date: Date, expiration_date: Date, origin_user: User, target_user: User, status: CouponStatus, finish_date: Date) {
+    private constructor(id: number, title: string, description: string, created_date: Date, expiration_date: Date, origin_user: User, target_user: User, status: CouponStatus, finish_date: Date | null) {
         this.id = id;
         this.title = title;
         this.description = description;
@@ -58,20 +59,45 @@ export class Coupon {
         return primitivized_coupons;
     }
 
+    static same(a: Coupon, b: Coupon): { isSame: boolean, different?: string } {
+        if (a.id !== b.id) return {isSame: false, different: "id"} ;
+        if (a.title !== b.title) return {isSame: false, different: "title"} ;
+        if (a.description !== b.description) return {isSame: false, different: "description"} ;
+        if (a.created_date.getTime() !== b.created_date.getTime()) return {isSame: false, different: "created_date"} ;
+        if (a.expiration_date.getTime() !== b.expiration_date.getTime()) return {isSame: false, different: "expiration_date"} ;
+        if (a.origin_user.internal_id !== b.origin_user.internal_id) return {isSame: false, different: "origin_user"} ;
+        if (a.target_user.internal_id !== b.target_user.internal_id) return {isSame: false, different: "target_user"} ;
+        return {isSame: true};
+    }
+
+    static equal(a: Coupon, b: Coupon): { isEqual: boolean, different?: string } {
+        const same = Coupon.same(a,b);
+        if (!same.isSame) return {isEqual: false, different: same.different};
+        if (a.status !== b.status) return {isEqual: false, different: "status"};
+        if (a.finish_date?.getTime() !== b.finish_date?.getTime()) return {isEqual: false, different: "finish_date"};
+        return {isEqual: true};
+    }
+
     /** Initializes the static methods used for interacting with the User table */
     static async initialize_statements(db: Database) {
         Coupon.query_all_statement = await db.prepare(Coupon.query_all);
         Coupon.query_create_statement = await db.prepare(Coupon.query_create);
+        Coupon.query_get_coupon_statement = await db.prepare(Coupon.query_get_coupon);
         Coupon.query_get_coupons_1_statement = await db.prepare(Coupon.query_get_coupons_1);
         Coupon.query_get_coupons_2_statement = await db.prepare(Coupon.query_get_coupons_2);
+        Coupon.query_get_coupons_3_statement = await db.prepare(Coupon.query_get_coupons_3);
+        Coupon.query_redeem_statement = await db.prepare(Coupon.query_redeem);
         Coupon.initialized = true;
     }
 
     static async close() {
         await Coupon.query_all_statement?.finalize();
         await Coupon.query_create_statement?.finalize();
+        await Coupon.query_get_coupon_statement?.finalize();
         await Coupon.query_get_coupons_1_statement?.finalize();
         await Coupon.query_get_coupons_2_statement?.finalize();
+        await Coupon.query_get_coupons_3_statement?.finalize();
+        await Coupon.query_redeem_statement?.finalize();
     }
     
     /** Resets the User table to an empty table */
@@ -86,8 +112,8 @@ export class Coupon {
                 id integer unique primary key autoincrement not null, -- Notes (Oscar) I believe sqlite will create an alias for rowid... TODO Gotta check
                 title text not null,
                 description text not null,
-                created_date datetime not null default (DATETIME('now')),
-                expiration_date datetime not null,
+                created_date int not null default (strftime('%s','now')),
+                expiration_date int not null,
                 origin_user integer not null references user(id),
                 target_user integer not null references user(id),
                 
@@ -103,7 +129,7 @@ export class Coupon {
             
                 -- Refers to the date that the coupon was "terminated" regardless of the reason, be it expired, was used, or deleted.
                 -- Must be null if coupon is Active. Must never be null otherwise
-                finish_date datetime check(
+                finish_date int check(
                     finish_date is null and status = 0
                     or
                     finish_date is not null and status != 0
@@ -129,11 +155,24 @@ export class Coupon {
     /** Create a coupon with the standard input, relying on all the default values and returning them */
     static query_create = `
         insert into coupon (title, description, expiration_date, origin_user, target_user)
-        values (?, ?, ?, ?, ?) returning created_date, id, status, finish_date, origin_user, target_user
+        values (?, ?, ?, ?, ?) returning *
     `;
     static query_create_statement: Statement | null = null;
+    
+    /** Redeem a coupon */
+    static query_redeem = `
+        update coupon set finish_date = (strftime('%s','now')), status = 1 where id = ?
+        returning *
+    `;
+    static query_redeem_statement: Statement | null = null;
 
-    /** Get all the coupons that a user might want to use */
+    /** Get specific coupon data */
+    static query_get_coupon = `
+        select * from coupon where id = ?
+    `;
+    static query_get_coupon_statement: Statement | null = null;
+
+    /** Get all the coupons received and active for user */
     static query_get_coupons_1 = `
         select * from coupon where target_user = ? and status = 0
     `;
@@ -145,60 +184,83 @@ export class Coupon {
     `;
     static query_get_coupons_2_statement: Statement | null = null;
 
+    /** Get all the coupons received by a user */
+    static query_get_coupons_3 = `
+        select * from coupon where target_user = ? and status in (0, 1, 2, 3)
+    `;
+    static query_get_coupons_3_statement: Statement | null = null;
+
     /** Pass origin and target user if you know for sure who they are, else just pass null and it will be check inside the function */
     static async parse_object(object: any, origin_user: User | null, target_user?: User | null): Promise<Coupon> {
+        if (!object.id) util.unreachable("parse coupon is missing field id!")
+        if (!object.title) util.unreachable("parse coupon is missing field title!")
+        if (!object.description) util.unreachable("parse coupon is missing field description!")
+        if (!object.created_date) util.unreachable("parse coupon is missing field created_date!")
+        if (!object.expiration_date) util.unreachable("parse coupon is missing field expiration_date!")
+        if (!object.origin_user) util.unreachable("parse coupon is missing field origin_user!")
+        if (!object.target_user) util.unreachable("parse coupon is missing field target_user!")
+        if (object.status === null || object.status === undefined) util.unreachable("parse coupon is missing field status!")
+        if (!object.finish_date === undefined) util.unreachable("parse coupon is missing field finish_date!")
+
         if (!origin_user) {
             origin_user = await User.get_existing_user_internal(object.origin_user);
             if (!origin_user) throw new Error(`Unreachable: user ${object.origin_user} must exist, but it doesn't!`)
         }
+        else {
+            if (origin_user.internal_id !== object.origin_user) throw new Error("The origin_user provided doesn't match this coupon's origin_user!")
+        }
+
         if (!target_user) {
             target_user = await User.get_existing_user_internal(object.target_user);
             if (!target_user) throw new Error(`Unreachable: user ${object.target_user} must exist, but it doesn't!`)
         }
+        else {
+            if (target_user.internal_id !== object.target_user) throw new Error("The target_user provided doesn't match this coupon's target_user!")
+        }
+
         return new Coupon(
             object.id,
             object.title,
             object.description,
-            new Date(object.created_date),
-            new Date(object.expiration_date),
+            util.parse_timestamp_unix_epoch_seconds(object.created_date),
+            util.parse_timestamp_unix_epoch_seconds(object.expiration_date),
             origin_user,
             target_user,
             object.status as CouponStatus,
-            new Date(object.finish_date)
+            object.finish_date !== null ? util.parse_timestamp_unix_epoch_seconds(object.finish_date) : null
         );
     }
 
     static async create_new_coupon(title: string, description: string, expiration_date: Date, origin_user: User, target_user: User): Promise<Coupon> {
         Coupon.require_initialized();
         try {
-            let result = await Coupon.query_create_statement?.get(title, description, expiration_date.getTime(), origin_user.internal_id, target_user.internal_id);
-            const id = result.id;
-            const created_date = result.created_date;
-            const status = result.status;
-            const finish_date = result.finish_date;
-            const returned_origin_user = result.origin_user;
-            const returned_target_user = result.target_user;
-            if (typeof id !== 'number' ) throw new Error("unreachable");
-            if (typeof created_date !== 'string' ) throw new Error("unreachable");
-            if ((typeof status !== 'number') || ((status as CouponStatus) !== 0) ) throw new Error("unreachable");
-            if (finish_date !== null ) throw new Error("unreachable");
-            if (origin_user.internal_id !== returned_origin_user) throw new Error("unreachable");
-            if (target_user.internal_id !== returned_target_user) throw new Error("unreachable");
-            const coupon = new Coupon(
-                id,
-                title,
-                description,
-                new Date(created_date),
-                expiration_date,
-                origin_user,
-                target_user,
-                status,
-                finish_date,
-            );
+            let result = await Coupon.query_create_statement?.get(title, description, expiration_date.getTime()/1000, origin_user.internal_id, target_user.internal_id);
+            const coupon = await Coupon.parse_object(result, origin_user, target_user);
+
+            if (typeof coupon.id !== 'number' ) throw new Error("unreachable");
+            // TODO check that creation date is in range
+            if ((typeof coupon.status !== 'number') || ((coupon.status as CouponStatus) !== CouponStatus.Active) ) throw new Error("unreachable");
+            if (coupon.finish_date !== null ) throw new Error("unreachable");
+            if (coupon.origin_user.internal_id !== origin_user.internal_id) throw new Error("unreachable");
+            if (coupon.target_user.internal_id !== target_user.internal_id) throw new Error("unreachable");
+
             return coupon;
         }
         finally {
             await Coupon.query_create_statement?.reset();
+        }
+    }
+
+    static async redeem(coupon: Coupon): Promise<Coupon> {
+        Coupon.require_initialized();
+        try {
+            let result = await Coupon.query_redeem_statement?.get(coupon.id);
+            // The origin and target of a coupon dont change
+            const coupon_updated = Coupon.parse_object(result, coupon.origin_user, coupon.target_user);
+            return coupon_updated;
+        }
+        finally {
+            await Coupon.query_redeem_statement?.reset();
         }
     }
 
@@ -218,6 +280,37 @@ export class Coupon {
         }
         finally {
             await Coupon.query_get_coupons_1_statement?.reset();
+        }
+    }
+
+    static async get_received(user: User): Promise<Coupon[]> {
+        Coupon.require_initialized();
+        try {
+            
+            // We are getting the available for user, meaning target_user = user
+            let target_user = user;
+
+            let result: any[] = await Coupon.query_get_coupons_3_statement?.all(target_user.internal_id);
+            let coupons: Array<Coupon> = new Array();
+            for (let i = 0; i < result.length; i++) {
+                coupons.push(await Coupon.parse_object(result[i], null, target_user));
+            }
+            return coupons;
+        }
+        finally {
+            await Coupon.query_get_coupons_3_statement?.reset();
+        }
+    }
+
+    static async get(id: number): Promise<Coupon> {
+        Coupon.require_initialized();
+        try {
+            let result: any = await Coupon.query_get_coupon_statement?.get(id);
+            const coupon = await Coupon.parse_object(result, null, null);
+            return coupon;
+        }
+        finally {
+            await Coupon.query_get_coupon_statement?.reset();
         }
     }
 
