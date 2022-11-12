@@ -302,10 +302,11 @@ export class Coupon {
         }
     }
 
-    static async get(id: number): Promise<Coupon> {
+    static async get(id: number): Promise<Coupon|null> {
         Coupon.require_initialized();
         try {
             let result: any = await Coupon.query_get_coupon_statement?.get(id);
+            if (!result) return null;
             const coupon = await Coupon.parse_object(result, null, null);
             return coupon;
         }

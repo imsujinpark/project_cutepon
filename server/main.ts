@@ -1,5 +1,5 @@
 import { User } from './src/User.js';
-import { Coupon } from './src/Coupon.js';
+import { Coupon, CouponStatus } from './src/Coupon.js';
 import { Database, Statement } from './src/sqlite-async.js';
 import * as jsonwebtoken from 'jsonwebtoken';
 import express, { Express, Request, Response } from 'express';
@@ -176,6 +176,11 @@ enum Errors {
     RegistrationInvalidEmail,
     SendCouponTargetUnknown,
     SendCouponTargetMissing,
+    RedeemCouponIdMissing,
+    RedeemCouponUnknownCoupon,
+    RedeemCouponWrongOwner,
+    RedeemCouponExpired,
+    RedeemCouponNotActive,
     RateLimitExceeded,
     Internal
 };
@@ -189,6 +194,11 @@ function response_error(res: Response, error: Errors, next: express.NextFunction
         case Errors.RegistrationInvalidEmail: status = 403; // Forbidden
         case Errors.SendCouponTargetUnknown: status = 400; // Bad Request
         case Errors.SendCouponTargetMissing: status = 400; // Bad Request
+        case Errors.RedeemCouponIdMissing: status = 400; // Bad Request
+        case Errors.RedeemCouponUnknownCoupon: status = 400; // Bad Request
+        case Errors.RedeemCouponWrongOwner: status = 403; // Forbidden
+        case Errors.RedeemCouponExpired: status = 400; // Bad Request
+        case Errors.RedeemCouponNotActive: status = 400; // Bad Request
         case Errors.RateLimitExceeded: status = 500; // Forbidden
         case Errors.Internal: status = 500; // Forbidden
     }
@@ -289,6 +299,21 @@ async function main() {
             target
         );
         res.json(coupon.primitive());
+    });
+
+    app.post("/api/redeem", body_as_json(), async (req, res, next) => {
+        const user: User = await User.get_existing_user_internal((req as any).internal_id) ?? util.unreachable();
+        if (!req.body.coupon_id) return response_error(res, Errors.RedeemCouponIdMissing, next);
+        
+        const now = new Date();
+        const coupon_to_redeem = await Coupon.get(req.body.coupon_id);
+        if (coupon_to_redeem === null) return response_error(res, Errors.RedeemCouponUnknownCoupon, next);
+        if (coupon_to_redeem.target_user.internal_id !== user.internal_id) return response_error(res, Errors.RedeemCouponWrongOwner, next);
+        if (coupon_to_redeem.expiration_date.getTime() < now.getTime()) return response_error(res, Errors.RedeemCouponExpired, next);
+        if (coupon_to_redeem.status !== CouponStatus.Active) return response_error(res, Errors.RedeemCouponNotActive, next);
+        const redeemed_coupon = await Coupon.redeem(coupon_to_redeem)
+        
+        res.json(redeemed_coupon.primitive());
     });
 
     app.get("/api/received", async (req, res) => {

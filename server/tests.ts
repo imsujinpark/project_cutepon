@@ -366,6 +366,7 @@ async function main () {
 
                 // The coupon in database should be the same as the coupon received after redeeming it
                 const coupon_in_db = await Coupon.get(coupon.id);
+                if (coupon_in_db === null) util.unreachable();
                 const same2 = Coupon.same(coupon_in_db, updated_coupon)
                 const equal2 = Coupon.equal(coupon_in_db, updated_coupon)
                 t.expect(same2.isSame, same2.different);
