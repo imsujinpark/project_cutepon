@@ -91,7 +91,7 @@ Use this API to test that `Authorization` is working as intended.
 
 Creates a new `coupon` and sends it to the `target_user`.
 
-### GET `/api/available`
+### GET `/api/received`
 
 **Response**: Json string in the body.
    
@@ -115,7 +115,34 @@ Creates a new `coupon` and sends it to the `target_user`.
 }
 ```
 
-Returns a list of all the available (coupon.status === Active) coupons that the sender has received (target_user === sender).
+Returns a list of all the received coupons that the sender has received (target_user === sender).
+Authorization header is used to identify the user.
+
+### GET `/api/sent`
+
+**Response**: Json string in the body.
+   
+```ts
+{
+    /** A list of Coupons with status == Active */
+    coupons: Coupon[] = [
+        {
+            id: number, /** Coupon identifier */
+            title: string, /** The coupon title */
+            description: string, /** The coupon description */
+            created_date: number, /** The exact date the coupon was sent */
+            expiration_date: number, /** The date the coupon expires */
+            origin_user: string, /** The public_id of the user who sent the coupon */
+            target_user: string, /** The public_id of the user who received the coupon */
+            status: int,  /** The status of the coupon. Maps directly to the `enum CouponStatus` */
+            finish_date: number | null /** The date a coupon was finished, (expired, used, or removed) */
+        },
+        ...
+    ]
+}
+```
+
+Returns a list of all the coupons that the request sender has sent (origin_user === sender).
 Authorization header is used to identify the user.
 
 ### GET `/refresh_token`

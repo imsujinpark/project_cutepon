@@ -291,9 +291,9 @@ async function main() {
         res.json(coupon.primitive());
     });
 
-    app.get("/api/available", async (req, res) => {
+    app.get("/api/received", async (req, res) => {
         const user: User = await User.get_existing_user_internal((req as any).internal_id) ?? util.unreachable();
-        const available = await Coupon.get_available(user);
+        const available = await Coupon.get_received(user);
         res.json(Coupon.primitivize(available));
     });
 
