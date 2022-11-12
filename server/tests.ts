@@ -275,8 +275,6 @@ async function main () {
                 t.expect(coupon_primitive.id === coupon.id);
                 t.expect(coupon_primitive.status === CouponStatus.Active);
 
-                t.log(coupon)
-                t.log(coupon_primitive)
             });
 
             await t.test("Send coupon", async () => {
@@ -329,7 +327,50 @@ async function main () {
                 const userb_available_coupons = await Coupon.get_available(userb);
                 t.expect(userb_available_coupons.length === 1);
 
-                t.log(coupon)
+            });
+
+            await t.test("A uses coupon from B", async () => {
+
+                const usera = await User.create_new_user("usera3", "Paco1");
+                const userb = await User.create_new_user("userb3", "Pepe1");
+
+                const coupon = await Coupon.create_new_coupon(
+                    "Name of coupon~",
+                    "Redeem this coupon for a mistery gift!",
+                    // this test should fail on July 4 2034 12:30 lol
+                    new Date("July 4 2034 12:30"),
+                    /* A sends a coupon to B */
+                    usera, userb
+                );
+                t.expect(coupon.status === CouponStatus.Active);
+
+                const now = new Date().getTime();
+                const updated_coupon = await Coupon.redeem(coupon);
+                
+                // They are the same coupon, but not equal, since status and finish_date have changed
+                const same1 = Coupon.same(coupon, updated_coupon);
+                const equal1 = Coupon.equal(coupon, updated_coupon);
+                t.expect(same1.isSame, same1.different);
+                t.expect(!equal1.isEqual, equal1.different);
+                
+                // status was updated
+                t.expect(updated_coupon.status === CouponStatus.Redeemed);
+
+                // used in between now-5ms and now+5ms
+                if (!updated_coupon.finish_date) throw new Error("Finish date is null even tho it was just redeemed")
+                const used = updated_coupon.finish_date.getTime();
+                // Its pretty high but the reason for that is not that its slow, but rather that the timestamps are 
+                // stored in seconds precision
+                const margin_ms = 2 * 1000;
+                t.expect(used > now-margin_ms && used < now+margin_ms)
+
+                // The coupon in database should be the same as the coupon received after redeeming it
+                const coupon_in_db = await Coupon.get(coupon.id);
+                const same2 = Coupon.same(coupon_in_db, updated_coupon)
+                const equal2 = Coupon.equal(coupon_in_db, updated_coupon)
+                t.expect(same2.isSame, same2.different);
+                t.expect(equal2.isEqual, equal2.different);
+
             });
 
         }

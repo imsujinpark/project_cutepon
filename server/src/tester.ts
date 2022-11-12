@@ -23,8 +23,8 @@ export class Tester {
         this.all_tests = all_tests;
     }
 
-    expect(thing: boolean): void {
-        if (!thing) throw new Error("Lower your expectations!");
+    expect(thing: boolean, msg?: string): void {
+        if (!thing) throw new Error(`Lower your expectations! ${msg}`);
     }
 
     expect_equal(thing1: number, thing2: number): void;
@@ -50,7 +50,7 @@ export class Tester {
         }
         
     }
-    private scope() { this.padding += ":   "; this.scope_number++; }
+    private scope() { this.padding += "|   "; this.scope_number++; }
     private descope() { this.scope_number--; this.padding = this.padding.substring(0, this.scope_number*4);  }
 
     async expect_throw(throwing_function: () => Promise<void>, error_checker: (error: any) => void) {
@@ -94,7 +94,7 @@ export class Tester {
 
     async run() {
         
-        this.log(`Test suite "${this.name}"`);
+        this.log(`\nTest suite "${this.name}"`);
         this.scope();
 
         if (this.on_start !== null) {
