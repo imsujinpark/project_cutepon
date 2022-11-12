@@ -26,7 +26,7 @@ export const day_in_ms = hour_in_ms * 24;
 
 // Use it on every date coming out of sqlite.
 // Return a Date object from a given datetime string that comes out of sqlite.
-export const parse_sqlite_datetime_text = (sql_date: number): Date => {
+export const parse_sqlite_datetime_text = (sql_date: string): Date => {
     
     // sql_date is always an UTC date string.
     // But doing `new Date(sql_date)`, js thinks that sql_date is a local datetime string
@@ -35,7 +35,7 @@ export const parse_sqlite_datetime_text = (sql_date: number): Date => {
     // then parse that string doing `new Date(utc_date_string)`...
     
     // This date is "correctly" parsed, but the `Date` class doesn't know that its a UTC date, so assumes its local date.
-    const date: Date = new Date(sql_date * 1000);
+    const date: Date = new Date(sql_date);
     
     // Methods like `getFullYear` or `getMonth` will return the "local" timezoned month and year. But since
     // it thinks that the sql_date was local time to start with, those methods will give us the UTC values.
