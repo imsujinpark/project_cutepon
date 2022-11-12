@@ -8,9 +8,10 @@ import Button from '../common/Button';
 
 type UserProps = {
     data: CouponData;
+    mode: 'received' | 'sent'; // to check which page coupon component is used
 };
 
-const Coupon = ({ data }: UserProps) => {
+const Coupon = ({ data, mode }: UserProps) => {
     const {
         id,
         origin_user,
@@ -54,9 +55,9 @@ const Coupon = ({ data }: UserProps) => {
                 <InnerContainer>
                     <Head>
                         <h2>{title}</h2>
-                        {/* 추후 유저 정보에 따라 from 이 내 아이디인지 to가 내 아이디인지 확인 예정 */}
+                        {/* if used in received coupon page, render "from", if used in sent page, render "to" */}
                         <span>
-                            {origin_user !== undefined
+                            {mode === 'received'
                                 ? `from. ${origin_user}`
                                 : `to. ${target_user}`}
                         </span>

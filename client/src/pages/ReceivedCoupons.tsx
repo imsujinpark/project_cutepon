@@ -43,7 +43,7 @@ const ReceivedCoupons = () => {
                 />
             )}
             {couponData.map((el, idx) => {
-                return <Coupon key={idx} data={el} />;
+                return <Coupon key={idx} data={el} mode="received" />;
             })}
         </Container>
     );
