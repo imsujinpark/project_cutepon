@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import styled from 'styled-components';
 
-import { CouponData } from '../../common/types';
+import { CouponData, CouponStatus } from '../../common/types';
 import useDetectClickOutside from '../../hooks/useDetectClickOutside';
 
 import Button from '../common/Button';
@@ -47,7 +47,7 @@ const Coupon = ({ data }: UserProps) => {
     return (
         <OuterContainer>
             <Container
-                className={`${status} ${isClicked && 'blur'}`}
+                className={`${CouponStatus[status]} ${isClicked && 'blur'}`}
                 onClick={handleCouponClick}
                 ref={couponRef}
             >
@@ -63,7 +63,7 @@ const Coupon = ({ data }: UserProps) => {
                     </Head>
                     {/* title is to show the full text when it's cut by ellipsis */}
                     <Body title={description}>{description}</Body>
-                    <TailTop>{status}</TailTop>
+                    <TailTop>{CouponStatus[status]}</TailTop>
                     <TailBottom>
                         <span>
                             #{created_date}-{id}
@@ -84,7 +84,7 @@ const Coupon = ({ data }: UserProps) => {
                         className="lightpink"
                         onClick={handleSendCopy}
                     />
-                    {status === 'active' && (
+                    {status === CouponStatus.Active && (
                         <Button
                             content="Redeem"
                             className="primary"
@@ -114,7 +114,7 @@ const Container = styled.div`
     border-radius: 6px;
 
     // disabled coupons
-    :not(&.active) {
+    :not(&.Active) {
         background-color: var(--liver-050);
         border: 4px solid var(--liver-200);
         border-left: 20px solid var(--liver-200);
@@ -137,7 +137,7 @@ const Container = styled.div`
         border-left: 20px solid var(--primary-500);
         background-color: var(--ecru-300);
         // disabled coupons
-        :not(&.active) {
+        :not(&.Active) {
             background-color: var(--liver-100);
             border: 4px solid var(--liver-300);
             border-left: 20px solid var(--liver-300);
