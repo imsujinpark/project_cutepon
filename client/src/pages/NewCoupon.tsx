@@ -1,11 +1,18 @@
+import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import axios from 'axios';
 
+import { ConvertedFormValues, FormValues } from '../common/types';
 import Button from '../components/common/Button';
+
+// redux related
+import { useDispatch, useSelector } from 'react-redux';
+import { clearCopyCoupon } from '../features/copyCouponSlice';
 // react-hook-form & yup related
 import { useForm, SubmitHandler, useWatch, Control } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
+import { RootState } from '../store';
 
 // schema has the properties that are going to be in the database.
 const schema = yup.object().shape({
@@ -19,15 +26,8 @@ const schema = yup.object().shape({
         .max(27, 'title cannot be over 27 characters')
         .required('title cannot be empty'),
     description: yup.string().max(100, 'title cannot be over 92 characters'),
-    expiration_date: yup.date().required(),
+    expiration_date: yup.string().required(),
 });
-
-type FormValues = {
-    target_user: string;
-    title: string;
-    description: string;
-    expiration_date: Date | number;
-};
 
 // creating styled-components outside function IsolateReRenderTitle & IsolateReRenderDescription will resolve below warning
 // "The component styled.div with the id of "sc-fzqAui" has been created dynamically."
@@ -64,6 +64,21 @@ function IsolateReRenderDescription({
 }
 
 const NewCoupon = () => {
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
+
+    // today's date in YYYY-MM-DD for default value in expiration date
+    const now: Date = new Date();
+    const nowToString: string = now.toISOString().split('T')[0];
+
+    // state of input data when coupon has been copied
+    const { target_user, title, description } = useSelector(
+        (state: RootState) => {
+            return state.copyCoupon;
+        }
+    );
+
+    // useForm from react-hook-form
     const {
         register,
         handleSubmit,
@@ -73,19 +88,31 @@ const NewCoupon = () => {
         resolver: yupResolver(schema),
     });
 
-    const submitForm: SubmitHandler<FormValues> = async (data) => {
-        // change expiration date data's type from date to number
-        if (typeof data.expiration_date !== 'number') {
-            data.expiration_date = data.expiration_date.getTime();
-        }
-        console.log(data);
+    // when submit button is valid and clicked
+    const submitForm: SubmitHandler<FormValues> = async (formData) => {
+        // change expiration date: string -> Date -> number
+        const stringToDate = new Date(formData.expiration_date);
+        const DateToNum = stringToDate.getTime();
+
+        const payload: ConvertedFormValues = {
+            title: formData.title,
+            target_user: formData.target_user,
+            description: formData.description,
+            expiration_date: DateToNum,
+        };
+
+        console.log(payload);
+
         try {
-            const response = await axios.post(`/api/send`, data);
+            const response = await axios.post(`/api/send`, payload);
             console.log(response);
+            dispatch(clearCopyCoupon()); // clears copy state
+            navigate('/sent');
         } catch (error) {
             console.log(error);
         }
     };
+
     return (
         <Container>
             <h1>Send New Coupon</h1>
@@ -95,19 +122,28 @@ const NewCoupon = () => {
                     type="text"
                     id="target_user"
                     placeholder="email@gmail.com"
-                    {...register('target_user')}
+                    {...register('target_user', {
+                        value: target_user,
+                    })}
                 />
                 <ErrorMessage>{errors.target_user?.message}</ErrorMessage>
 
                 <Label htmlFor="title">Title *</Label>
-                <Input type="text" id="title" {...register('title')} />
+                <Input
+                    type="text"
+                    id="title"
+                    {...register('title', { value: title })}
+                />
                 <IsolateReRenderTitle control={control} />
                 <ErrorMessage className="title">
                     {errors.title?.message}
                 </ErrorMessage>
 
                 <Label htmlFor="description">Description</Label>
-                <TextArea id="description" {...register('description')} />
+                <TextArea
+                    id="description"
+                    {...register('description', { value: description })}
+                />
                 <IsolateReRenderDescription control={control} />
                 <ErrorMessage>{errors.description?.message}</ErrorMessage>
 
@@ -115,7 +151,9 @@ const NewCoupon = () => {
                 <Input
                     type="date"
                     id="expiration_date"
-                    {...register('expiration_date')}
+                    {...register('expiration_date', {
+                        value: nowToString,
+                    })}
                     className="date"
                 />
                 <ErrorMessage>

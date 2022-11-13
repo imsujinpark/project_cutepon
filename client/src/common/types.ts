@@ -50,3 +50,19 @@ export type userType = {
 export interface RootState {
     user: userType;
 }
+
+// a type for new coupon form
+export type FormValues = {
+    target_user: string;
+    title: string;
+    description: string;
+    expiration_date: string;
+};
+
+// a type for new coupon form with converted date
+export type ConvertedFormValues = {
+    target_user: string;
+    title: string;
+    description: string;
+    expiration_date: number;
+};
