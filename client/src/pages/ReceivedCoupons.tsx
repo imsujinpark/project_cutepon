@@ -12,10 +12,23 @@ import axios from 'axios';
 const ReceivedCoupons = () => {
     const [optionMode, setOptionMode] = useState<CouponOption>('active');
     const [couponData, setCouponData] = useState<CouponData[]>([]);
+    const [activeCoupons, setActiveCoupons] = useState<CouponData[]>([]);
+    const [disabledCoupons, setDisabledCoupons] = useState<CouponData[]>([]);
 
     useEffect(() => {
         getCoupons();
     }, []);
+
+    useEffect(() => {
+        console.log({ couponData, activeCoupons, disabledCoupons });
+        if (optionMode === 'active') {
+            const filteredArr = couponData.filter((data) => data.status === 0);
+            setActiveCoupons([...filteredArr]);
+        } else {
+            const filteredArr = couponData.filter((data) => data.status !== 0);
+            setDisabledCoupons([...filteredArr]);
+        }
+    }, [couponData, optionMode]);
 
     const getCoupons = async () => {
         try {
@@ -55,9 +68,13 @@ const ReceivedCoupons = () => {
                     icon={faArrowPointer}
                 />
             )}
-            {couponData.map((el, idx) => {
-                return <Coupon key={idx} data={el} mode="received" />;
-            })}
+            {optionMode === 'active'
+                ? activeCoupons.map((el, idx) => {
+                      return <Coupon key={idx} data={el} mode="received" />;
+                  })
+                : disabledCoupons.map((el, idx) => {
+                      return <Coupon key={idx} data={el} mode="received" />;
+                  })}
         </Container>
     );
 };
