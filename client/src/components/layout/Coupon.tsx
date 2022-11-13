@@ -8,7 +8,7 @@ import Button from '../common/Button';
 // redux related
 import { useDispatch } from 'react-redux';
 import { makeCopy } from '../../features/copyCouponSlice';
-import { dDayCalculator } from '../../common/utils';
+import { dateToYYYYYMMDD, dDayCalculator } from '../../common/utils';
 
 type UserProps = {
     data: CouponData;
@@ -80,7 +80,7 @@ const Coupon = ({ data, mode }: UserProps) => {
                     <TailTop>{CouponStatus[status]}</TailTop>
                     <TailBottom>
                         <span>
-                            #{created_date}-{id}
+                            #{dateToYYYYYMMDD(created_date)}-{id}
                         </span>
                         <span>{dDayCalculator(expiration_date)}</span>
                     </TailBottom>

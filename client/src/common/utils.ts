@@ -48,3 +48,10 @@ export const dDayCalculator = (epochMs: number): string => {
         return `D-${gapDay}`;
     }
 };
+
+// epoch date -> string "YYYYMMDD"
+export const dateToYYYYYMMDD = (epochMs: number): string => {
+    const date: Date = new Date(epochMs);
+    const dateToString: string = date.toISOString().slice(0, 10).replace(/-/g, "");
+    return dateToString;
+};
