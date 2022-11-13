@@ -22,8 +22,18 @@ const ReceivedCoupons = () => {
             const { data } = await axios.get(`/api/received`);
             console.log(data);
             setCouponData(data);
-        } catch (error) {
-            console.log(error);
+        } catch (error: any) {
+            if (error.response.data.message && error.response.data.error) {
+                // const err: Errors = error.response.data.error;
+                // switch(err) {
+                //     case Errors.AuthorizationExpired: {
+
+                //     }
+                // }
+                console.log(`${error.response.data.message}`);
+            } else {
+                console.log(error);
+            }
         }
     };
 

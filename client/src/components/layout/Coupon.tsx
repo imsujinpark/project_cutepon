@@ -1,8 +1,9 @@
 import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import axios from 'axios';
 
-import { CouponData, CouponStatus } from '../../common/types';
+import { CouponData, CouponStatus, Errors } from '../../common/types';
 import useDetectClickOutside from '../../hooks/useDetectClickOutside';
 import Button from '../common/Button';
 // redux related
@@ -53,9 +54,25 @@ const Coupon = ({ data, mode }: UserProps) => {
         navigate('/new');
     };
 
-    const handleRedeem = (): void => {
-        console.log('redeemed!');
+    const handleRedeem = async () => {
         setIsClicked(false);
+        const payload = { coupon_id: id };
+        try {
+            const response = await axios.post(`/api/redeem`, payload);
+            console.log(response);
+        } catch (error: any) {
+            if (error.response.data.message && error.response.data.error) {
+                // const err: Errors = error.response.data.error;
+                // switch(err) {
+                //     case Errors.AuthorizationExpired: {
+
+                //     }
+                // }
+                console.log(`${error.response.data.message}`);
+            } else {
+                console.log(error);
+            }
+        }
     };
 
     return (
