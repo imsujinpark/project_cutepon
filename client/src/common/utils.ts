@@ -31,7 +31,10 @@ export const silentRefresh = async (refreshToken: string) => {
         return;
 
     } catch (error: any) {
-        if (error.response.data.message && error.response.data.error) {
+        if (
+            error.response.data.message &&
+            error.response.data.error !== undefined
+        ) {
             // const err: Errors = error.response.data.error;
             // switch(err) {
             //     case Errors.AuthorizationExpired: {

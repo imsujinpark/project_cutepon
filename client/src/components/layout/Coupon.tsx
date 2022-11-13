@@ -59,9 +59,12 @@ const Coupon = ({ data, mode }: UserProps) => {
         const payload = { coupon_id: id };
         try {
             const response = await axios.post(`/api/redeem`, payload);
-            console.log(response);
+            window.location.reload();
         } catch (error: any) {
-            if (error.response.data.message && error.response.data.error) {
+            if (
+                error.response.data.message &&
+                error.response.data.error !== undefined
+            ) {
                 // const err: Errors = error.response.data.error;
                 // switch(err) {
                 //     case Errors.AuthorizationExpired: {
