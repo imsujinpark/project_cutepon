@@ -35,3 +35,16 @@ export const silentRefresh = async (refreshToken: string) => {
     }
 
 };
+
+// D-Day calculator
+export const dDayCalculator = (epochMs: number): string => {
+    const now: Date = new Date(); // current date
+    const gap = epochMs - now.getTime(); // difference in milliseconds
+    const gapDay = Math.ceil(gap / (1000 * 60 * 60 * 24)); // milliseconds to days
+
+    if (gapDay < 0) {
+        return `D+${Math.abs(gapDay)}`;
+    } else {
+        return `D-${gapDay}`;
+    }
+};
