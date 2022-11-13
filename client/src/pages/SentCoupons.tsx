@@ -29,7 +29,7 @@ const SentCoupons = () => {
 
     return (
         <Container>
-            <h1>Received Coupons</h1>
+            <h1>Sent Coupons</h1>
             <OptionTab optionMode={optionMode} setOptionMode={setOptionMode} />
             {optionMode === 'active' ? (
                 <Description
