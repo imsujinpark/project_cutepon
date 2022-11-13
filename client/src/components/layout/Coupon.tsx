@@ -1,10 +1,13 @@
 import { useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 
 import { CouponData, CouponStatus } from '../../common/types';
 import useDetectClickOutside from '../../hooks/useDetectClickOutside';
-
 import Button from '../common/Button';
+// redux related
+import { useDispatch } from 'react-redux';
+import { makeCopy } from '../../features/copyCouponSlice';
 
 type UserProps = {
     data: CouponData;
@@ -23,6 +26,10 @@ const Coupon = ({ data, mode }: UserProps) => {
         status,
     } = data;
 
+    const convertedDate = new Date(expiration_date);
+
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
     const couponRef = useRef(null);
     const [isClicked, setIsClicked] = useDetectClickOutside(couponRef, false);
 
@@ -36,8 +43,15 @@ const Coupon = ({ data, mode }: UserProps) => {
     };
 
     const handleSendCopy = (): void => {
-        console.log('gonna go to new coupon page!');
         setIsClicked(false);
+        dispatch(
+            makeCopy({
+                title: title,
+                target_user: target_user,
+                description: description,
+            })
+        );
+        navigate('/new');
     };
 
     const handleRedeem = (): void => {
@@ -69,7 +83,7 @@ const Coupon = ({ data, mode }: UserProps) => {
                         <span>
                             #{created_date}-{id}
                         </span>
-                        <span>Expiration {expiration_date}</span>
+                        <span>Expiration {convertedDate.toString()}</span>
                     </TailBottom>
                 </InnerContainer>
             </Container>
