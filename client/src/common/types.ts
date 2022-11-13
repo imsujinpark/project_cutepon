@@ -66,3 +66,20 @@ export type ConvertedFormValues = {
     description: string;
     expiration_date: number;
 };
+
+// error handling
+export enum Errors {
+    AuthorizationMissing,
+    AuthorizationExpired,
+    AuthorizationInvalid,
+    RegistrationInvalidEmail,
+    SendCouponTargetUnknown,
+    SendCouponTargetMissing,
+    RedeemCouponIdMissing,
+    RedeemCouponUnknownCoupon,
+    RedeemCouponWrongOwner,
+    RedeemCouponExpired,
+    RedeemCouponNotActive,
+    RateLimitExceeded,
+    Internal
+}
