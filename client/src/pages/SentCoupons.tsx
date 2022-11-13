@@ -19,7 +19,7 @@ const SentCoupons = () => {
 
     const getCoupons = async () => {
         try {
-            const { data } = await axios.get(`/api/send`);
+            const { data } = await axios.get(`/api/sent`);
             console.log(data);
             setCouponData(data);
         } catch (error) {
