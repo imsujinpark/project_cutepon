@@ -53,12 +53,16 @@ export const silentRefresh = async (refreshToken: string) => {
 export const dDayCalculator = (epochMs: number): string => {
     const now: Date = new Date(); // current date
     const gap = epochMs - now.getTime(); // difference in milliseconds
-    const gapDay = Math.ceil(gap / (1000 * 60 * 60 * 24)); // milliseconds to days
+    const gapDay = gap / (1000 * 60 * 60 * 24); // milliseconds to days
 
-    if (gapDay < 0) {
-        return `D+${Math.abs(gapDay)}`;
-    } else {
-        return `D-${gapDay}`;
+    // to prevent -0.1 ~ -0.9 day passed from now turning into D-0
+    if (gapDay < 0 && gapDay > -1) {
+        return `D+${Math.abs(Math.floor(gapDay))}`;
+    } else if (gap <= -1) {
+        return `D+${Math.abs(Math.ceil(gapDay))}`;
+    }
+    else {
+        return `D-${Math.ceil(gapDay)}`;
     }
 };
 
