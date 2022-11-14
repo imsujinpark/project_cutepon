@@ -11,6 +11,7 @@ import OAuth2RedirectHandler from './pages/OAuth2RedirectHandler';
 import ReceivedCoupons from './pages/ReceivedCoupons';
 import SentCoupons from './pages/SentCoupons';
 import CustomToast from './components/common/CustomToast';
+import Logout from './pages/Logout';
 import { silentRefresh } from './common/utils';
 // redux related
 import { useSelector } from 'react-redux';
@@ -58,6 +59,7 @@ const App = () => {
                         <Route path="/received" element={<ReceivedCoupons />} />
                         <Route path="/sent" element={<SentCoupons />} />
                         <Route path="/new" element={<NewCoupon />} />
+                        <Route path="/logout" element={<Logout />} />
                     </Routes>
                 )}
                 {showToast && <CustomToast />}
