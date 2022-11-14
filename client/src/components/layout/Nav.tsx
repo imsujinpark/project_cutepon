@@ -6,6 +6,8 @@ import {
     faBars,
     faRightToBracket,
     faBell,
+    faFaceSmile,
+    faFaceSurprise,
 } from '@fortawesome/free-solid-svg-icons';
 import { DropdownMenuData } from '../../common/types';
 import useDetectClickOutside from '../../hooks/useDetectClickOutside';
@@ -17,25 +19,52 @@ import { RootState } from '../../store';
 const Nav = () => {
     const navigate = useNavigate();
     const menuRef = useRef(null);
+    const profileRef = useRef(null);
 
     // login status
     const { isLoggedIn } = useSelector((state: RootState) => {
         return state.user;
     });
 
-    const [isClicked, setIsClicked] = useDetectClickOutside(menuRef, false);
+    // these states are for Menu Dropdown on the left side
+    const [isMenuClicked, setIsMenuClicked] = useDetectClickOutside(
+        menuRef,
+        false
+    );
     const [isMenuActivated, setIsMenuActivated] = useState<boolean>(false); // this state shows whether menu button has been clicked at least once
     const [menuAnimation, setMenuAnimation] = useState<'open' | 'close' | ''>(
         ''
     );
 
+    // these states are for profile Dropdown on the right side
+    const [isProfileClicked, setIsProfileClicked] = useDetectClickOutside(
+        profileRef,
+        false
+    );
+    const [isProfileActivated, setIsProfileActivated] =
+        useState<boolean>(false);
+    const [profileAnimation, setProfileAnimation] = useState<
+        'open' | 'close' | ''
+    >('');
+
     // for dropdown open and close animation
     useEffect(() => {
         // to prevent state being close when being rendered, check if menu button has ever been clicked
         if (isMenuActivated) {
-            isClicked ? setMenuAnimation('open') : setMenuAnimation('close');
+            isMenuClicked
+                ? setMenuAnimation('open')
+                : setMenuAnimation('close');
         }
-    }, [isClicked]);
+    }, [isMenuClicked]);
+
+    useEffect(() => {
+        // to prevent state being close when being rendered, check if menu button has ever been clicked
+        if (isProfileActivated) {
+            isProfileClicked
+                ? setProfileAnimation('open')
+                : setProfileAnimation('close');
+        }
+    }, [isProfileClicked]);
 
     const menus: DropdownMenuData[] = [
         {
@@ -52,9 +81,21 @@ const Nav = () => {
         },
     ];
 
+    const profileOptions: DropdownMenuData[] = [
+        {
+            name: 'Logout',
+            path: '/logout',
+        },
+    ];
+
     const handleMenuClick = (): void => {
-        setIsClicked(!isClicked);
+        setIsMenuClicked(!isMenuClicked);
         setIsMenuActivated(true);
+    };
+
+    const handleProfileClick = (): void => {
+        setIsProfileClicked(!isProfileClicked);
+        setIsProfileActivated(true);
     };
 
     return (
@@ -76,12 +117,26 @@ const Nav = () => {
                     <img src={logo} alt="logo"></img>
                 </Logo>
                 {isLoggedIn ? (
-                    <IconWrapper>
-                        <StyledFontAwesomeIcon
-                            icon={faBell}
-                            title="notification"
-                        />
-                    </IconWrapper>
+                    <RightSideWrapper>
+                        <IconWrapper>
+                            <StyledFontAwesomeIcon
+                                icon={
+                                    isProfileClicked
+                                        ? faFaceSurprise
+                                        : faFaceSmile
+                                }
+                                title="profile"
+                                ref={profileRef}
+                                onClick={handleProfileClick}
+                            />
+                        </IconWrapper>
+                        <IconWrapper>
+                            <StyledFontAwesomeIcon
+                                icon={faBell}
+                                title="notification"
+                            />
+                        </IconWrapper>
+                    </RightSideWrapper>
                 ) : (
                     <Link to="/login">
                         <IconWrapper>
@@ -93,7 +148,7 @@ const Nav = () => {
                     </Link>
                 )}
             </Container>
-            <DropDown className={menuAnimation}>
+            <MenuDropDown className={menuAnimation}>
                 <ul>
                     {menus.map((menu, idx) => {
                         return (
@@ -109,14 +164,31 @@ const Nav = () => {
                         );
                     })}
                 </ul>
-            </DropDown>
+            </MenuDropDown>
+            <ProfileDropDown className={profileAnimation}>
+                <ul>
+                    {profileOptions.map((item, idx) => {
+                        return (
+                            <NavLink
+                                key={idx}
+                                to={item.path}
+                                className={({ isActive }) =>
+                                    isActive ? 'selected' : ''
+                                }
+                            >
+                                <li>{item.name}</li>
+                            </NavLink>
+                        );
+                    })}
+                </ul>
+            </ProfileDropDown>
         </OuterContainer>
     );
 };
 
 // animation keyframes
 
-const slideIn = keyframes`
+const slideInForMenu = keyframes`
     from {
         transform: translateY(0px);
     }
@@ -135,9 +207,47 @@ const slideIn = keyframes`
     }
 `;
 
-const slideOut = keyframes`
+const slideOutForMenu = keyframes`
     from {
-        transform: translateY(110%);
+        transform: translateY(110px);
+    }
+    to {
+        transform: translateY(0px);
+    }
+
+    0% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 0.8;
+    }
+    100% {
+        opacity: 0;
+    }
+`;
+
+const slideInForProfile = keyframes`
+    from {
+        transform: translateY(0px);
+    }
+    to {
+        transform: translateY(40px);
+    }
+
+    0% {
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.8;
+    }
+    100% {
+        opacity: 1;
+    }
+`;
+
+const slideOutForProfile = keyframes`
+    from {
+        transform: translateY(40px);
     }
     to {
         transform: translateY(0px);
@@ -190,6 +300,23 @@ const IconWrapper = styled.div`
     align-items: center;
     margin: 0 24px;
 `;
+
+const RightSideWrapper = styled.div`
+    /* width: 40px;
+    height: 24px; */
+    width: 93px;
+    display: flex;
+    flex-direction: row;
+    margin: 0 12px 0 30px;
+    /* margin: 0 24px; */
+    /* justify-content: center;
+    align-items: center; */
+    > * {
+        margin: 0 12px 0 12px;
+        width: 24px;
+    }
+`;
+
 const StyledFontAwesomeIcon = styled(FontAwesomeIcon)`
     font-size: 24px;
     cursor: pointer;
@@ -204,12 +331,13 @@ const Logo = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
+    margin-left: 66px; // to make logo come to the middle
     > img {
         width: 88px;
     }
 `;
 
-const DropDown = styled.nav`
+const MenuDropDown = styled.nav`
     position: fixed;
     top: -50px;
     display: flex;
@@ -222,12 +350,72 @@ const DropDown = styled.nav`
     opacity: 0;
 
     &.open {
-        animation: ${slideIn} 0.5s ease-in-out 0s 1 normal forwards;
+        animation: ${slideInForMenu} 0.5s ease-in-out 0s 1 normal forwards;
         opacity: 100%;
     }
 
     &.close {
-        animation: ${slideOut} 0.5s ease-in-out 0s 1 normal forwards;
+        animation: ${slideOutForMenu} 0.5s ease-in-out 0s 1 normal forwards;
+    }
+
+    > ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        width: 100vw;
+        > * {
+            width: 100%;
+            color: var(--liver-500);
+            > li {
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                background-color: var(--lightpink-400);
+                padding: 10px 0;
+                font-size: 12px;
+            }
+            // every menu li except the last one
+            :not(:last-of-type) > li {
+                border-bottom: 1px solid var(--ecru-100);
+            }
+            /* // last li
+            :last-of-type > li {
+                background-color: var(--ecru-200);
+            } */
+            &:hover > li {
+                background-color: var(--lightpink-300);
+                text-shadow: var(--text-shadow);
+            }
+            &.selected > li {
+                background-color: var(--ecru-500);
+                font-weight: bold;
+                color: var(--liver-400);
+            }
+        }
+    }
+`;
+
+const ProfileDropDown = styled.nav`
+    position: fixed;
+    top: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--liver-500);
+    box-shadow: var(--shadow-low);
+    z-index: 9998;
+    opacity: 0;
+
+    &.open {
+        animation: ${slideInForProfile} 0.5s ease-in-out 0s 1 normal forwards;
+        opacity: 100%;
+    }
+
+    &.close {
+        animation: ${slideOutForProfile} 0.5s ease-in-out 0s 1 normal forwards;
     }
 
     > ul {
