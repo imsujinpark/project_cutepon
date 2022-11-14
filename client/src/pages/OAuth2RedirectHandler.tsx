@@ -5,6 +5,7 @@ import { silentRefresh } from '../common/utils';
 // redux related
 import { useDispatch } from 'react-redux';
 import { loginFulfilled } from '../features/userSlice';
+import { setNoticeToast } from '../features/toastSlice';
 
 // this is a component rendering when user is redirected after a successful Oauth login
 const OAuth2RedirectHandler = () => {
@@ -30,7 +31,8 @@ const OAuth2RedirectHandler = () => {
         if (refreshToken !== null) {
             silentRefresh(refreshToken);
         }
-        navigate('/');
+        dispatch(setNoticeToast('Successfully logged in'));
+        navigate('/received');
     };
 
     return (

@@ -18,12 +18,14 @@ const Home = () => {
     const logout = () => {
         dispatch(logoutFulfilled()); // changes login state in redux slice
         setTimeout(() => purge(), 1000); // will remove login info from session storage
+        dispatch(setNoticeToast('Successfully logged out'));
         window.location.reload(); // refresh to remove remaining silent refresh function timeout
     };
 
     const hello = async () => {
         try {
             const { data } = await axios.get(`/api/hello`);
+            dispatch(setNoticeToast(data));
             console.log(data);
         } catch (error: any) {
             if (

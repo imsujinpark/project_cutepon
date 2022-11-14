@@ -8,6 +8,7 @@ import Button from '../components/common/Button';
 // redux related
 import { useDispatch, useSelector } from 'react-redux';
 import { clearCopyCoupon } from '../features/copyCouponSlice';
+import { setNoticeToast } from '../features/toastSlice';
 // react-hook-form & yup related
 import { useForm, SubmitHandler, useWatch, Control } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -107,6 +108,7 @@ const NewCoupon = () => {
             const response = await axios.post(`/api/send`, payload);
             console.log(response);
             dispatch(clearCopyCoupon()); // clears copy state
+            dispatch(setNoticeToast('Successfully sent'));
             navigate('/sent');
         } catch (error: any) {
             if (
