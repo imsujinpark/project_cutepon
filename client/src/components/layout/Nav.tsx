@@ -139,12 +139,14 @@ const Nav = () => {
                     </RightSideWrapper>
                 ) : (
                     <Link to="/login">
-                        <IconWrapper>
-                            <StyledFontAwesomeIcon
-                                icon={faRightToBracket}
-                                title="login"
-                            />
-                        </IconWrapper>
+                        <RightSideWrapper>
+                            <IconWrapper>
+                                <StyledFontAwesomeIcon
+                                    icon={faRightToBracket}
+                                    title="login"
+                                />
+                            </IconWrapper>
+                        </RightSideWrapper>
                     </Link>
                 )}
             </Container>
@@ -165,7 +167,10 @@ const Nav = () => {
                     })}
                 </ul>
             </MenuDropDown>
-            <ProfileDropDown className={profileAnimation}>
+            <ProfileDropDown
+                className={profileAnimation}
+                onClick={() => setIsProfileClicked(false)}
+            >
                 <ul>
                     {profileOptions.map((item, idx) => {
                         return (
@@ -302,15 +307,12 @@ const IconWrapper = styled.div`
 `;
 
 const RightSideWrapper = styled.div`
-    /* width: 40px;
-    height: 24px; */
     width: 93px;
     display: flex;
     flex-direction: row;
     margin: 0 12px 0 30px;
-    /* margin: 0 24px; */
-    /* justify-content: center;
-    align-items: center; */
+    justify-content: flex-end;
+    align-items: center;
     > * {
         margin: 0 12px 0 12px;
         width: 24px;
