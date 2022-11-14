@@ -70,8 +70,11 @@ const App = () => {
                             path="/oauth2/tokens"
                             element={<OAuth2RedirectHandler />}
                         />
-                        <Route path="/received" element={<ReceivedCoupons />} />
-                        <Route path="/sent" element={<SentCoupons />} />
+                        <Route
+                            path="/received/:status"
+                            element={<ReceivedCoupons />}
+                        />
+                        <Route path="/sent/:status" element={<SentCoupons />} />
                         <Route path="/new" element={<NewCoupon />} />
                         <Route path="/logout" element={<Logout />} />
                     </Routes>

@@ -1,13 +1,17 @@
 import styled from 'styled-components';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+
 import Button from '../common/Button';
 import { OptionType, CouponOption } from '../../common/types';
 
-type PropsType = {
-    optionMode: CouponOption;
-    setOptionMode: React.Dispatch<React.SetStateAction<CouponOption>>;
-};
+const OptionTab = () => {
+    const navigate = useNavigate();
+    const { pathname } = useLocation();
+    // console.log({ pathname });
 
-const OptionTab = ({ optionMode, setOptionMode }: PropsType) => {
+    const { status } = useParams();
+    // console.log({ status });
+
     const options: OptionType[] = [
         {
             mode: 'active',
@@ -20,7 +24,20 @@ const OptionTab = ({ optionMode, setOptionMode }: PropsType) => {
     ];
 
     const handleClick = (mode: CouponOption) => {
-        setOptionMode(mode);
+        if (
+            pathname === '/received/active' ||
+            pathname === '/received/disabled'
+        ) {
+            navigate(`/received/${mode}`);
+        } else if (
+            pathname === '/sent/active' ||
+            pathname === '/sent/disabled'
+        ) {
+            navigate(`/sent/${mode}`);
+        } else {
+            console.log('wrong path');
+            navigate('/');
+        }
     };
 
     return (
@@ -31,7 +48,7 @@ const OptionTab = ({ optionMode, setOptionMode }: PropsType) => {
                         key={idx}
                         content={option.text}
                         className={`small curve ${
-                            optionMode === option.mode ? 'darkliver' : 'grey'
+                            status === option.mode ? 'darkliver' : 'grey'
                         }`}
                         onClick={() => {
                             handleClick(option.mode);

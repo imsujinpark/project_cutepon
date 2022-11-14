@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import styled from 'styled-components';
 
-import { CouponData, CouponOption } from '../common/types';
+import { CouponData } from '../common/types';
 import Coupon from '../components/layout/Coupon';
 import OptionTab from '../components/layout/OptionTab';
 import Description from '../components/layout/Description';
@@ -10,10 +11,12 @@ import { faArrowPointer } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 
 const SentCoupons = () => {
-    const [optionMode, setOptionMode] = useState<CouponOption>('active');
     const [couponData, setCouponData] = useState<CouponData[]>([]);
     const [activeCoupons, setActiveCoupons] = useState<CouponData[]>([]);
     const [disabledCoupons, setDisabledCoupons] = useState<CouponData[]>([]);
+
+    // status is either "active" or "disabled"
+    const { status } = useParams();
 
     useEffect(() => {
         getCoupons();
@@ -21,14 +24,14 @@ const SentCoupons = () => {
 
     // filters server coupon data by status
     useEffect(() => {
-        if (optionMode === 'active') {
+        if (status === 'active') {
             const filteredArr = couponData.filter((data) => data.status === 0);
             setActiveCoupons([...filteredArr]);
         } else {
             const filteredArr = couponData.filter((data) => data.status !== 0);
             setDisabledCoupons([...filteredArr]);
         }
-    }, [couponData, optionMode]);
+    }, [status, couponData]);
 
     const getCoupons = async () => {
         try {
@@ -56,8 +59,8 @@ const SentCoupons = () => {
     return (
         <Container>
             <h1>Sent Coupons</h1>
-            <OptionTab optionMode={optionMode} setOptionMode={setOptionMode} />
-            {optionMode === 'active' ? (
+            <OptionTab />
+            {status === 'active' ? (
                 <Description
                     text="Click the coupon to redeem, delete, or send a copy"
                     icon={faArrowPointer}
@@ -68,7 +71,7 @@ const SentCoupons = () => {
                     icon={faArrowPointer}
                 />
             )}
-            {optionMode === 'active'
+            {status === 'active'
                 ? activeCoupons.map((el, idx) => {
                       return <Coupon key={idx} data={el} mode="sent" />;
                   })
