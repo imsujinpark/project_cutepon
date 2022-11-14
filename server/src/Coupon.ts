@@ -87,6 +87,7 @@ export class Coupon {
         Coupon.query_get_coupons_2_statement = await db.prepare(Coupon.query_get_coupons_2);
         Coupon.query_get_coupons_3_statement = await db.prepare(Coupon.query_get_coupons_3);
         Coupon.query_redeem_statement = await db.prepare(Coupon.query_redeem);
+        Coupon.query_expired_statement = await db.prepare(Coupon.query_expired);
         Coupon.initialized = true;
     }
 
@@ -98,6 +99,7 @@ export class Coupon {
         await Coupon.query_get_coupons_2_statement?.finalize();
         await Coupon.query_get_coupons_3_statement?.finalize();
         await Coupon.query_redeem_statement?.finalize();
+        await Coupon.query_expired_statement?.finalize();
     }
     
     /** Resets the User table to an empty table */
@@ -165,6 +167,13 @@ export class Coupon {
         returning *
     `;
     static query_redeem_statement: Statement | null = null;
+    
+    /** Set a coupon as expired */
+    static query_expired = `
+        update coupon set finish_date = (strftime('%s','now')), status = 3 where id = ?
+        returning *
+    `;
+    static query_expired_statement: Statement | null = null;
 
     /** Get specific coupon data */
     static query_get_coupon = `
@@ -264,6 +273,19 @@ export class Coupon {
         }
     }
 
+    static async set_expired(coupon: Coupon): Promise<Coupon> {
+        Coupon.require_initialized();
+        try {
+            let result = await Coupon.query_expired_statement?.get(coupon.id);
+            // The origin and target of a coupon dont change
+            const coupon_updated = Coupon.parse_object(result, coupon.origin_user, coupon.target_user);
+            return coupon_updated;
+        }
+        finally {
+            await Coupon.query_expired_statement?.reset();
+        }
+    }
+
     static async get_available(user: User): Promise<Coupon[]> {
         Coupon.require_initialized();
         try {
@@ -347,6 +369,41 @@ export class Coupon {
         finally {
             await Coupon.query_all_statement?.reset();
         }
+    }
+
+    /** Will return the updated coupon IFF the coupon was indeed updated in status */
+    static async update_status(coupon: Coupon, now?: { timestamp_ms: number, date: Date }): Promise<Coupon | undefined> {
+        
+        if (coupon.status !== CouponStatus.Active) return;
+        
+        if (!now) {
+            const date_now = new Date();
+            now = {
+                date: date_now,
+                timestamp_ms: date_now.getTime()
+            }
+        }
+
+        if (coupon.expiration_date.getTime() < now.timestamp_ms) {
+            coupon.status = CouponStatus.Expired;
+            coupon.finish_date = now.date;
+            return await Coupon.set_expired(coupon);
+        }
+        
+        return;
+    }
+
+    /** Given a list of coupons, return a list with the same coupons, except they have been updated where necessary */
+    static async update_all(coupons: Coupon[]): Promise<Coupon[]> {
+        const now = new Date();
+        for (let i = 0; i < coupons.length; i++) {
+            const coupon = coupons[i];
+            const updated = await Coupon.update_status(coupon, { date: now, timestamp_ms: now.getTime() });
+            if (updated) {
+                coupons[i] = updated;
+            }
+        }
+        return coupons;
     }
 
     static require_initialized() {

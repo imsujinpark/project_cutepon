@@ -298,7 +298,8 @@ async function main() {
             user,
             target
         );
-        res.json(coupon.primitive());
+        const updated = await Coupon.update_status(coupon) ?? coupon;
+        res.json(updated.primitive());
     });
 
     app.post("/api/redeem", body_as_json(), async (req, res, next) => {
@@ -319,14 +320,16 @@ async function main() {
     app.get("/api/received", async (req, res) => {
         const user: User = await User.get_existing_user_internal((req as any).internal_id) ?? util.unreachable();
         const available = await Coupon.get_received(user);
-        res.json(Coupon.primitivize(available));
+        const updated = await Coupon.update_all(available);
+        res.json(Coupon.primitivize(updated));
     });
 
     // TODO Add to docs as well as tests
     app.get("/api/sent", async (req, res) => {
         const user: User = await User.get_existing_user_internal((req as any).internal_id) ?? util.unreachable();
         const sent = await Coupon.get_sent(user);
-        res.json(Coupon.primitivize(sent));
+        const updated = await Coupon.update_all(sent);
+        res.json(Coupon.primitivize(updated));
     });
 
     app.get("/refresh_token", (req, res, next) => {
