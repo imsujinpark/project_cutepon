@@ -1,4 +1,5 @@
 import { Database, Statement } from './sqlite-async.js';
+import * as util from './util.js';
 
 export class User {
 
@@ -88,6 +89,7 @@ export class User {
         try {
             let result = await User.query_insert_statement?.get(unique_id, public_id);
             const user = new User(result.internal_id, unique_id, public_id);
+            console.log(`user created: ` + util.inspect(user));
             return user;
         }
         finally {

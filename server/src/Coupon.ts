@@ -262,6 +262,7 @@ export class Coupon {
             if (coupon.origin_user.internal_id !== origin_user.internal_id) throw new Error("unreachable");
             if (coupon.target_user.internal_id !== target_user.internal_id) throw new Error("unreachable");
 
+            console.log(`create new coupon: ` + util.inspect(coupon));
             return coupon;
         }
         finally {
@@ -274,7 +275,9 @@ export class Coupon {
         try {
             let result = await Coupon.query_redeem_statement?.get(coupon.id);
             // The origin and target of a coupon dont change
-            const coupon_updated = Coupon.parse_object(result, coupon.origin_user, coupon.target_user);
+            const coupon_updated = await Coupon.parse_object(result, coupon.origin_user, coupon.target_user);
+            // console.log("redeemed!")
+            console.log(`coupon redeemed: ` + util.inspect(coupon_updated));
             return coupon_updated;
         }
         finally {
@@ -287,7 +290,8 @@ export class Coupon {
         try {
             let result = await Coupon.query_expired_statement?.get(coupon.id);
             // The origin and target of a coupon dont change
-            const coupon_updated = Coupon.parse_object(result, coupon.origin_user, coupon.target_user);
+            const coupon_updated = await Coupon.parse_object(result, coupon.origin_user, coupon.target_user);
+            console.log(`coupon expired: ` + util.inspect(coupon_updated));
             return coupon_updated;
         }
         finally {
@@ -300,7 +304,8 @@ export class Coupon {
         try {
             let result = await Coupon.query_delete_statement?.get(coupon.id);
             // The origin and target of a coupon dont change
-            const coupon_updated = Coupon.parse_object(result, coupon.origin_user, coupon.target_user);
+            const coupon_updated = await Coupon.parse_object(result, coupon.origin_user, coupon.target_user);
+            console.log(`coupon deleted: ` + util.inspect(coupon_updated));
             return coupon_updated;
         }
         finally {
@@ -407,8 +412,6 @@ export class Coupon {
         }
 
         if (coupon.expiration_date.getTime() < now.timestamp_ms) {
-            coupon.status = CouponStatus.Expired;
-            coupon.finish_date = now.date;
             return await Coupon.set_expired(coupon);
         }
         

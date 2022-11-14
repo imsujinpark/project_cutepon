@@ -23,30 +23,24 @@ export class Tester {
         this.all_tests = all_tests;
     }
 
-    expect(thing: boolean, msg?: string): void {
+    expect(thing: any, msg?: string): asserts thing {
         if (!thing) throw new Error(`Lower your expectations! ${msg}`);
     }
 
-    expect_equal(thing1: number, thing2: number): void;
-    expect_equal(thing1: string, thing2: string): void;
-    expect_equal(thing1: any, thing2: any): void;
     expect_equal(thing1: any, thing2: any): void {
         if (thing1 !== thing2) {
             throw new Error(`Lower your expectations! ${thing1} is different from ${thing2}`);
         }
     }
-
-    log(err: Error): void;
-    log(msg: string): void;
-    log(msg: any): void;
+    
     log(msg: any): void {
         
         if (typeof msg === 'string') {
-            console.log(this.padding + msg.replace("\n","\n" + this.padding))
+            Tester.orig_console_log(this.padding + msg.replace(/(?:\r\n|\r|\n)/g,"\n" + this.padding))
         }
         else {
             const formatted = util.inspect(msg, { showHidden: false, depth: null, colors: true })
-            console.log(this.padding + formatted.replace(/(?:\r\n|\r|\n)/g,"\n" + this.padding))
+            Tester.orig_console_log(this.padding + formatted.replace(/(?:\r\n|\r|\n)/g,"\n" + this.padding))
         }
         
     }
@@ -92,7 +86,13 @@ export class Tester {
         this.log("");
     }
 
+    static orig_console_log: any;
+
     async run() {
+
+        Tester.orig_console_log = console.log;
+        // intercept calls to console log so that it prints out with the same style as the rest
+        console.log = (stuff) => this.log.call(this, stuff)
         
         this.log(`\nTest suite "${this.name}"`);
         this.scope();
@@ -110,7 +110,7 @@ export class Tester {
         }
         catch (e) {
             this.log("####################################");
-            this.log("Uncaught error stopped the test run!\n");
+            this.log("Uncaught error stopped the test run!");
             this.log("####################################");
             this.log(e);
         }
@@ -125,6 +125,9 @@ export class Tester {
         }
         this.descope();
         this.log("");
+
+        // reset console.log to the original value
+        console.log = Tester.orig_console_log;
 
     }
 }

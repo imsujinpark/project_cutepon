@@ -55,3 +55,9 @@ export const parse_timestamp_unix_epoch_seconds = (unix_seconds_ts: number): Dat
     return date;
     
 }
+
+export function date1_is_around_date2(date1: Date, date2: Date, margin_ms: number): boolean {
+    const ms_left = date2.getTime() - margin_ms;
+    const ms_right = date2.getTime() + margin_ms;
+    return date1.getTime() > ms_left && date1.getTime() < ms_right
+}

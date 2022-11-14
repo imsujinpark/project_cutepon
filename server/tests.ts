@@ -8,6 +8,7 @@ import { Database, Statement } from './src/sqlite-async.js';
 import { Tester } from './src/tester.js';
 import fs from 'fs';
 import * as util from "./src/util.js";
+import { assert } from 'console';
 
 async function main () {
     
@@ -374,11 +375,104 @@ async function main () {
 
             });
 
+            await t.test("Test received coupons", async () => {
+
+                const usera = await User.create_new_user("usera4", "Paco2");
+                const userb = await User.create_new_user("userb4", "Pepe2");
+
+                const user_a_received = await Coupon.get_received(usera);
+                const user_b_received = await Coupon.get_received(userb);
+                t.expect(user_a_received.length === 0)
+                t.expect(user_b_received.length === 0)
+
+                const coupon = await Coupon.create_new_coupon(
+                    "Name of coupon~",
+                    "Redeem this coupon for a mistery gift!",
+                    new Date("July 4 2034 12:30"),
+                    usera, userb
+                );
+
+                const user_a_received_2 = await Coupon.get_received(usera);
+                const user_b_received_2 = await Coupon.get_received(userb);
+                t.expect(user_a_received_2.length === 0)
+                t.expect(user_b_received_2.length === 1)
+
+            });
+
+            await t.test("Test sent coupons", async () => {
+
+                const usera = await User.create_new_user("usera5", "Paco3");
+                const userb = await User.create_new_user("userb5", "Pepe3");
+
+                const user_a_sent = await Coupon.get_sent(usera);
+                const user_b_sent = await Coupon.get_sent(userb);
+                t.expect(user_a_sent.length === 0)
+                t.expect(user_b_sent.length === 0)
+
+                const coupon = await Coupon.create_new_coupon(
+                    "Name of coupon~",
+                    "Redeem this coupon for a mistery gift!",
+                    new Date("July 4 2034 12:30"),
+                    usera, userb
+                );
+
+                const user_a_sent_2 = await Coupon.get_sent(usera);
+                const user_b_sent_2 = await Coupon.get_sent(userb);
+                t.expect(user_a_sent_2.length === 1)
+                t.expect(user_b_sent_2.length === 0)
+
+            });
+
+            await t.test("update expired coupon", async () => {
+
+                const usera = await User.create_new_user("usera6", "Paco4");
+                const userb = await User.create_new_user("userb6", "Pepe4");
+
+                const coupon = await Coupon.create_new_coupon(
+                    "Name of coupon~",
+                    "Redeem this coupon for a mistery gift!",
+                    new Date(new Date().getTime() - 1), // coupon expired a millisecond ago
+                    /* A sends a coupon to B */
+                    usera, userb
+                );
+
+                t.expect(coupon.status === CouponStatus.Active);
+                t.expect(coupon.finish_date === null);
+
+                const now = new Date()
+                const coupon_updated = await Coupon.update_status(coupon);
+                t.expect(coupon_updated);
+                t.expect(coupon_updated.finish_date);
+                t.expect(coupon_updated.status === CouponStatus.Expired);
+                t.expect(util.date1_is_around_date2(coupon_updated.finish_date, now, 1500));
+
+            });
+
+            await t.test("update non-expired coupon", async () => {
+
+                const usera = await User.create_new_user("usera7", "Paco5");
+                const userb = await User.create_new_user("userb7", "Pepe5");
+
+                const coupon = await Coupon.create_new_coupon(
+                    "Name of coupon~",
+                    "Redeem this coupon for a mistery gift!",
+                    new Date(new Date().getTime() + 10000), // coupon expires in 10 seconds
+                    /* A sends a coupon to B */
+                    usera, userb
+                );
+
+                t.expect(coupon.status === CouponStatus.Active);
+                t.expect(coupon.finish_date === null);
+
+                const coupon_updated = await Coupon.update_status(coupon);
+                t.expect(!coupon_updated);
+            });
+
         }
     ).run();
 
     await new Tester(
-        "Tests SQLite", null, null, async (t) => {
+        "Tests SQLite", null, null, async (t:Tester) => {
 
             await t.test("As long as statements are reset or finalized, changes are commited", async () => {
 
@@ -397,7 +491,7 @@ async function main () {
                 const same_db_2 = await Database.open('./data/dbtest.sqlite3') as Database;
                 await User.initialize_statements(same_db_2);
                 const same_user = await User.get_existing_user_internal(user.internal_id);
-                t.expect(same_user !== null);
+                t.expect(same_user);
                 t.expect(user.internal_id === same_user?.internal_id);
 
             });
