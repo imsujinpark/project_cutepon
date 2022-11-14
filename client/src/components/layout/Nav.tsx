@@ -69,11 +69,11 @@ const Nav = () => {
     const menus: DropdownMenuData[] = [
         {
             name: 'Received Coupons',
-            path: '/received',
+            path: '/received/active',
         },
         {
             name: 'Sent Coupons',
-            path: '/sent',
+            path: '/sent/active',
         },
         {
             name: 'Send New Coupon!',

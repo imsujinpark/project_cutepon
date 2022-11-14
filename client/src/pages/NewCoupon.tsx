@@ -109,7 +109,7 @@ const NewCoupon = () => {
             console.log(response);
             dispatch(clearCopyCoupon()); // clears copy state
             dispatch(setNoticeToast('Successfully sent'));
-            navigate('/sent');
+            navigate('/sent/active');
         } catch (error: any) {
             if (
                 error.response.data.message &&

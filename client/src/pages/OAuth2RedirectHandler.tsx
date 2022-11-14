@@ -32,7 +32,7 @@ const OAuth2RedirectHandler = () => {
             silentRefresh(refreshToken);
         }
         dispatch(setNoticeToast('Successfully logged in'));
-        navigate('/received');
+        navigate('/received/active');
     };
 
     return (
