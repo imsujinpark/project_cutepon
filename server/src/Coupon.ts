@@ -341,13 +341,13 @@ export class Coupon {
         Coupon.require_initialized();
         try {
             
-            // We are getting the available for user, meaning target_user = user
-            let target_user = user;
+            // We are getting the available for user, meaning origin_user = user
+            let origin_user = user;
 
-            let result: any[] = await Coupon.query_get_coupons_2_statement?.all(target_user.internal_id);
+            let result: any[] = await Coupon.query_get_coupons_2_statement?.all(origin_user.internal_id);
             let coupons: Array<Coupon> = new Array();
             for (let i = 0; i < result.length; i++) {
-                coupons.push(await Coupon.parse_object(result[i], null, target_user));
+                coupons.push(await Coupon.parse_object(result[i], origin_user, null));
             }
             return coupons;
         }
