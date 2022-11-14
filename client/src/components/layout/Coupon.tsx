@@ -33,6 +33,13 @@ const Coupon = ({ data, mode }: UserProps) => {
     const couponRef = useRef(null);
     const [isClicked, setIsClicked] = useDetectClickOutside(couponRef, false);
 
+    // changes epoch number to "YYYY-MM-DD" string
+    const epochToString = (epoch: number) => {
+        const date: Date = new Date(epoch);
+        const string: string = date.toISOString().split('T')[0];
+        return string;
+    };
+
     const handleCouponClick = (): void => {
         setIsClicked(true);
     };
@@ -49,6 +56,7 @@ const Coupon = ({ data, mode }: UserProps) => {
                 title: title,
                 target_user: target_user,
                 description: description,
+                expiration_date: epochToString(expiration_date),
             })
         );
         navigate('/new');

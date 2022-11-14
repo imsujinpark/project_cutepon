@@ -68,12 +68,8 @@ const NewCoupon = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
-    // today's date in YYYY-MM-DD for default value in expiration date
-    const now: Date = new Date();
-    const nowToString: string = now.toISOString().split('T')[0];
-
     // state of input data when coupon has been copied
-    const { target_user, title, description } = useSelector(
+    const { target_user, title, description, expiration_date } = useSelector(
         (state: RootState) => {
             return state.copyCoupon;
         }
@@ -167,7 +163,7 @@ const NewCoupon = () => {
                     type="date"
                     id="expiration_date"
                     {...register('expiration_date', {
-                        value: nowToString,
+                        value: expiration_date,
                     })}
                     className="date"
                 />

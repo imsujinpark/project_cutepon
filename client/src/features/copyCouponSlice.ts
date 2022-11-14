@@ -4,11 +4,15 @@ import { FormValues } from "../common/types";
 // this is a slice to keep form data input as states
 // is utilised mostly for copying an existing coupon
 
+// today's date in YYYY-MM-DD for default value in expiration date
+const now: Date = new Date();
+const nowToString: string = now.toISOString().split('T')[0];
+
 const initialState: FormValues = {
     target_user: "@gmail.com",
     title: "",
     description: "",
-    expiration_date: "",
+    expiration_date: nowToString,
 };
 
 const copyCouponSlice = createSlice({
@@ -19,6 +23,7 @@ const copyCouponSlice = createSlice({
             state.title = action.payload.title;
             state.target_user = action.payload.target_user;
             state.description = action.payload.description;
+            state.expiration_date = action.payload.expiration_date;
         },
         // setTitle(state, action) {
         //     state.title = action.payload;
