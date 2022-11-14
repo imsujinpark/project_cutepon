@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import styled from 'styled-components';
 // external components and functions
@@ -8,19 +8,26 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import NewCoupon from './pages/NewCoupon';
 import OAuth2RedirectHandler from './pages/OAuth2RedirectHandler';
-import ReceivedCoupons from './pages/ReceivedCoupons';
-import SentCoupons from './pages/SentCoupons';
+// import ReceivedCoupons from './pages/ReceivedCoupons';
+// import SentCoupons from './pages/SentCoupons';
 import CustomToast from './components/common/CustomToast';
 import Logout from './pages/Logout';
 import { silentRefresh } from './common/utils';
 // redux related
 import { useSelector } from 'react-redux';
 import { RootState } from './store';
+// font-awesome icon
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSpinner } from '@fortawesome/free-solid-svg-icons';
 
 const App = () => {
+    // React.lazy imports
+    const ReceivedCoupons = React.lazy(() => import('./pages/ReceivedCoupons'));
+    const SentCoupons = React.lazy(() => import('./pages/SentCoupons'));
+
     // this state is to prevent component rendering before default header is set for http request when logged in
     // if the rendering takes too long, a loading component might be added in the future
-    const [isAuthChecked, setIsAuthChecked] = useState<boolean>(false);
+    // const [isAuthChecked, setIsAuthChecked] = useState<boolean>(false);
 
     // login status
     const { isLoggedIn, token, refreshToken } = useSelector(
@@ -40,7 +47,7 @@ const App = () => {
         if (isLoggedIn && refreshToken !== null) {
             silentRefresh(refreshToken);
         }
-        setIsAuthChecked(true); // we can now render the rest of the components
+        // setIsAuthChecked(true); // we can now render the rest of the components
     }, []);
 
     return (
@@ -48,7 +55,14 @@ const App = () => {
             <GlobalStyle />
             <Div>
                 <Nav />
-                {isAuthChecked && (
+                {/* {isAuthChecked && ( */}
+                <Suspense
+                    fallback={
+                        <Loader>
+                            <FontAwesomeIcon icon={faSpinner} spin />
+                        </Loader>
+                    }
+                >
                     <Routes>
                         <Route path="/" element={<Home />} />
                         <Route path="/login" element={<Login />} />
@@ -61,8 +75,9 @@ const App = () => {
                         <Route path="/new" element={<NewCoupon />} />
                         <Route path="/logout" element={<Logout />} />
                     </Routes>
-                )}
-                {showToast && <CustomToast />}
+                    {/* )} */}
+                    {showToast && <CustomToast />}
+                </Suspense>
             </Div>
         </BrowserRouter>
     );
@@ -71,6 +86,18 @@ const App = () => {
 const Div = styled.div`
     width: 100vw;
     height: fit-content;
+`;
+
+const Loader = styled.div`
+    width: 100vw;
+    height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    > * {
+        color: var(--primary-500);
+        font-size: 36px;
+    }
 `;
 
 export default App;
