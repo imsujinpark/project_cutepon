@@ -5,6 +5,7 @@ import { silentRefresh } from '../common/utils';
 import { useDispatch, useSelector } from 'react-redux';
 import { logoutFulfilled } from '../features/userSlice';
 import { persistor } from '../index';
+import { setNoticeToast, setWarningToast } from '../features/toastSlice';
 
 const Home = () => {
     const dispatch = useDispatch();
@@ -42,11 +43,20 @@ const Home = () => {
         }
     };
 
+    const toastTest = () => {
+        dispatch(setNoticeToast('does it work?'));
+    };
+    const toastTest2 = () => {
+        dispatch(setWarningToast('it doesnt work'));
+    };
+
     return (
         <Container>
             <div>Home</div>
             <button onClick={logout}>Logout</button>
             <button onClick={hello}>Who am I?</button>
+            <button onClick={toastTest}>notice toaster</button>
+            <button onClick={toastTest2}>warning toaster</button>
         </Container>
     );
 };

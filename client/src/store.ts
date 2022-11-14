@@ -4,12 +4,15 @@ import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import { persistReducer } from "redux-persist";
 import thunk from "redux-thunk";
 import storageSession from "redux-persist/lib/storage/session";
+
 import userSlice from "./features/userSlice";
 import copyCouponSlice from "./features/copyCouponSlice";
+import toastSlice from "./features/toastSlice";
 
 const rootReducer = combineReducers({
     user: userSlice.reducer,
     copyCoupon: copyCouponSlice.reducer,
+    toast: toastSlice.reducer,
 });
 
 const persistConfig = {

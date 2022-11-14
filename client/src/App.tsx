@@ -10,6 +10,7 @@ import NewCoupon from './pages/NewCoupon';
 import OAuth2RedirectHandler from './pages/OAuth2RedirectHandler';
 import ReceivedCoupons from './pages/ReceivedCoupons';
 import SentCoupons from './pages/SentCoupons';
+import CustomToast from './components/common/CustomToast';
 import { silentRefresh } from './common/utils';
 // redux related
 import { useSelector } from 'react-redux';
@@ -26,6 +27,10 @@ const App = () => {
             return state.user;
         }
     );
+
+    const { showToast } = useSelector((state: RootState) => {
+        return state.toast;
+    });
 
     console.log({ isLoggedIn, token, refreshToken });
 
@@ -55,6 +60,7 @@ const App = () => {
                         <Route path="/new" element={<NewCoupon />} />
                     </Routes>
                 )}
+                {showToast && <CustomToast />}
             </Div>
         </BrowserRouter>
     );
