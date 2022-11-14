@@ -17,7 +17,11 @@ enum Errors {
     RedeemCouponWrongOwner,
     RedeemCouponExpired,
     RedeemCouponNotActive,
+    DeleteCouponIdMissing,
+    DeleteCouponDeleteActiveNoAuthorized,
+    DeleteCouponUnknownCoupon,
     RateLimitExceeded,
+    NotImplemented,
     Internal
 };
 ```
@@ -33,7 +37,11 @@ The errors sent will be of the following form:
 
 You can use the `error: number` to branch your logic depending on the error as it will map 1:1 to the `enum Errors` defined above.
 
-In cases that an unexpected error happens you will receive an `Errors.Internal`.
+Here is some global errors the server might send in any request:
+* All the `Errors.Authorization*` errors (explained down below).
+* In cases that an unexpected error happens in the server side (such as SQL connection issue, or google oauth service down) you will receive an `Errors.Internal`.
+* Exceeding certain HTTP request threshold per minute will trigger a softban on the requestor's IP and return an `Errors.RateLimitExceeded`.
+* In case of accessing a not yet implemented API, `Errors.NotImplemented` will be returned.
 
 ## Authorization
 
@@ -116,6 +124,44 @@ Use this API to test that `Authorization` is working as intended.
 Redeems the `coupon` as long as it is possible to be redeemed by the user.
 Returns the same `coupon` but with its data updated (status changed, finish_date changed...).
 
+
+### POST `/api/delete`
+
+**Request**: Json string in the body.
+
+```ts
+{
+    coupon_id: number, /** The id of the coupon to delete */
+}
+```
+
+**Response**: Json string in the body.
+   
+```ts
+{
+    id: number, /** Coupon identifier */
+    title: string, /** The coupon title */
+    description: string, /** The coupon description */
+    created_date: number, /** The exact date the coupon was sent */
+    expiration_date: number, /** The date the coupon expires */
+    origin_user: string, /** The public_id of the user who sent the coupon */
+    target_user: string, /** The public_id of the user who received the coupon */
+    status: int,  /** The status of the coupon. Maps directly to the `enum CouponStatus` */
+    finish_date: number | null /** The date a coupon was finished, (expired, used, or removed) */
+}
+```
+
+**Possible errors**:
+
+* `DeleteCouponIdMissing`: The coupon id is missing from the request.
+* `DeleteCouponUnknownCoupon`: The coupon id is unknown.
+* `NotImplemented`: When trying to delete a coupon that is not active, the coupon will just be hidden for the user, but this is not implemented yet.
+* `DeleteCouponDeleteActiveNoAuthorized`: When the user is not allowed to delete an active coupon. Only the `target_user` of a coupon may delete an active coupon.
+
+Deletes the `coupon` from the coupon list.
+Active `coupon`s can only be deleted by the target of the `coupon`.
+Deleting a non-active `coupon` will just hide it for the user sending the request (and not the other user). **WARNING: This is not implemented yet!**
+Returns the same `coupon` but with its data updated (status changed, finish_date changed...).
 
 ### POST `/api/send`
 

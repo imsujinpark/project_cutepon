@@ -88,6 +88,7 @@ export class Coupon {
         Coupon.query_get_coupons_3_statement = await db.prepare(Coupon.query_get_coupons_3);
         Coupon.query_redeem_statement = await db.prepare(Coupon.query_redeem);
         Coupon.query_expired_statement = await db.prepare(Coupon.query_expired);
+        Coupon.query_delete_statement = await db.prepare(Coupon.query_delete);
         Coupon.initialized = true;
     }
 
@@ -100,6 +101,7 @@ export class Coupon {
         await Coupon.query_get_coupons_3_statement?.finalize();
         await Coupon.query_redeem_statement?.finalize();
         await Coupon.query_expired_statement?.finalize();
+        await Coupon.query_delete_statement?.finalize();
     }
     
     /** Resets the User table to an empty table */
@@ -174,6 +176,13 @@ export class Coupon {
         returning *
     `;
     static query_expired_statement: Statement | null = null;
+    
+    /** Set a coupon as expired */
+    static query_delete = `
+        update coupon set finish_date = (strftime('%s','now')), status = 2 where id = ?
+        returning *
+    `;
+    static query_delete_statement: Statement | null = null;
 
     /** Get specific coupon data */
     static query_get_coupon = `
@@ -283,6 +292,19 @@ export class Coupon {
         }
         finally {
             await Coupon.query_expired_statement?.reset();
+        }
+    }
+
+    static async set_deleted(coupon: Coupon): Promise<Coupon> {
+        Coupon.require_initialized();
+        try {
+            let result = await Coupon.query_delete_statement?.get(coupon.id);
+            // The origin and target of a coupon dont change
+            const coupon_updated = Coupon.parse_object(result, coupon.origin_user, coupon.target_user);
+            return coupon_updated;
+        }
+        finally {
+            await Coupon.query_delete_statement?.reset();
         }
     }
 

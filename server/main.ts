@@ -181,7 +181,11 @@ enum Errors {
     RedeemCouponWrongOwner,
     RedeemCouponExpired,
     RedeemCouponNotActive,
+    DeleteCouponIdMissing,
+    DeleteCouponDeleteActiveNoAuthorized,
+    DeleteCouponUnknownCoupon,
     RateLimitExceeded,
+    NotImplemented,
     Internal
 };
 
@@ -199,7 +203,11 @@ function response_error(res: Response, error: Errors, next: express.NextFunction
         case Errors.RedeemCouponWrongOwner: status = 403; // Forbidden
         case Errors.RedeemCouponExpired: status = 400; // Bad Request
         case Errors.RedeemCouponNotActive: status = 400; // Bad Request
+        case Errors.DeleteCouponIdMissing: status = 400; // Bad Request
+        case Errors.DeleteCouponDeleteActiveNoAuthorized: status = 401; // Unauthorized
+        case Errors.DeleteCouponUnknownCoupon: status = 400; // Bad Request
         case Errors.RateLimitExceeded: status = 500; // Forbidden
+        case Errors.NotImplemented: status = 501; // Not implemented
         case Errors.Internal: status = 500; // Forbidden
     }
     const error_object = { error: error, message: Errors[error] }
@@ -307,14 +315,49 @@ async function main() {
         if (!req.body.coupon_id) return response_error(res, Errors.RedeemCouponIdMissing, next);
         
         const now = new Date();
-        const coupon_to_redeem = await Coupon.get(req.body.coupon_id);
+        let coupon_to_redeem = await Coupon.get(req.body.coupon_id);
         if (coupon_to_redeem === null) return response_error(res, Errors.RedeemCouponUnknownCoupon, next);
+
+        coupon_to_redeem = await Coupon.update_status(coupon_to_redeem) ?? coupon_to_redeem;
+
         if (coupon_to_redeem.target_user.internal_id !== user.internal_id) return response_error(res, Errors.RedeemCouponWrongOwner, next);
         if (coupon_to_redeem.expiration_date.getTime() < now.getTime()) return response_error(res, Errors.RedeemCouponExpired, next);
         if (coupon_to_redeem.status !== CouponStatus.Active) return response_error(res, Errors.RedeemCouponNotActive, next);
         const redeemed_coupon = await Coupon.redeem(coupon_to_redeem)
         
         res.json(redeemed_coupon.primitive());
+    });
+
+    app.post("/api/delete", body_as_json(), async (req, res, next) => {
+        const user: User = await User.get_existing_user_internal((req as any).internal_id) ?? util.unreachable();
+        if (!req.body.coupon_id) return response_error(res, Errors.DeleteCouponIdMissing, next);
+        
+        // check coupon exists
+        let coupon_to_delete = await Coupon.get(req.body.coupon_id);
+        if (coupon_to_delete === null) return response_error(res, Errors.DeleteCouponUnknownCoupon, next);
+        
+        // update status of coupon
+        coupon_to_delete = await Coupon.update_status(coupon_to_delete) ?? coupon_to_delete;
+
+        let updated_coupon: Coupon;
+        if (coupon_to_delete.status !== CouponStatus.Active) {
+            
+            return response_error(res, Errors.NotImplemented, next);
+            // TODO Hide the coupon for both sender and receiver
+
+        }
+        else {
+            // Delete the coupon that is active
+            
+            // Only receiver of the coupon can delete
+            if (coupon_to_delete.target_user.internal_id !== user.internal_id) {
+                return response_error(res, Errors.DeleteCouponDeleteActiveNoAuthorized, next);
+            }
+
+            updated_coupon = await Coupon.set_deleted(coupon_to_delete);
+        }
+        
+        res.json(updated_coupon.primitive());
     });
 
     app.get("/api/received", async (req, res) => {
