@@ -19,8 +19,8 @@ const ReceivedCoupons = () => {
         getCoupons();
     }, []);
 
+    // filters server coupon data by status
     useEffect(() => {
-        console.log({ couponData, activeCoupons, disabledCoupons });
         if (optionMode === 'active') {
             const filteredArr = couponData.filter((data) => data.status === 0);
             setActiveCoupons([...filteredArr]);
