@@ -70,3 +70,10 @@ export const dateToYYYYYMMDD = (epochMs: number): string => {
     const dateToString: string = date.toISOString().slice(0, 10).replace(/-/g, "");
     return dateToString;
 };
+
+// today's date in YYYY-MM-DD for default value in expiration date
+export const nowToYYYYMMDD = (): string => {
+    const now: Date = new Date();
+    const nowToString: string = now.toISOString().split('T')[0];
+    return nowToString;
+};

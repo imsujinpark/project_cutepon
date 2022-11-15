@@ -1,5 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { FormValues } from "../common/types";
+import { nowToYYYYMMDD } from "../common/utils";
 
 // this is a slice to keep form data input as states
 // is utilised mostly for copying an existing coupon

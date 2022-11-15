@@ -4,6 +4,7 @@ import axios from 'axios';
 
 import { ConvertedFormValues, FormValues } from '../common/types';
 import Button from '../components/common/Button';
+import { nowToYYYYMMDD } from '../common/utils';
 
 // redux related
 import { useDispatch, useSelector } from 'react-redux';
@@ -166,6 +167,8 @@ const NewCoupon = () => {
                         value: expiration_date,
                     })}
                     className="date"
+                    // cannot set expiration to past
+                    min={nowToYYYYMMDD()}
                 />
                 <ErrorMessage>
                     {errors.expiration_date?.message && 'invalid date format'}
