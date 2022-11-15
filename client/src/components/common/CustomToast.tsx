@@ -31,7 +31,7 @@ const CustomToast = () => {
             clearTimeout(toastTimer);
             clearTimeout(animationTimer);
         };
-    }, []);
+    }, [message]); // when message is changed while being shown, restart timeout
 
     return (
         <Container className={toastAnimation}>
