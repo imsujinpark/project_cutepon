@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import axios from 'axios';
@@ -69,6 +70,13 @@ const NewCoupon = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
+    useEffect(() => {
+        return () => {
+            // clears copy state
+            dispatch(clearCopyCoupon());
+        };
+    }, []);
+
     // state of input data when coupon has been copied
     const { target_user, title, description, expiration_date } = useSelector(
         (state: RootState) => {
@@ -104,7 +112,6 @@ const NewCoupon = () => {
         try {
             const response = await axios.post(`/api/send`, payload);
             console.log(response);
-            dispatch(clearCopyCoupon()); // clears copy state
             dispatch(setNoticeToast('Successfully sent'));
             navigate('/sent/active');
         } catch (error: any) {
@@ -123,6 +130,11 @@ const NewCoupon = () => {
                 console.log(error);
             }
         }
+    };
+
+    const handleCancel = (e: React.MouseEvent<HTMLElement>): void => {
+        e.preventDefault();
+        navigate(-1);
     };
 
     return (
@@ -178,10 +190,7 @@ const NewCoupon = () => {
                     <Button
                         content="CANCEL"
                         className="grey"
-                        onClick={(e) => {
-                            e.preventDefault();
-                            console.log('cancelled????');
-                        }}
+                        onClick={handleCancel}
                     />
                     <Button
                         content="SUBMIT"
