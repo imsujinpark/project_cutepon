@@ -47,9 +47,28 @@ const Coupon = ({ data }: UserProps) => {
         setIsClicked(true);
     };
 
-    const handleDelete = (): void => {
-        console.log('deleted!');
+    const handleDelete = async () => {
         setIsClicked(false);
+        const payload = { coupon_id: id };
+        try {
+            const response = await axios.post(`/api/delete`, payload);
+            window.location.reload();
+        } catch (error: any) {
+            if (
+                error.response.data.message &&
+                error.response.data.error !== undefined
+            ) {
+                // const err: Errors = error.response.data.error;
+                // switch(err) {
+                //     case Errors.AuthorizationExpired: {
+
+                //     }
+                // }
+                console.log(`${error.response.data.message}`);
+            } else {
+                console.log(error);
+            }
+        }
     };
 
     const handleSendCopy = (): void => {
