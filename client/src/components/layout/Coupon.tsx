@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import axios from 'axios';
 
@@ -13,10 +13,10 @@ import { dateToYYYYYMMDD, dDayCalculator } from '../../common/utils';
 
 type UserProps = {
     data: CouponData;
-    mode: 'received' | 'sent'; // to check which page coupon component is used
+    // mode: 'received' | 'sent'; // to check which page coupon component is used
 };
 
-const Coupon = ({ data, mode }: UserProps) => {
+const Coupon = ({ data }: UserProps) => {
     const {
         id,
         origin_user,
@@ -31,7 +31,10 @@ const Coupon = ({ data, mode }: UserProps) => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const couponRef = useRef(null);
+    // state to check if the coupon is clicked for option buttons
     const [isClicked, setIsClicked] = useDetectClickOutside(couponRef, false);
+    // to check whether the component is used in received or sent
+    const { pathname } = useLocation();
 
     // changes epoch number to "YYYY-MM-DD" string
     const epochToString = (epoch: number) => {
@@ -97,8 +100,17 @@ const Coupon = ({ data, mode }: UserProps) => {
                     <Head>
                         <h2>{title}</h2>
                         {/* if used in received coupon page, render "from", if used in sent page, render "to" */}
-                        <span>
-                            {mode === 'received'
+                        {/* title is to show the full text when it's cut by ellipsis */}
+                        <span
+                            title={
+                                pathname === '/received/active' ||
+                                pathname === '/received/disabled'
+                                    ? `from. ${origin_user}`
+                                    : `to. ${target_user}`
+                            }
+                        >
+                            {pathname === '/received/active' ||
+                            pathname === '/received/disabled'
                                 ? `from. ${origin_user}`
                                 : `to. ${target_user}`}
                         </span>

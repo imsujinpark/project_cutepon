@@ -73,10 +73,10 @@ const ReceivedCoupons = () => {
             )}
             {status === 'active'
                 ? activeCoupons.map((el, idx) => {
-                      return <Coupon key={idx} data={el} mode="received" />;
+                      return <Coupon key={idx} data={el} />;
                   })
                 : disabledCoupons.map((el, idx) => {
-                      return <Coupon key={idx} data={el} mode="received" />;
+                      return <Coupon key={idx} data={el} />;
                   })}
         </Container>
     );
