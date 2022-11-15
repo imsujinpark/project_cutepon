@@ -87,15 +87,15 @@ const NewCoupon = () => {
 
     // when submit button is valid and clicked
     const submitForm: SubmitHandler<FormValues> = async (formData) => {
-        // change expiration date: string -> Date -> number
+        // change expiration date: string -> Date -> change time to 23:59 local (number)
         const stringToDate = new Date(formData.expiration_date);
-        const DateToNum = stringToDate.getTime();
+        const dateToMidnightNum = stringToDate.setHours(23, 59, 59, 999);
 
         const payload: ConvertedFormValues = {
             title: formData.title,
             target_user: formData.target_user,
             description: formData.description,
-            expiration_date: DateToNum,
+            expiration_date: dateToMidnightNum,
         };
 
         console.log(payload);
