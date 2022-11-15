@@ -6,11 +6,10 @@ import axios from 'axios';
 import { ConvertedFormValues, FormValues } from '../common/types';
 import Button from '../components/common/Button';
 import { nowToYYYYMMDD } from '../common/utils';
-
 // redux related
 import { useDispatch, useSelector } from 'react-redux';
 import { clearCopyCoupon } from '../features/copyCouponSlice';
-import { setNoticeToast } from '../features/toastSlice';
+import { setNoticeToast, setWarningToast } from '../features/toastSlice';
 // react-hook-form & yup related
 import { useForm, SubmitHandler, useWatch, Control } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -70,7 +69,16 @@ const NewCoupon = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
+    // login status
+    const { isLoggedIn } = useSelector((state: RootState) => {
+        return state.user;
+    });
+
     useEffect(() => {
+        if (!isLoggedIn) {
+            dispatch(setWarningToast('You are not logged in'));
+            navigate('/login');
+        }
         return () => {
             // clears copy state
             dispatch(clearCopyCoupon());

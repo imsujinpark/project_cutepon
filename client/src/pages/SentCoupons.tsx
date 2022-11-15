@@ -1,25 +1,39 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-
+import axios from 'axios';
+// components + external functions
 import { CouponData } from '../common/types';
 import Coupon from '../components/layout/Coupon';
 import OptionTab from '../components/layout/OptionTab';
 import Description from '../components/layout/Description';
 import { faArrowPointer } from '@fortawesome/free-solid-svg-icons';
-
-import axios from 'axios';
+// redux related
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState } from '../store';
+import { setWarningToast } from '../features/toastSlice';
 
 const SentCoupons = () => {
     const [couponData, setCouponData] = useState<CouponData[]>([]);
     const [activeCoupons, setActiveCoupons] = useState<CouponData[]>([]);
     const [disabledCoupons, setDisabledCoupons] = useState<CouponData[]>([]);
 
-    // status is either "active" or "disabled"
-    const { status } = useParams();
+    const { status } = useParams(); // status is either "active" or "disabled"
+    const navigate = useNavigate();
+    const dispatch = useDispatch();
+
+    // login status
+    const { isLoggedIn } = useSelector((state: RootState) => {
+        return state.user;
+    });
 
     useEffect(() => {
-        getCoupons();
+        if (isLoggedIn) {
+            getCoupons();
+        } else {
+            dispatch(setWarningToast('You are not logged in'));
+            navigate('/login');
+        }
     }, []);
 
     // filters server coupon data by status
