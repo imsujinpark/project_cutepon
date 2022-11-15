@@ -10,18 +10,6 @@ import { setNoticeToast, setWarningToast } from '../features/toastSlice';
 const Home = () => {
     const dispatch = useDispatch();
 
-    // purge function is to remove state from session storage
-    const purge = async () => {
-        await persistor.purge();
-    };
-
-    const logout = () => {
-        dispatch(logoutFulfilled()); // changes login state in redux slice
-        setTimeout(() => purge(), 1000); // will remove login info from session storage
-        dispatch(setNoticeToast('Successfully logged out'));
-        window.location.reload(); // refresh to remove remaining silent refresh function timeout
-    };
-
     const hello = async () => {
         try {
             const { data } = await axios.get(`/api/hello`);
@@ -55,7 +43,6 @@ const Home = () => {
     return (
         <Container>
             <div>Home</div>
-            <button onClick={logout}>Logout</button>
             <button onClick={hello}>Who am I?</button>
             <button onClick={toastTest}>notice toaster</button>
             <button onClick={toastTest2}>warning toaster</button>
