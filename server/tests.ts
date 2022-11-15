@@ -9,6 +9,7 @@ import { Tester } from './src/tester.js';
 import fs from 'fs';
 import * as util from "./src/util.js";
 import { assert } from 'console';
+import { UserCoupon } from './src/UserCoupon.js';
 
 async function main () {
     
@@ -557,6 +558,60 @@ async function main () {
 
             });
 
+        }
+    ).run();
+
+    await new Tester(
+        "UserCoupon tests!",
+        async function on_start(t) {
+            const db: Database = await Database.open("./data/test_db.db");
+            db.on("error", (err: Error) => {
+                t.log("AAAAAAAAAAAA");
+                throw err;
+            });
+            await User.reset_table(db);
+            await Coupon.reset_table(db);
+            await UserCoupon.reset_table(db);
+            await User.initialize_statements(db);
+            await Coupon.initialize_statements(db);
+            await UserCoupon.initialize_statements(db);
+            return {db};
+        },
+        null,
+        async (t:Tester) => {
+            // TODO Test whether the double primary key is a kept constraint
+            // TODO Test that boolean cant be other than 0 or 1
+            // TODO Test get coupon (also one that doesnt exists)
+            // TODO Test update coupon (also one that doesnt exists)
+            await t.test("Test whether the double primary key is a kept constraint", async () => {
+
+            });
+            await t.test("Test that boolean cant be other than 0 or 1", async () => {
+
+            });
+            await t.test("Test get coupon (also one that doesnt exists)", async () => {
+                const user_a = await User.create_new_user("user_a", "A");
+                const user_b = await User.create_new_user("user_b", "B");
+
+                const coupon = await Coupon.create_new_coupon(
+                    "Title", "Description", new Date("July 4 2034 12:30"), user_a, user_b
+                );
+
+                const user_coupon_1 = await UserCoupon.get(user_a, coupon);
+                t.expect(user_coupon_1);
+                const user_coupon_2 = await UserCoupon.get(user_b, coupon);
+                t.expect(user_coupon_2);
+
+                t.expect(Coupon.equal(user_coupon_1.coupon, user_coupon_2.coupon));
+                t.expect(Coupon.equal(user_coupon_1.coupon, coupon));
+
+                const user_coupon_3 = await UserCoupon.get(user_a, coupon);
+                t.expect_equal(user_coupon_1.rowid, user_coupon_3.rowid);
+
+            });
+            await t.test("Test update coupon (also one that doesnt exists)", async () => {
+
+            });
         }
     ).run();
     

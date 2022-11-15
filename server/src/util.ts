@@ -1,7 +1,7 @@
 import * as util from "util"
 
 export function require_not_null(object: any): void {
-    if (!object) throw new Error("required non null!");
+    if (object === null || object === undefined) throw new Error("required non null!");
 }
 export function throw_expression(msg: string): never {
     throw new Error(msg);
