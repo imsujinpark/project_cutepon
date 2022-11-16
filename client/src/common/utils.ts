@@ -66,11 +66,15 @@ export const dDayCalculator = (epochMs: number): string => {
 	}
 };
 
-// epoch date -> string "YYYYMMDD"
+// epoch date -> string "YYYYMMDD-HHMM"
 export const dateToYYYYYMMDDHHMM = (epochMs: number): string => {
 	const date: Date = new Date(epochMs);
 	const dateToString: string = date.toISOString().slice(0, 10).replace(/-/g, "");
 	const timeToString: string = date.toISOString().slice(11, 16).replace(/:/g, "");
+	// below for time in local, above in utc is use now
+	// as it needs to be the same for everyone to be a coupon id
+	// const dateToString: string = date.toLocaleString().slice(0, 10).replace(/\//g, "");
+	// const timeToString: string = date.toLocaleString().slice(12, 20).replace(/:/g, "");
 	return dateToString + "-" + timeToString;
 };
 
