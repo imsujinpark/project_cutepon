@@ -1,5 +1,5 @@
-import { createGlobalStyle } from 'styled-components';
-import './style.css';
+import { createGlobalStyle } from "styled-components";
+import "./style.css";
 
 const GlobalStyle = createGlobalStyle`
 

@@ -1,89 +1,89 @@
-import React, { Suspense, useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import styled from 'styled-components';
+import React, { Suspense, useEffect, useState } from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import styled from "styled-components";
 // external components and functions
-import Nav from './components/layout/Nav';
-import GlobalStyle from './GlobalStyle';
-import Home from './pages/Home';
-import Login from './pages/Login';
-import NewCoupon from './pages/NewCoupon';
-import OAuth2RedirectHandler from './pages/OAuth2RedirectHandler';
+import Nav from "./components/layout/Nav";
+import GlobalStyle from "./GlobalStyle";
+import Home from "./pages/Home";
+import Login from "./pages/Login";
+import NewCoupon from "./pages/NewCoupon";
+import OAuth2RedirectHandler from "./pages/OAuth2RedirectHandler";
 // import ReceivedCoupons from './pages/ReceivedCoupons';
 // import SentCoupons from './pages/SentCoupons';
-import CustomToast from './components/common/CustomToast';
-import Logout from './pages/Logout';
-import { silentRefresh } from './common/utils';
+import CustomToast from "./components/common/CustomToast";
+import Logout from "./pages/Logout";
+import { silentRefresh } from "./common/utils";
 // redux related
-import { useSelector } from 'react-redux';
-import { RootState } from './store';
+import { useSelector } from "react-redux";
+import { RootState } from "./store";
 // font-awesome icon
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSpinner } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 
 const App = () => {
-    // React.lazy imports
-    const ReceivedCoupons = React.lazy(() => import('./pages/ReceivedCoupons'));
-    const SentCoupons = React.lazy(() => import('./pages/SentCoupons'));
+	// React.lazy imports
+	const ReceivedCoupons = React.lazy(() => import("./pages/ReceivedCoupons"));
+	const SentCoupons = React.lazy(() => import("./pages/SentCoupons"));
 
-    // this state is to prevent component rendering before default header is set for http request when logged in
-    // if the rendering takes too long, a loading component might be added in the future
-    // const [isAuthChecked, setIsAuthChecked] = useState<boolean>(false);
+	// this state is to prevent component rendering before default header is set for http request when logged in
+	// if the rendering takes too long, a loading component might be added in the future
+	// const [isAuthChecked, setIsAuthChecked] = useState<boolean>(false);
 
-    // login status
-    const { isLoggedIn, token, refreshToken } = useSelector(
-        (state: RootState) => {
-            return state.user;
-        }
-    );
+	// login status
+	const { isLoggedIn, token, refreshToken } = useSelector(
+		(state: RootState) => {
+			return state.user;
+		}
+	);
 
-    const { showToast } = useSelector((state: RootState) => {
-        return state.toast;
-    });
+	const { showToast } = useSelector((state: RootState) => {
+		return state.toast;
+	});
 
-    console.log({ isLoggedIn, token, refreshToken });
+	console.log({ isLoggedIn, token, refreshToken });
 
-    useEffect(() => {
-        // if the user is logged in and refresh token exists, call silent refresh function
-        if (isLoggedIn && refreshToken !== null) {
-            silentRefresh(refreshToken);
-        }
-        // setIsAuthChecked(true); // we can now render the rest of the components
-    }, []);
+	useEffect(() => {
+		// if the user is logged in and refresh token exists, call silent refresh function
+		if (isLoggedIn && refreshToken !== null) {
+			silentRefresh(refreshToken);
+		}
+		// setIsAuthChecked(true); // we can now render the rest of the components
+	}, []);
 
-    return (
-        <BrowserRouter>
-            <GlobalStyle />
-            <Div>
-                <Nav />
-                {/* {isAuthChecked && ( */}
-                <Suspense
-                    fallback={
-                        <Loader>
-                            <FontAwesomeIcon icon={faSpinner} spin />
-                        </Loader>
-                    }
-                >
-                    <Routes>
-                        <Route path="/" element={<Home />} />
-                        <Route path="/login" element={<Login />} />
-                        <Route
-                            path="/oauth2/tokens"
-                            element={<OAuth2RedirectHandler />}
-                        />
-                        <Route
-                            path="/received/:status"
-                            element={<ReceivedCoupons />}
-                        />
-                        <Route path="/sent/:status" element={<SentCoupons />} />
-                        <Route path="/new" element={<NewCoupon />} />
-                        <Route path="/logout" element={<Logout />} />
-                    </Routes>
-                    {/* )} */}
-                    {showToast && <CustomToast />}
-                </Suspense>
-            </Div>
-        </BrowserRouter>
-    );
+	return (
+		<BrowserRouter>
+			<GlobalStyle />
+			<Div>
+				<Nav />
+				{/* {isAuthChecked && ( */}
+				<Suspense
+					fallback={
+						<Loader>
+							<FontAwesomeIcon icon={faSpinner} spin />
+						</Loader>
+					}
+				>
+					<Routes>
+						<Route path="/" element={<Home />} />
+						<Route path="/login" element={<Login />} />
+						<Route
+							path="/oauth2/tokens"
+							element={<OAuth2RedirectHandler />}
+						/>
+						<Route
+							path="/received/:status"
+							element={<ReceivedCoupons />}
+						/>
+						<Route path="/sent/:status" element={<SentCoupons />} />
+						<Route path="/new" element={<NewCoupon />} />
+						<Route path="/logout" element={<Logout />} />
+					</Routes>
+					{/* )} */}
+					{showToast && <CustomToast />}
+				</Suspense>
+			</Div>
+		</BrowserRouter>
+	);
 };
 
 const Div = styled.div`

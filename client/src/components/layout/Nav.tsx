@@ -1,194 +1,194 @@
-import React, { useEffect, useState, useRef } from 'react';
-import styled, { keyframes } from 'styled-components';
-import { useNavigate, Link, NavLink } from 'react-router-dom';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import React, { useEffect, useState, useRef } from "react";
+import styled, { keyframes } from "styled-components";
+import { useNavigate, Link, NavLink } from "react-router-dom";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-    faBars,
-    faRightToBracket,
-    faBell,
-    faFaceSmile,
-    faFaceSurprise,
-} from '@fortawesome/free-solid-svg-icons';
-import { DropdownMenuData } from '../../common/types';
-import useDetectClickOutside from '../../hooks/useDetectClickOutside';
-import logo from '../../assets/logo.png';
+	faBars,
+	faRightToBracket,
+	faBell,
+	faFaceSmile,
+	faFaceSurprise,
+} from "@fortawesome/free-solid-svg-icons";
+import { DropdownMenuData } from "../../common/types";
+import useDetectClickOutside from "../../hooks/useDetectClickOutside";
+import logo from "../../assets/logo.png";
 // redux related
-import { useSelector } from 'react-redux';
-import { RootState } from '../../store';
+import { useSelector } from "react-redux";
+import { RootState } from "../../store";
 
 const Nav = () => {
-    const navigate = useNavigate();
-    const menuRef = useRef(null);
-    const profileRef = useRef(null);
+	const navigate = useNavigate();
+	const menuRef = useRef(null);
+	const profileRef = useRef(null);
 
-    // login status
-    const { isLoggedIn } = useSelector((state: RootState) => {
-        return state.user;
-    });
+	// login status
+	const { isLoggedIn } = useSelector((state: RootState) => {
+		return state.user;
+	});
 
-    // these states are for Menu Dropdown on the left side
-    const [isMenuClicked, setIsMenuClicked] = useDetectClickOutside(
-        menuRef,
-        false
-    );
-    const [isMenuActivated, setIsMenuActivated] = useState<boolean>(false); // this state shows whether menu button has been clicked at least once
-    const [menuAnimation, setMenuAnimation] = useState<'open' | 'close' | ''>(
-        ''
-    );
+	// these states are for Menu Dropdown on the left side
+	const [isMenuClicked, setIsMenuClicked] = useDetectClickOutside(
+		menuRef,
+		false
+	);
+	const [isMenuActivated, setIsMenuActivated] = useState<boolean>(false); // this state shows whether menu button has been clicked at least once
+	const [menuAnimation, setMenuAnimation] = useState<"open" | "close" | "">(
+		""
+	);
 
-    // these states are for profile Dropdown on the right side
-    const [isProfileClicked, setIsProfileClicked] = useDetectClickOutside(
-        profileRef,
-        false
-    );
-    const [isProfileActivated, setIsProfileActivated] =
+	// these states are for profile Dropdown on the right side
+	const [isProfileClicked, setIsProfileClicked] = useDetectClickOutside(
+		profileRef,
+		false
+	);
+	const [isProfileActivated, setIsProfileActivated] =
         useState<boolean>(false);
-    const [profileAnimation, setProfileAnimation] = useState<
-        'open' | 'close' | ''
-    >('');
+	const [profileAnimation, setProfileAnimation] = useState<
+        "open" | "close" | ""
+    >("");
 
-    // for dropdown open and close animation
-    useEffect(() => {
-        // to prevent state being close when being rendered, check if menu button has ever been clicked
-        if (isMenuActivated) {
-            isMenuClicked
-                ? setMenuAnimation('open')
-                : setMenuAnimation('close');
-        }
-    }, [isMenuClicked]);
+	// for dropdown open and close animation
+	useEffect(() => {
+		// to prevent state being close when being rendered, check if menu button has ever been clicked
+		if (isMenuActivated) {
+			isMenuClicked
+				? setMenuAnimation("open")
+				: setMenuAnimation("close");
+		}
+	}, [isMenuClicked]);
 
-    useEffect(() => {
-        // to prevent state being close when being rendered, check if menu button has ever been clicked
-        if (isProfileActivated) {
-            isProfileClicked
-                ? setProfileAnimation('open')
-                : setProfileAnimation('close');
-        }
-    }, [isProfileClicked]);
+	useEffect(() => {
+		// to prevent state being close when being rendered, check if menu button has ever been clicked
+		if (isProfileActivated) {
+			isProfileClicked
+				? setProfileAnimation("open")
+				: setProfileAnimation("close");
+		}
+	}, [isProfileClicked]);
 
-    const menus: DropdownMenuData[] = [
-        {
-            name: 'Received Coupons',
-            path: '/received/active',
-        },
-        {
-            name: 'Sent Coupons',
-            path: '/sent/active',
-        },
-        {
-            name: 'Send New Coupon!',
-            path: '/new',
-        },
-    ];
+	const menus: DropdownMenuData[] = [
+		{
+			name: "Received Coupons",
+			path: "/received/active",
+		},
+		{
+			name: "Sent Coupons",
+			path: "/sent/active",
+		},
+		{
+			name: "Send New Coupon!",
+			path: "/new",
+		},
+	];
 
-    const profileOptions: DropdownMenuData[] = [
-        {
-            name: 'Logout',
-            path: '/logout',
-        },
-    ];
+	const profileOptions: DropdownMenuData[] = [
+		{
+			name: "Logout",
+			path: "/logout",
+		},
+	];
 
-    const handleMenuClick = (): void => {
-        setIsMenuClicked(!isMenuClicked);
-        setIsMenuActivated(true);
-    };
+	const handleMenuClick = (): void => {
+		setIsMenuClicked(!isMenuClicked);
+		setIsMenuActivated(true);
+	};
 
-    const handleProfileClick = (): void => {
-        setIsProfileClicked(!isProfileClicked);
-        setIsProfileActivated(true);
-    };
+	const handleProfileClick = (): void => {
+		setIsProfileClicked(!isProfileClicked);
+		setIsProfileActivated(true);
+	};
 
-    return (
-        <OuterContainer>
-            <Container>
-                <IconWrapper>
-                    <StyledFontAwesomeIcon
-                        icon={faBars}
-                        title="menu"
-                        ref={menuRef}
-                        onClick={handleMenuClick}
-                    />
-                </IconWrapper>
-                <Logo
-                    onClick={() => {
-                        navigate('/');
-                    }}
-                >
-                    <img src={logo} alt="logo"></img>
-                </Logo>
-                {isLoggedIn ? (
-                    <RightSideWrapper>
-                        <IconWrapper>
-                            <StyledFontAwesomeIcon
-                                icon={
-                                    isProfileClicked
-                                        ? faFaceSurprise
-                                        : faFaceSmile
-                                }
-                                title="profile"
-                                ref={profileRef}
-                                onClick={handleProfileClick}
-                            />
-                        </IconWrapper>
-                        <IconWrapper>
-                            <StyledFontAwesomeIcon
-                                icon={faBell}
-                                title="notification"
-                            />
-                        </IconWrapper>
-                    </RightSideWrapper>
-                ) : (
-                    <Link to="/login">
-                        <RightSideWrapper>
-                            <IconWrapper>
-                                <StyledFontAwesomeIcon
-                                    icon={faRightToBracket}
-                                    title="login"
-                                />
-                            </IconWrapper>
-                        </RightSideWrapper>
-                    </Link>
-                )}
-            </Container>
-            <MenuDropDown className={menuAnimation}>
-                <ul>
-                    {menus.map((menu, idx) => {
-                        return (
-                            <NavLink
-                                key={idx}
-                                to={menu.path}
-                                className={({ isActive }) =>
-                                    isActive ? 'selected' : ''
-                                }
-                            >
-                                <li>{menu.name}</li>
-                            </NavLink>
-                        );
-                    })}
-                </ul>
-            </MenuDropDown>
-            <ProfileDropDown
-                className={profileAnimation}
-                onClick={() => setIsProfileClicked(false)}
-            >
-                <ul>
-                    {profileOptions.map((item, idx) => {
-                        return (
-                            <NavLink
-                                key={idx}
-                                to={item.path}
-                                className={({ isActive }) =>
-                                    isActive ? 'selected' : ''
-                                }
-                            >
-                                <li>{item.name}</li>
-                            </NavLink>
-                        );
-                    })}
-                </ul>
-            </ProfileDropDown>
-        </OuterContainer>
-    );
+	return (
+		<OuterContainer>
+			<Container>
+				<IconWrapper>
+					<StyledFontAwesomeIcon
+						icon={faBars}
+						title="menu"
+						ref={menuRef}
+						onClick={handleMenuClick}
+					/>
+				</IconWrapper>
+				<Logo
+					onClick={() => {
+						navigate("/");
+					}}
+				>
+					<img src={logo} alt="logo"></img>
+				</Logo>
+				{isLoggedIn ? (
+					<RightSideWrapper>
+						<IconWrapper>
+							<StyledFontAwesomeIcon
+								icon={
+									isProfileClicked
+										? faFaceSurprise
+										: faFaceSmile
+								}
+								title="profile"
+								ref={profileRef}
+								onClick={handleProfileClick}
+							/>
+						</IconWrapper>
+						<IconWrapper>
+							<StyledFontAwesomeIcon
+								icon={faBell}
+								title="notification"
+							/>
+						</IconWrapper>
+					</RightSideWrapper>
+				) : (
+					<Link to="/login">
+						<RightSideWrapper>
+							<IconWrapper>
+								<StyledFontAwesomeIcon
+									icon={faRightToBracket}
+									title="login"
+								/>
+							</IconWrapper>
+						</RightSideWrapper>
+					</Link>
+				)}
+			</Container>
+			<MenuDropDown className={menuAnimation}>
+				<ul>
+					{menus.map((menu, idx) => {
+						return (
+							<NavLink
+								key={idx}
+								to={menu.path}
+								className={({ isActive }) =>
+									isActive ? "selected" : ""
+								}
+							>
+								<li>{menu.name}</li>
+							</NavLink>
+						);
+					})}
+				</ul>
+			</MenuDropDown>
+			<ProfileDropDown
+				className={profileAnimation}
+				onClick={() => setIsProfileClicked(false)}
+			>
+				<ul>
+					{profileOptions.map((item, idx) => {
+						return (
+							<NavLink
+								key={idx}
+								to={item.path}
+								className={({ isActive }) =>
+									isActive ? "selected" : ""
+								}
+							>
+								<li>{item.name}</li>
+							</NavLink>
+						);
+					})}
+				</ul>
+			</ProfileDropDown>
+		</OuterContainer>
+	);
 };
 
 // animation keyframes

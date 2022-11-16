@@ -1,54 +1,54 @@
-import { useSelector, useDispatch } from 'react-redux';
-import { useState, useEffect } from 'react';
-import { closeToast } from '../../features/toastSlice';
-import { faExclamation, faCheck } from '@fortawesome/free-solid-svg-icons';
-import styled, { keyframes } from 'styled-components';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { useSelector, useDispatch } from "react-redux";
+import { useState, useEffect } from "react";
+import { closeToast } from "../../features/toastSlice";
+import { faExclamation, faCheck } from "@fortawesome/free-solid-svg-icons";
+import styled, { keyframes } from "styled-components";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
-import { RootState } from '../../store';
+import { RootState } from "../../store";
 
 // mode는 warning 또는 notice
 const CustomToast = () => {
-    // 렌더링 후 초기 상태는 토스트 토스트 열리는 애니메이션
-    const [toastAnimation, setToastAnimation] = useState('openAnimation');
-    const dispatch = useDispatch();
+	// 렌더링 후 초기 상태는 토스트 토스트 열리는 애니메이션
+	const [toastAnimation, setToastAnimation] = useState("openAnimation");
+	const dispatch = useDispatch();
 
-    const { showToast, message, mode } = useSelector((state: RootState) => {
-        return state.toast;
-    });
+	const { showToast, message, mode } = useSelector((state: RootState) => {
+		return state.toast;
+	});
 
-    useEffect(() => {
-        let toastTimer: ReturnType<typeof setTimeout>;
-        // 2초 후 토스트 사라지는 애니메이션
-        // 그 후 .5초 후 토스트 보여주는 상태를 false로 변경
-        const animationTimer = setTimeout(() => {
-            setToastAnimation('closeAnimation');
-            toastTimer = setTimeout(() => {
-                dispatch(closeToast());
-            }, 500);
-        }, 2000);
-        return () => {
-            clearTimeout(toastTimer);
-            clearTimeout(animationTimer);
-        };
-    }, [message]); // when message is changed while being shown, restart timeout
+	useEffect(() => {
+		let toastTimer: ReturnType<typeof setTimeout>;
+		// Toast animation close in 2 seconds
+		// after, changes showToast to false in 0.5 second
+		const animationTimer = setTimeout(() => {
+			setToastAnimation("closeAnimation");
+			toastTimer = setTimeout(() => {
+				dispatch(closeToast());
+			}, 500);
+		}, 2000);
+		return () => {
+			clearTimeout(toastTimer);
+			clearTimeout(animationTimer);
+		};
+	}, [message]); // when message is changed while being shown, restart timeout
 
-    return (
-        <Container className={toastAnimation}>
-            <Box className={mode === 'warning' ? 'red' : 'green'}>
-                {mode === 'warning' && (
-                    <StyledFontAwesomeIcon
-                        icon={faExclamation}
-                        className="red"
-                    />
-                )}
-                {mode === 'notice' && (
-                    <StyledFontAwesomeIcon icon={faCheck} className="green" />
-                )}
-                <Text>{message}</Text>
-            </Box>
-        </Container>
-    );
+	return (
+		<Container className={toastAnimation}>
+			<Box className={mode === "warning" ? "red" : "green"}>
+				{mode === "warning" && (
+					<StyledFontAwesomeIcon
+						icon={faExclamation}
+						className="red"
+					/>
+				)}
+				{mode === "notice" && (
+					<StyledFontAwesomeIcon icon={faCheck} className="green" />
+				)}
+				<Text>{message}</Text>
+			</Box>
+		</Container>
+	);
 };
 
 const slideIn = keyframes`

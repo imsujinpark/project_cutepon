@@ -1,15 +1,16 @@
-import { useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import styled from 'styled-components';
-import axios from 'axios';
+import { useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import styled from "styled-components";
+import axios from "axios";
 
-import { CouponData, CouponStatus, Errors } from '../../common/types';
-import useDetectClickOutside from '../../hooks/useDetectClickOutside';
-import Button from '../common/Button';
+import { CouponData, CouponStatus, Errors } from "../../common/types";
+import useDetectClickOutside from "../../hooks/useDetectClickOutside";
+import Button from "../common/Button";
+import { dateToYYYYYMMDD, dDayCalculator } from "../../common/utils";
 // redux related
-import { useDispatch } from 'react-redux';
-import { makeCopy } from '../../features/copyCouponSlice';
-import { dateToYYYYYMMDD, dDayCalculator } from '../../common/utils';
+import { useDispatch } from "react-redux";
+import { makeCopy } from "../../features/copyCouponSlice";
+import { setNoticeToast } from "../../features/toastSlice";
 
 type UserProps = {
     data: CouponData;
@@ -17,157 +18,163 @@ type UserProps = {
 };
 
 const Coupon = ({ data }: UserProps) => {
-    const {
-        id,
-        origin_user,
-        target_user,
-        title,
-        description,
-        created_date,
-        expiration_date,
-        status,
-    } = data;
+	const {
+		id,
+		origin_user,
+		target_user,
+		title,
+		description,
+		created_date,
+		expiration_date,
+		status,
+	} = data;
 
-    const dispatch = useDispatch();
-    const navigate = useNavigate();
-    const couponRef = useRef(null);
-    // state to check if the coupon is clicked for option buttons
-    const [isClicked, setIsClicked] = useDetectClickOutside(couponRef, false);
-    // to check whether the component is used in received or sent
-    const { pathname } = useLocation();
+	const dispatch = useDispatch();
+	const navigate = useNavigate();
+	const couponRef = useRef(null);
+	// state to check if the coupon is clicked for option buttons
+	const [isClicked, setIsClicked] = useDetectClickOutside(couponRef, false);
+	// to check whether the component is used in received or sent
+	const { pathname } = useLocation();
 
-    // changes epoch number to "YYYY-MM-DD" string
-    const epochToString = (epoch: number) => {
-        const date: Date = new Date(epoch);
-        const string: string = date.toISOString().split('T')[0];
-        return string;
-    };
+	// changes epoch number to "YYYY-MM-DD" string
+	const epochToString = (epoch: number) => {
+		const date: Date = new Date(epoch);
+		const string: string = date.toISOString().split("T")[0];
+		return string;
+	};
 
-    const handleCouponClick = (): void => {
-        setIsClicked(true);
-    };
+	const handleCouponClick = (): void => {
+		setIsClicked(true);
+	};
 
-    const handleDelete = async () => {
-        setIsClicked(false);
-        const payload = { coupon_id: id };
-        try {
-            const response = await axios.post(`/api/delete`, payload);
-            window.location.reload();
-        } catch (error: any) {
-            if (
-                error.response.data.message &&
+	const handleDelete = async () => {
+		setIsClicked(false);
+		const payload = { coupon_id: id };
+		try {
+			const response = await axios.post("/api/delete", payload);
+			dispatch(setNoticeToast("Successfully deleted"));
+			setTimeout(() => window.location.reload(), 500);
+		}
+		catch (error: any) {
+			if (
+				error.response.data.message &&
                 error.response.data.error !== undefined
-            ) {
-                // const err: Errors = error.response.data.error;
-                // switch(err) {
-                //     case Errors.AuthorizationExpired: {
+			) {
+				// const err: Errors = error.response.data.error;
+				// switch(err) {
+				//     case Errors.AuthorizationExpired: {
 
-                //     }
-                // }
-                console.log(`${error.response.data.message}`);
-            } else {
-                console.log(error);
-            }
-        }
-    };
+				//     }
+				// }
+				console.log(`${error.response.data.message}`);
+			}
+			else {
+				console.log(error);
+			}
+		}
+	};
 
-    const handleSendCopy = (): void => {
-        setIsClicked(false);
-        dispatch(
-            makeCopy({
-                title: title,
-                target_user: target_user,
-                description: description,
-                expiration_date: epochToString(expiration_date),
-            })
-        );
-        navigate('/new');
-    };
+	const handleSendCopy = (): void => {
+		setIsClicked(false);
+		dispatch(
+			makeCopy({
+				title: title,
+				target_user: target_user,
+				description: description,
+				expiration_date: epochToString(expiration_date),
+			})
+		);
+		navigate("/new");
+	};
 
-    const handleRedeem = async () => {
-        setIsClicked(false);
-        const payload = { coupon_id: id };
-        try {
-            const response = await axios.post(`/api/redeem`, payload);
-            window.location.reload();
-        } catch (error: any) {
-            if (
-                error.response.data.message &&
+	const handleRedeem = async () => {
+		setIsClicked(false);
+		const payload = { coupon_id: id };
+		try {
+			const response = await axios.post("/api/redeem", payload);
+			dispatch(setNoticeToast("Successfully redeemed"));
+			setTimeout(() => window.location.reload(), 500);
+		}
+		catch (error: any) {
+			if (
+				error.response.data.message &&
                 error.response.data.error !== undefined
-            ) {
-                // const err: Errors = error.response.data.error;
-                // switch(err) {
-                //     case Errors.AuthorizationExpired: {
+			) {
+				// const err: Errors = error.response.data.error;
+				// switch(err) {
+				//     case Errors.AuthorizationExpired: {
 
-                //     }
-                // }
-                console.log(`${error.response.data.message}`);
-            } else {
-                console.log(error);
-            }
-        }
-    };
+				//     }
+				// }
+				console.log(`${error.response.data.message}`);
+			}
+			else {
+				console.log(error);
+			}
+		}
+	};
 
-    return (
-        <OuterContainer>
-            <Container
-                className={`${CouponStatus[status]} ${isClicked && 'blur'}`}
-                onClick={handleCouponClick}
-                ref={couponRef}
-            >
-                <InnerContainer>
-                    <Head>
-                        <h2>{title}</h2>
-                        {/* if used in received coupon page, render "from", if used in sent page, render "to" */}
-                        {/* title is to show the full text when it's cut by ellipsis */}
-                        <span
-                            title={
-                                pathname === '/received/active' ||
-                                pathname === '/received/disabled'
-                                    ? `from. ${origin_user}`
-                                    : `to. ${target_user}`
-                            }
-                        >
-                            {pathname === '/received/active' ||
-                            pathname === '/received/disabled'
-                                ? `from. ${origin_user}`
-                                : `to. ${target_user}`}
-                        </span>
-                    </Head>
-                    {/* title is to show the full text when it's cut by ellipsis */}
-                    <Body title={description}>{description}</Body>
-                    <TailTop>{CouponStatus[status]}</TailTop>
-                    <TailBottom>
-                        <span>
+	return (
+		<OuterContainer>
+			<Container
+				className={`${CouponStatus[status]} ${isClicked && "blur"}`}
+				onClick={handleCouponClick}
+				ref={couponRef}
+			>
+				<InnerContainer>
+					<Head>
+						<h2>{title}</h2>
+						{/* if used in received coupon page, render "from", if used in sent page, render "to" */}
+						{/* title is to show the full text when it's cut by ellipsis */}
+						<span
+							title={
+								pathname === "/received/active" ||
+                                pathname === "/received/disabled"
+									? `from. ${origin_user}`
+									: `to. ${target_user}`
+							}
+						>
+							{pathname === "/received/active" ||
+                            pathname === "/received/disabled"
+								? `from. ${origin_user}`
+								: `to. ${target_user}`}
+						</span>
+					</Head>
+					{/* title is to show the full text when it's cut by ellipsis */}
+					<Body title={description}>{description}</Body>
+					<TailTop>{CouponStatus[status]}</TailTop>
+					<TailBottom>
+						<span>
                             #{dateToYYYYYMMDD(created_date)}-{id}
-                        </span>
-                        <span>{dDayCalculator(expiration_date)}</span>
-                    </TailBottom>
-                </InnerContainer>
-            </Container>
-            {isClicked && (
-                <ButtonWrapper>
-                    <Button
-                        content="Delete"
-                        className="grey"
-                        onClick={handleDelete}
-                    />
-                    <Button
-                        content="Send Copy"
-                        className="lightpink"
-                        onClick={handleSendCopy}
-                    />
-                    {status === CouponStatus.Active && (
-                        <Button
-                            content="Redeem"
-                            className="primary"
-                            onClick={handleRedeem}
-                        />
-                    )}
-                </ButtonWrapper>
-            )}
-        </OuterContainer>
-    );
+						</span>
+						<span>{dDayCalculator(expiration_date)}</span>
+					</TailBottom>
+				</InnerContainer>
+			</Container>
+			{isClicked && (
+				<ButtonWrapper>
+					<Button
+						content="Delete"
+						className="grey"
+						onClick={handleDelete}
+					/>
+					<Button
+						content="Send Copy"
+						className="lightpink"
+						onClick={handleSendCopy}
+					/>
+					{status === CouponStatus.Active && (
+						<Button
+							content="Redeem"
+							className="primary"
+							onClick={handleRedeem}
+						/>
+					)}
+				</ButtonWrapper>
+			)}
+		</OuterContainer>
+	);
 };
 
 const OuterContainer = styled.div`
