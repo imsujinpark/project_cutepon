@@ -2,7 +2,7 @@ import { User } from './src/User.js';
 import { Coupon, CouponStatus } from './src/Coupon.js';
 import { Database, Statement } from './src/sqlite-async.js';
 import * as jsonwebtoken from 'jsonwebtoken';
-import express, { Express, Request, Response } from 'express';
+import express, { Express, NextFunction, Request, RequestHandler, Response } from 'express';
 import cors, {CorsOptions, CorsOptionsDelegate, CorsRequest} from 'cors';
 import * as dotenv from 'dotenv';
 import axios from 'axios';
@@ -219,6 +219,23 @@ function response_error(res: Response, error: Errors, next: express.NextFunction
     (err as any).__handled__ = true;
     next(err);
 }
+
+// Given an async RequestHandler, returns an synchronized version of it by wrapping it in a Promise
+// This is necessary becase express doesn't yet handle exceptions thrown in async handlers, making the whole process
+// to crash if such a thing happens. By wrapping your async handlers in this function, exceptions thrown in the function are
+// properly caught and passed on to the error handler that you may have defined. Example:
+//
+//     app.use(asyncHandler(async(req, res, next) => {
+//         await authenticate(req);
+//         next();
+//     }));
+//     
+//     app.get('/async', asyncHandler(async(req, res) => {
+//         const result = await request('http://example.com');
+//         res.end(result);
+//     }));
+// 
+const asyncHandler = (fn: RequestHandler) => (req: Request, res: Response, next: NextFunction) => Promise.resolve(fn(req, res, next)).catch(next)
 
 ///////////////////////////////
 // Application down below... //
