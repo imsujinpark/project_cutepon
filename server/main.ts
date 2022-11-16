@@ -389,7 +389,8 @@ async function main() {
         const available = await Coupon.get_received(user);
         const updated = await Coupon.update_all(available);
         await UserCoupon.get_all(user, updated);
-        res.json(Coupon.primitivize(updated));
+        const non_hidden_coupons = updated.filter((coupon) => !coupon.user_data.hidden);
+        res.json(Coupon.primitivize(non_hidden_coupons));
     }));
 
     // TODO Add to docs as well as tests
@@ -398,7 +399,8 @@ async function main() {
         const sent = await Coupon.get_sent(user);
         const updated = await Coupon.update_all(sent);
         await UserCoupon.get_all(user, updated);
-        res.json(Coupon.primitivize(updated));
+        const non_hidden_coupons = updated.filter((coupon) => !coupon.user_data.hidden);
+        res.json(Coupon.primitivize(non_hidden_coupons));
     }));
 
     app.get("/refresh_token", (req, res, next) => {
