@@ -159,7 +159,7 @@ export class UserCoupon {
     static async update(user_coupon: UserCoupon) {
         UserCoupon.require_initialized();
         try {
-            await UserCoupon.query_insert_update_user_coupon_statement?.get(user_coupon.user, user_coupon.coupon, user_coupon.hidden ? 1 : 0);
+            await UserCoupon.query_insert_update_user_coupon_statement?.get(user_coupon.user.internal_id, user_coupon.coupon.id, user_coupon.hidden ? 1 : 0);
         }
         finally {
             await UserCoupon.query_insert_update_user_coupon_statement?.reset();
