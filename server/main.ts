@@ -279,7 +279,7 @@ async function main() {
     const user_sessions = new Map<number, user_tokens>();
 
     /** Anything in the path /api/* is a protected route and needs to be accessed with proper authorization */
-    app.use('/api/*', async (req, res, next) => {
+    app.use('/api/*', asyncHandler(async (req, res, next) => {
         const token = req.headers.authorization;
         if(!token) return response_error(res, Errors.AuthorizationMissing, next);
         const user_session = sessions.get(token);
@@ -303,14 +303,14 @@ async function main() {
         // TODO: This is pretty ugly... is there a better way?
         (req as any).internal_id = user_session.internal_id;
         next();
-    });
+    }));
 
-    app.get("/api/hello", async (req, res, next) => {
+    app.get("/api/hello", asyncHandler(async (req, res, next) => {
         const user: User = await User.get_existing_user_internal((req as any).internal_id) ?? util.unreachable();
         res.send(`Hello ${user.public_id}!`)
-    });
+    }));
 
-    app.post("/api/send", body_as_json(), async (req, res, next) => {
+    app.post("/api/send", body_as_json(), asyncHandler(async (req, res, next) => {
         const user: User = await User.get_existing_user_internal((req as any).internal_id) ?? util.unreachable();
         if (!req.body.target_user) return response_error(res, Errors.SendCouponTargetMissing, next);
         const target: User|null = await User.get_existing_user_public(req.body.target_user);
@@ -325,9 +325,9 @@ async function main() {
         );
         const updated = await Coupon.update_status(coupon) ?? coupon;
         res.json(updated.primitive());
-    });
+    }));
 
-    app.post("/api/redeem", body_as_json(), async (req, res, next) => {
+    app.post("/api/redeem", body_as_json(), asyncHandler(async (req, res, next) => {
         const user: User = await User.get_existing_user_internal((req as any).internal_id) ?? util.unreachable();
         if (!req.body.coupon_id) return response_error(res, Errors.RedeemCouponIdMissing, next);
         
@@ -343,9 +343,9 @@ async function main() {
         const redeemed_coupon = await Coupon.redeem(coupon_to_redeem)
         
         res.json(redeemed_coupon.primitive());
-    });
+    }));
 
-    app.post("/api/delete", body_as_json(), async (req, res, next) => {
+    app.post("/api/delete", body_as_json(), asyncHandler(async (req, res, next) => {
         const user: User = await User.get_existing_user_internal((req as any).internal_id) ?? util.unreachable();
         if (!req.body.coupon_id) return response_error(res, Errors.DeleteCouponIdMissing, next);
         
@@ -375,22 +375,22 @@ async function main() {
         }
         
         res.json(updated_coupon.primitive());
-    });
+    }));
 
-    app.get("/api/received", async (req, res) => {
+    app.get("/api/received", asyncHandler(async (req, res) => {
         const user: User = await User.get_existing_user_internal((req as any).internal_id) ?? util.unreachable();
         const available = await Coupon.get_received(user);
         const updated = await Coupon.update_all(available);
         res.json(Coupon.primitivize(updated));
-    });
+    }));
 
     // TODO Add to docs as well as tests
-    app.get("/api/sent", async (req, res) => {
+    app.get("/api/sent", asyncHandler(async (req, res) => {
         const user: User = await User.get_existing_user_internal((req as any).internal_id) ?? util.unreachable();
         const sent = await Coupon.get_sent(user);
         const updated = await Coupon.update_all(sent);
         res.json(Coupon.primitivize(updated));
-    });
+    }));
 
     app.get("/refresh_token", (req, res, next) => {
         const auth = req.headers.authorization;
@@ -432,7 +432,7 @@ async function main() {
         res.redirect(301, url);
     });
 
-    app.get('/oauth2/google/callback', async function handle_google_oauth_callback (req, res, next) {
+    app.get('/oauth2/google/callback', asyncHandler(async function handle_google_oauth_callback (req, res, next) {
         // https://developers.google.com/identity/protocols/oauth2/web-server#handlingresponse
         const error = req.query.error;
         if (error) throw new Error(error.toString());
@@ -468,7 +468,7 @@ async function main() {
         user_sessions.set(user.internal_id, authorized_tokens);
         console.log({tokens: authorized_tokens});
         res.redirect(`/oauth2/tokens?${new URLSearchParams(authorized_tokens).toString()}`);
-    });
+    }));
 
     /** serve all the files where the react app will be */
     app.use(express.static('../client/build'));
