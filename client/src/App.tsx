@@ -27,7 +27,7 @@ const App = () => {
 
 	// this state is to prevent component rendering before default header is set for http request when logged in
 	// if the rendering takes too long, a loading component might be added in the future
-	// const [isAuthChecked, setIsAuthChecked] = useState<boolean>(false);
+	const [isAuthChecked, setIsAuthChecked] = useState<boolean>(false);
 
 	// login status
 	const { isLoggedIn, token, refreshToken } = useSelector(
@@ -42,12 +42,17 @@ const App = () => {
 
 	console.log({ isLoggedIn, token, refreshToken });
 
-	useEffect(() => {
+	// this will let the default headers to be set first before rendering certain components
+	const preventRenderBeforeAuth = async () => {
 		// if the user is logged in and refresh token exists, call silent refresh function
 		if (isLoggedIn && refreshToken !== null) {
-			silentRefresh(refreshToken);
+			await silentRefresh(refreshToken);
 		}
-		// setIsAuthChecked(true); // we can now render the rest of the components
+		setIsAuthChecked(true); // we can now render the rest of the components
+	};
+
+	useEffect(() => {
+		preventRenderBeforeAuth();
 	}, []);
 
 	return (
@@ -55,32 +60,32 @@ const App = () => {
 			<GlobalStyle />
 			<Div>
 				<Nav />
-				{/* {isAuthChecked && ( */}
-				<Suspense
-					fallback={
-						<Loader>
-							<FontAwesomeIcon icon={faSpinner} spin />
-						</Loader>
-					}
-				>
-					<Routes>
-						<Route path="/" element={<Home />} />
-						<Route path="/login" element={<Login />} />
-						<Route
-							path="/oauth2/tokens"
-							element={<OAuth2RedirectHandler />}
-						/>
-						<Route
-							path="/received/:status"
-							element={<ReceivedCoupons />}
-						/>
-						<Route path="/sent/:status" element={<SentCoupons />} />
-						<Route path="/new" element={<NewCoupon />} />
-						<Route path="/logout" element={<Logout />} />
-					</Routes>
-					{/* )} */}
-					{showToast && <CustomToast />}
-				</Suspense>
+				{isAuthChecked && (
+					<Suspense
+						fallback={
+							<Loader>
+								<FontAwesomeIcon icon={faSpinner} spin />
+							</Loader>
+						}
+					>
+						<Routes>
+							<Route path="/" element={<Home />} />
+							<Route path="/login" element={<Login />} />
+							<Route
+								path="/oauth2/tokens"
+								element={<OAuth2RedirectHandler />}
+							/>
+							<Route
+								path="/received/:status"
+								element={<ReceivedCoupons />}
+							/>
+							<Route path="/sent/:status" element={<SentCoupons />} />
+							<Route path="/new" element={<NewCoupon />} />
+							<Route path="/logout" element={<Logout />} />
+						</Routes>
+					</Suspense>
+				)}
+				{showToast && <CustomToast />}
 			</Div>
 		</BrowserRouter>
 	);

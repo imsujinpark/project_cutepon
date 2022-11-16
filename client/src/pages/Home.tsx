@@ -1,37 +1,36 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import axios from "axios";
-import { silentRefresh } from "../common/utils";
+// external components & fuctions
+import { couponRequest } from "../common/utils";
 // redux related
-import { useDispatch, useSelector } from "react-redux";
-import { logoutFulfilled } from "../features/userSlice";
-import { persistor } from "../index";
+import { useDispatch } from "react-redux";
 import { setNoticeToast, setWarningToast } from "../features/toastSlice";
 
 const Home = () => {
 	const dispatch = useDispatch();
+	const navigate = useNavigate();
 
 	const hello = async () => {
-		try {
-			const { data } = await axios.get("/api/hello");
+		const {data, message, path, error} = await couponRequest("get", "/api/hello");
+		
+		// Unhandled server error
+		if (error) {
+			console.log(error);
+		}
+		// handled server error requires warning toast & navigate action
+		else if (message && path) {
+			dispatch(setWarningToast(message));
+			navigate(path);
+		}
+		// handled server error requires only warning toast
+		else if (message) {
+			dispatch(setWarningToast(message));
+		}
+		// no error
+		else {
 			dispatch(setNoticeToast(data));
 			console.log(data);
-		}
-		catch (error: any) {
-			if (
-				error.response.data.message &&
-                error.response.data.error !== undefined
-			) {
-				// const err: Errors = error.response.data.error;
-				// switch(err) {
-				//     case Errors.AuthorizationExpired: {
-
-				//     }
-				// }
-				console.log(`${error.response.data.message}`);
-			}
-			else {
-				console.log(error);
-			}
 		}
 	};
 

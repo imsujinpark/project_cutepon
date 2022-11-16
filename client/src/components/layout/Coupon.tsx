@@ -1,16 +1,15 @@
 import { useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import styled from "styled-components";
-import axios from "axios";
 
 import { CouponData, CouponStatus } from "../../common/types";
 import useDetectClickOutside from "../../hooks/useDetectClickOutside";
 import Button from "../common/Button";
-import { dateToYYYYYMMDDHHMM, dDayCalculator } from "../../common/utils";
+import { dateToYYYYYMMDDHHMM, dDayCalculator, couponRequest} from "../../common/utils";
 // redux related
 import { useDispatch } from "react-redux";
 import { makeCopy } from "../../features/copyCouponSlice";
-import { setNoticeToast } from "../../features/toastSlice";
+import { setNoticeToast, setWarningToast } from "../../features/toastSlice";
 
 type UserProps = {
     data: CouponData;
@@ -51,27 +50,27 @@ const Coupon = ({ data }: UserProps) => {
 	const handleDelete = async () => {
 		setIsClicked(false);
 		const payload = { coupon_id: id };
-		try {
-			const response = await axios.post("/api/delete", payload);
+
+		const {data, message, path, error} = await couponRequest("post", "/api/delete", payload);
+		
+		// Unhandled server error
+		if (error) {
+			console.log(error);
+		}
+		// handled server error requires warning toast & navigate action
+		else if (message && path) {
+			dispatch(setWarningToast(message));
+			navigate(path);
+		}
+		// handled server error requires only warning toast
+		else if (message) {
+			dispatch(setWarningToast(message));
+		}
+		// no error
+		else {
+			console.log(data);
 			dispatch(setNoticeToast("Successfully deleted"));
 			setTimeout(() => window.location.reload(), 500);
-		}
-		catch (error: any) {
-			if (
-				error.response.data.message &&
-                error.response.data.error !== undefined
-			) {
-				// const err: Errors = error.response.data.error;
-				// switch(err) {
-				//     case Errors.AuthorizationExpired: {
-
-				//     }
-				// }
-				console.log(`${error.response.data.message}`);
-			}
-			else {
-				console.log(error);
-			}
 		}
 	};
 
@@ -91,27 +90,27 @@ const Coupon = ({ data }: UserProps) => {
 	const handleRedeem = async () => {
 		setIsClicked(false);
 		const payload = { coupon_id: id };
-		try {
-			const response = await axios.post("/api/redeem", payload);
+
+		const {data, message, path, error} = await couponRequest("post", "/api/redeem", payload);
+		
+		// Unhandled server error
+		if (error) {
+			console.log(error);
+		}
+		// handled server error requires warning toast & navigate action
+		else if (message && path) {
+			dispatch(setWarningToast(message));
+			navigate(path);
+		}
+		// handled server error requires only warning toast
+		else if (message) {
+			dispatch(setWarningToast(message));
+		}
+		// no error
+		else {
+			console.log(data);
 			dispatch(setNoticeToast("Successfully redeemed"));
 			setTimeout(() => window.location.reload(), 500);
-		}
-		catch (error: any) {
-			if (
-				error.response.data.message &&
-                error.response.data.error !== undefined
-			) {
-				// const err: Errors = error.response.data.error;
-				// switch(err) {
-				//     case Errors.AuthorizationExpired: {
-
-				//     }
-				// }
-				console.log(`${error.response.data.message}`);
-			}
-			else {
-				console.log(error);
-			}
 		}
 	};
 

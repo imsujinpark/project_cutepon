@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import axios from "axios";
 // components + external functions
 import { CouponData } from "../common/types";
 import Coupon from "../components/layout/Coupon";
 import OptionTab from "../components/layout/OptionTab";
 import Description from "../components/layout/Description";
 import { faArrowPointer } from "@fortawesome/free-solid-svg-icons";
+import { couponRequest } from "../common/utils";
 // redux related
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../store";
@@ -44,33 +44,32 @@ const SentCoupons = () => {
 			setActiveCoupons([...filteredArr]);
 		}
 		else {
-			const filteredArr = couponData.filter((data) => data.status !== 0);
+			// data.status: 0 = active, 3 = deleted (hide deleted in disabled)
+			const filteredArr = couponData.filter((data) => data.status !== 0 && data.status !== 3);
 			setDisabledCoupons([...filteredArr]);
 		}
 	}, [status, couponData]);
 
 	const getCoupons = async () => {
-		try {
-			const { data } = await axios.get("/api/sent");
-			console.log(data);
-			setCouponData(data);
-		}
-		catch (error: any) {
-			if (
-				error.response.data.message &&
-                error.response.data.error !== undefined
-			) {
-				// const err: Errors = error.response.data.error;
-				// switch(err) {
-				//     case Errors.AuthorizationExpired: {
 
-				//     }
-				// }
-				console.log(`${error.response.data.message}`);
-			}
-			else {
-				console.log(error);
-			}
+		const {data, message, path, error} = await couponRequest("get", "/api/sent");
+		
+		// Unhandled server error
+		if (error) {
+			console.log(error);
+		}
+		// handled server error requires warning toast & navigate action
+		else if (message && path) {
+			dispatch(setWarningToast(message));
+			navigate(path);
+		}
+		// handled server error requires only warning toast
+		else if (message) {
+			dispatch(setWarningToast(message));
+		}
+		// no error
+		else {
+			setCouponData([...data]);
 		}
 	};
 
