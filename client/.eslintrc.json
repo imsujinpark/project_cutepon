@@ -21,6 +21,10 @@
     ],
     "rules": {
         "react/jsx-uses-react": "off",
-        "react/react-in-jsx-scope": "off"
+        "react/react-in-jsx-scope": "off",
+        "brace-style": ["error", "stroustrup"],
+        "indent": ["error", "tab", { "SwitchCase": 1 }],
+        "semi": ["error", "always"],
+        "quotes": ["error", "double"]
     }
 }
