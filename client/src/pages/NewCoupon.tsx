@@ -203,7 +203,7 @@ const NewCoupon = () => {
 						onClick={handleCancel}
 					/>
 					<Button
-						content="SUBMIT"
+						content="SEND"
 						className={`primary ${!isValid && "invalid"}`}
 						// if the button is actually invalid, it won't let the error message appear, so it is only made visually-invalid
 						// disabled={!isValid}
