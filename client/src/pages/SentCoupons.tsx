@@ -1,93 +1,102 @@
-import { useState } from 'react';
-import styled from 'styled-components';
-import { CouponData, CouponOption } from '../common/types';
-import Coupon from '../components/layout/Coupon';
-import OptionTab from '../components/layout/OptionTab';
-import Description from '../components/layout/Description';
-import { faArrowPointer } from '@fortawesome/free-solid-svg-icons';
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import styled from "styled-components";
+// components + external functions
+import { CouponData } from "../common/types";
+import Coupon from "../components/layout/Coupon";
+import OptionTab from "../components/layout/OptionTab";
+import Description from "../components/layout/Description";
+import { faArrowPointer } from "@fortawesome/free-solid-svg-icons";
+import { couponRequest } from "../common/utils";
+// redux related
+import { useSelector, useDispatch } from "react-redux";
+import { RootState } from "../store";
+import { setWarningToast } from "../features/toastSlice";
 
 const SentCoupons = () => {
-    const [optionMode, setOptionMode] = useState<CouponOption>('active');
-    const dummyData: CouponData[] = [
-        {
-            id: 1,
-            target: 'sujinparkova',
-            title: 'Belly Buruburu',
-            description: 'you can give buruburu on the belly for 3 seconds',
-            receivedDate: 20202020,
-            expirationDate: 20202020,
-            status: 'active',
-        },
-        {
-            id: 2,
-            target: 'sujinparkova',
-            title: 'Belly Buruburu',
-            description:
-                'description of the coupon description of the coupon description of the coupon description of',
-            receivedDate: 20202020,
-            expirationDate: 20202020,
-            status: 'active',
-        },
-        {
-            id: 999,
-            target: 'sujinparkova',
-            title: 'Belly Buruburu',
-            description:
-                'description of the coupon description of the coupon description of the coupon description of',
-            receivedDate: 20202020,
-            expirationDate: 20202020,
-            status: 'active',
-        },
-        {
-            id: 3,
-            target: 'sujinparkova',
-            title: 'Belly Buruburu',
-            description: 'you can give buruburu on the belly for 3 seconds',
-            receivedDate: 20202020,
-            expirationDate: 20202020,
-            status: 'expired',
-        },
-        {
-            id: 4,
-            target: 'sujinparkova',
-            title: 'Belly Buruburu',
-            description:
-                'description of the coupon description of the coupon description of the coupon description of',
-            receivedDate: 20202020,
-            expirationDate: 20202020,
-            status: 'expired',
-        },
-        {
-            id: 5,
-            target: 'sujinparkova',
-            title: 'Belly Buruburu',
-            description:
-                'description of the coupon description of the coupon description of the coupon description of',
-            receivedDate: 20202020,
-            expirationDate: 20202020,
-            status: 'expired',
-        },
-    ];
-    return (
-        <Container>
-            <h1>Sent Coupons</h1>
-            <OptionTab optionMode={optionMode} setOptionMode={setOptionMode} />
-            {optionMode === 'active' ? (
-                <Description
-                    text="Click the coupon to redeem, delete, or send a copy"
-                    icon={faArrowPointer}
-                />
-            ) : (
-                <Description
-                    text="Click the coupon to delete or send a copy"
-                    icon={faArrowPointer}
-                />
-            )}
-            {dummyData.map((el, idx) => {
-                return <Coupon key={idx} data={el} />;
-            })}
-        </Container>
-    );
+	const [couponData, setCouponData] = useState<CouponData[]>([]);
+	const [activeCoupons, setActiveCoupons] = useState<CouponData[]>([]);
+	const [disabledCoupons, setDisabledCoupons] = useState<CouponData[]>([]);
+
+	const { status } = useParams(); // status is either "active" or "disabled"
+	const navigate = useNavigate();
+	const dispatch = useDispatch();
+
+	// login status
+	const { isLoggedIn } = useSelector((state: RootState) => {
+		return state.user;
+	});
+
+	useEffect(() => {
+		if (isLoggedIn) {
+			getCoupons();
+		}
+		else {
+			dispatch(setWarningToast("You are not logged in"));
+			navigate("/login");
+		}
+	}, []);
+
+	// filters server coupon data by status
+	useEffect(() => {
+		if (status === "active") {
+			const filteredArr = couponData.filter((data) => data.status === 0);
+			setActiveCoupons([...filteredArr]);
+		}
+		else {
+			// data.status: 0 = active, 3 = deleted (hide deleted in disabled)
+			const filteredArr = couponData.filter((data) => data.status !== 0 && data.status !== 3);
+			setDisabledCoupons([...filteredArr]);
+		}
+	}, [status, couponData]);
+
+	const getCoupons = async () => {
+
+		const {data, message, path, error} = await couponRequest("get", "/api/sent");
+		
+		// Unhandled server error
+		if (error) {
+			console.log(error);
+		}
+		// handled server error requires warning toast & navigate action
+		else if (message && path) {
+			dispatch(setWarningToast(message));
+			navigate(path);
+		}
+		// handled server error requires only warning toast
+		else if (message) {
+			dispatch(setWarningToast(message));
+		}
+		// no error
+		else {
+			setCouponData([...data]);
+		}
+	};
+
+	return (
+		<Container>
+			<h1>Sent Coupons</h1>
+			<OptionTab />
+			{status === "active" ? (
+				<Description
+					text="Click the coupon to redeem, delete, or send a copy"
+					icon={faArrowPointer}
+				/>
+			) : (
+				<Description
+					text="Click the coupon to delete or send a copy"
+					icon={faArrowPointer}
+				/>
+			)}
+			{status === "active"
+				? activeCoupons.map((el, idx) => {
+					return <Coupon key={idx} data={el} />;
+				})
+				: disabledCoupons.map((el, idx) => {
+					return <Coupon key={idx} data={el} />;
+				})}
+		</Container>
+	);
 };
 
 const Container = styled.div`

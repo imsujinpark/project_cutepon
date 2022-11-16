@@ -4,24 +4,29 @@ import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import { persistReducer } from "redux-persist";
 import thunk from "redux-thunk";
 import storageSession from "redux-persist/lib/storage/session";
+
 import userSlice from "./features/userSlice";
+import copyCouponSlice from "./features/copyCouponSlice";
+import toastSlice from "./features/toastSlice";
 
 const rootReducer = combineReducers({
-    user: userSlice.reducer,
+	user: userSlice.reducer,
+	copyCoupon: copyCouponSlice.reducer,
+	toast: toastSlice.reducer,
 });
 
 const persistConfig = {
-    key: "root",
-    storage: storageSession, // will be saved in session storage
-    whitelist: ["user"], // will save only user reducer in session storage
+	key: "root",
+	storage: storageSession, // will be saved in session storage
+	whitelist: ["user"], // will save only user reducer in session storage
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
 
 const store = configureStore({
-    reducer: persistedReducer,
-    devTools: process.env.NODE_ENV !== "production",
-    middleware: [thunk],
+	reducer: persistedReducer,
+	devTools: process.env.NODE_ENV !== "production",
+	middleware: [thunk],
 });
 
 export default store;

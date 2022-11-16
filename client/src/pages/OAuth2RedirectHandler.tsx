@@ -1,53 +1,45 @@
-import { useSearchParams } from 'react-router-dom';
+import { useEffect } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import axios from "axios";
+import { silentRefresh } from "../common/utils";
 // redux related
-import { useSelector, useDispatch } from 'react-redux';
-import { loginFulfilled, logoutFulfilled } from '../features/userSlice';
-import { RootState } from '../store';
-import { persistor } from '../index';
+import { useDispatch } from "react-redux";
+import { loginFulfilled } from "../features/userSlice";
+import { setNoticeToast } from "../features/toastSlice";
 
+// this is a component rendering when user is redirected after a successful Oauth login
 const OAuth2RedirectHandler = () => {
-    // https://cutepon.net/oauth2/tokens?token=b0590ecb-0dbd-4c21-be59-91c0cb3b411a&refresh_token=83c87474-882f-4065-a66c-d44deddbdeeb
-    const dispatch = useDispatch();
-    const [searchParams] = useSearchParams();
+	const dispatch = useDispatch();
+	const navigate = useNavigate();
+	const [searchParams] = useSearchParams();
 
-    const tokenParam = searchParams.get('token'); //
-    const refreshTokenParam = searchParams.get('refresh_token');
+	const token = searchParams.get("token"); // token taken from redirected url
+	const refreshToken = searchParams.get("refresh_token"); // refresh token taken from redirected url
 
-    // login status
-    const { isLoggedIn, token, refreshToken } = useSelector(
-        (state: RootState) => {
-            return state.user;
-        }
-    );
+	useEffect(() => {
+		OAuthRedirector();
+	}, []);
 
-    console.log({ isLoggedIn, token, refreshToken });
+	const OAuthRedirector = () => {
+		dispatch(
+			loginFulfilled({
+				token: token,
+				refreshToken: refreshToken,
+			})
+		);
+		axios.defaults.headers.common["Authorization"] = token;
+		if (refreshToken !== null) {
+			silentRefresh(refreshToken);
+		}
+		dispatch(setNoticeToast("Successfully logged in"));
+		navigate("/received/active");
+	};
 
-    // purge function to remove state from session storage
-    const purge = async () => {
-        await persistor.purge();
-    };
-
-    const logout = () => {
-        dispatch(logoutFulfilled());
-        setTimeout(() => purge(), 2000);
-    };
-
-    const login = () => {
-        dispatch(
-            loginFulfilled({
-                token: tokenParam,
-                refreshToken: refreshTokenParam,
-            })
-        );
-    };
-
-    return (
-        <div>
-            <div>OAuth2.0 Redirect Page</div>
-            <button onClick={login}>Login</button>
-            <button onClick={logout}>Logout</button>
-        </div>
-    );
+	return (
+		<div>
+			<div>OAuth2.0 Redirect Page</div>s
+		</div>
+	);
 };
 
 export default OAuth2RedirectHandler;

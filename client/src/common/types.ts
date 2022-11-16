@@ -1,3 +1,5 @@
+// these are all external types that are used/shared in each functions
+
 export interface LoginButtonRule {
     loginButtonData: {
         title: string;
@@ -7,13 +9,14 @@ export interface LoginButtonRule {
 
 export type CouponData = {
     id: number;
-    origin?: string;
-    target?: string;
     title: string;
     description: string;
-    receivedDate: number;
-    expirationDate: number;
-    status: "active" | "expired" | "redeemed" | "deleted";
+    created_date: number;
+    expiration_date: number;
+    origin_user?: string;
+    target_user?: string;
+    status: CouponStatus;
+    // finish_date: number | null;
 };
 
 export type DropdownMenuData = {
@@ -29,6 +32,13 @@ export type OptionType = {
     text: string;
 };
 
+// enum to show coupon status
+export enum CouponStatus {
+    Active, Redeemed, Expired, Deleted
+}
+// 1 -> Console.log(CouponStatus.Redeemed)
+// "Redeemed" -> Console.log(CouponStatus[CouponStatus.Redeemed])
+
 // for redux toolkit initial state for userSlice
 export type userType = {
     isLoggedIn: boolean;
@@ -39,4 +49,37 @@ export type userType = {
 // interface for redux toolkit useSelector
 export interface RootState {
     user: userType;
+}
+
+// a type for new coupon form
+export type FormValues = {
+    target_user: string;
+    title: string;
+    description: string;
+    expiration_date: string;
+};
+
+// a type for new coupon form with converted date
+export type ConvertedFormValues = {
+    target_user: string;
+    title: string;
+    description: string;
+    expiration_date: number;
+};
+
+// error handling
+export enum Errors {
+    AuthorizationMissing,
+    AuthorizationExpired,
+    AuthorizationInvalid,
+    RegistrationInvalidEmail,
+    SendCouponTargetUnknown,
+    SendCouponTargetMissing,
+    RedeemCouponIdMissing,
+    RedeemCouponUnknownCoupon,
+    RedeemCouponWrongOwner,
+    RedeemCouponExpired,
+    RedeemCouponNotActive,
+    RateLimitExceeded,
+    Internal
 }

@@ -1,99 +1,179 @@
-import styled from 'styled-components';
-import { CouponData } from '../../common/types';
-import Button from '../common/Button';
-import { useRef } from 'react';
-import useDetectClickOutside from '../../hooks/useDetectClickOutside';
+import { useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import styled from "styled-components";
+
+import { CouponData, CouponStatus } from "../../common/types";
+import useDetectClickOutside from "../../hooks/useDetectClickOutside";
+import Button from "../common/Button";
+import { dateToYYYYYMMDDHHMM, dDayCalculator, couponRequest} from "../../common/utils";
+// redux related
+import { useDispatch } from "react-redux";
+import { makeCopy } from "../../features/copyCouponSlice";
+import { setNoticeToast, setWarningToast } from "../../features/toastSlice";
 
 type UserProps = {
     data: CouponData;
+    // mode: 'received' | 'sent'; // to check which page coupon component is used
 };
 
 const Coupon = ({ data }: UserProps) => {
-    const {
-        id,
-        origin,
-        target,
-        title,
-        description,
-        receivedDate,
-        expirationDate,
-        status,
-    } = data;
+	const {
+		id,
+		origin_user,
+		target_user,
+		title,
+		description,
+		created_date,
+		expiration_date,
+		status,
+	} = data;
 
-    const couponRef = useRef(null);
-    const [isClicked, setIsClicked] = useDetectClickOutside(couponRef, false);
+	const dispatch = useDispatch();
+	const navigate = useNavigate();
+	const couponRef = useRef(null);
+	// state to check if the coupon is clicked for option buttons
+	const [isClicked, setIsClicked] = useDetectClickOutside(couponRef, false);
+	// to check whether the component is used in received or sent
+	const { pathname } = useLocation();
 
-    const handleCouponClick = (): void => {
-        setIsClicked(true);
-    };
+	// changes epoch number to "YYYY-MM-DD" string
+	const epochToString = (epoch: number) => {
+		const date: Date = new Date(epoch);
+		const string: string = date.toISOString().split("T")[0];
+		return string;
+	};
 
-    const handleDelete = (): void => {
-        console.log('deleted!');
-        setIsClicked(false);
-    };
+	const handleCouponClick = (): void => {
+		setIsClicked(true);
+	};
 
-    const handleSendCopy = (): void => {
-        console.log('gonna go to new coupon page!');
-        setIsClicked(false);
-    };
+	const handleDelete = async () => {
+		setIsClicked(false);
+		const payload = { coupon_id: id };
 
-    const handleRedeem = (): void => {
-        console.log('redeemed!');
-        setIsClicked(false);
-    };
+		const {data, message, path, error} = await couponRequest("post", "/api/delete", payload);
+		
+		// Unhandled server error
+		if (error) {
+			console.log(error);
+		}
+		// handled server error requires warning toast & navigate action
+		else if (message && path) {
+			dispatch(setWarningToast(message));
+			navigate(path);
+		}
+		// handled server error requires only warning toast
+		else if (message) {
+			dispatch(setWarningToast(message));
+		}
+		// no error
+		else {
+			console.log(data);
+			dispatch(setNoticeToast("Successfully deleted"));
+			setTimeout(() => window.location.reload(), 500);
+		}
+	};
 
-    return (
-        <OuterContainer>
-            <Container
-                className={`${status} ${isClicked && 'blur'}`}
-                onClick={handleCouponClick}
-                ref={couponRef}
-            >
-                <InnerContainer>
-                    <Head>
-                        <h2>{title}</h2>
-                        {/* from 정보가 있으면 받는 쿠폰으로 origin 표시, 없으면 보내는 쿠폰으로 to 표시 */}
-                        {/* 추후 유저 정보에 따라 from 이 내 아이디인지 to가 내 아이디인지 확인 예정 */}
-                        <span>
-                            {origin !== undefined
-                                ? `from. ${origin}`
-                                : `to. ${target}`}
-                        </span>
-                    </Head>
-                    {/* title is to show the full text when it's cut by ellipsis */}
-                    <Body title={description}>{description}</Body>
-                    <TailTop>{status}</TailTop>
-                    <TailBottom>
-                        <span>
-                            #{receivedDate}-{id}
-                        </span>
-                        <span>Expiration D-2100</span>
-                    </TailBottom>
-                </InnerContainer>
-            </Container>
-            {isClicked && (
-                <ButtonWrapper>
-                    <Button
-                        content="Delete"
-                        className="grey"
-                        onClick={handleDelete}
-                    />
-                    <Button
-                        content="Send Copy"
-                        className="lightpink"
-                        onClick={handleSendCopy}
-                    />
-                    {status === 'active' && (
-                        <Button
-                            content="Redeem"
-                            className="primary"
-                            onClick={handleRedeem}
-                        />
-                    )}
-                </ButtonWrapper>
-            )}
-        </OuterContainer>
-    );
+	const handleSendCopy = (): void => {
+		setIsClicked(false);
+		dispatch(
+			makeCopy({
+				title: title,
+				target_user: target_user,
+				description: description,
+				expiration_date: epochToString(expiration_date),
+			})
+		);
+		navigate("/new");
+	};
+
+	const handleRedeem = async () => {
+		setIsClicked(false);
+		const payload = { coupon_id: id };
+
+		const {data, message, path, error} = await couponRequest("post", "/api/redeem", payload);
+		
+		// Unhandled server error
+		if (error) {
+			console.log(error);
+		}
+		// handled server error requires warning toast & navigate action
+		else if (message && path) {
+			dispatch(setWarningToast(message));
+			navigate(path);
+		}
+		// handled server error requires only warning toast
+		else if (message) {
+			dispatch(setWarningToast(message));
+		}
+		// no error
+		else {
+			console.log(data);
+			dispatch(setNoticeToast("Successfully redeemed"));
+			setTimeout(() => window.location.reload(), 500);
+		}
+	};
+
+	return (
+		<OuterContainer>
+			<Container
+				className={`${CouponStatus[status]} ${isClicked && "blur"}`}
+				onClick={handleCouponClick}
+				ref={couponRef}
+			>
+				<InnerContainer>
+					<Head>
+						<h2>{title}</h2>
+						{/* if used in received coupon page, render "from", if used in sent page, render "to" */}
+						{/* title is to show the full text when it's cut by ellipsis */}
+						<span
+							title={
+								pathname === "/received/active" ||
+                                pathname === "/received/disabled"
+									? `from. ${origin_user}`
+									: `to. ${target_user}`
+							}
+						>
+							{pathname === "/received/active" ||
+                            pathname === "/received/disabled"
+								? `from. ${origin_user}`
+								: `to. ${target_user}`}
+						</span>
+					</Head>
+					{/* title is to show the full text when it's cut by ellipsis */}
+					<Body title={description}>{description}</Body>
+					<TailTop>{CouponStatus[status]}</TailTop>
+					<TailBottom>
+						<span>
+                            #{dateToYYYYYMMDDHHMM(created_date)}-{id}
+						</span>
+						<span>{dDayCalculator(expiration_date)}</span>
+					</TailBottom>
+				</InnerContainer>
+			</Container>
+			{isClicked && (
+				<ButtonWrapper>
+					<Button
+						content="Delete"
+						className="grey"
+						onClick={handleDelete}
+					/>
+					<Button
+						content="Send Copy"
+						className="lightpink"
+						onClick={handleSendCopy}
+					/>
+					{pathname === "/received/active" && (
+						<Button
+							content="Redeem"
+							className="primary"
+							onClick={handleRedeem}
+						/>
+					)}
+				</ButtonWrapper>
+			)}
+		</OuterContainer>
+	);
 };
 
 const OuterContainer = styled.div`
@@ -113,7 +193,7 @@ const Container = styled.div`
     border-radius: 6px;
 
     // disabled coupons
-    :not(&.active) {
+    :not(&.Active) {
         background-color: var(--liver-050);
         border: 4px solid var(--liver-200);
         border-left: 20px solid var(--liver-200);
@@ -136,7 +216,7 @@ const Container = styled.div`
         border-left: 20px solid var(--primary-500);
         background-color: var(--ecru-300);
         // disabled coupons
-        :not(&.active) {
+        :not(&.Active) {
             background-color: var(--liver-100);
             border: 4px solid var(--liver-300);
             border-left: 20px solid var(--liver-300);

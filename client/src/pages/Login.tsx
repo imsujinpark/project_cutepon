@@ -1,16 +1,31 @@
-import styled from 'styled-components';
-import googleLogo from '../assets/google_logo.png';
-import LoginButton from '../components/layout/LoginButton';
+import { useEffect } from "react";
+import styled from "styled-components";
+import googleLogo from "../assets/google_logo.png";
+import LoginButton from "../components/layout/LoginButton";
+// external functions
+import { purge } from "../common/utils";
+// redux related
+import { useDispatch } from "react-redux";
+import { logoutFulfilled } from "../features/userSlice";
+import { persistor } from "../index";
 
 const Login = () => {
-    const googleLogin = { title: 'Sign in with Google', image: googleLogo };
+	const dispatch = useDispatch();
 
-    return (
-        <Container>
-            <h1>Login</h1>
-            <LoginButton loginButtonData={googleLogin} />
-        </Container>
-    );
+	const googleLogin = { title: "Sign in with Google", image: googleLogo };
+		
+	// remove any previous login info which is now invalid
+	useEffect(() => {
+		dispatch(logoutFulfilled());
+		setTimeout(() => purge(), 500); 
+	}, []);
+
+	return (
+		<Container>
+			<h1>Login</h1>
+			<LoginButton loginButtonData={googleLogin} />
+		</Container>
+	);
 };
 
 const Container = styled.div`

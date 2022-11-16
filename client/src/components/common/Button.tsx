@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import styled from "styled-components";
 
 type Class = {
     className?: string;
@@ -8,15 +8,15 @@ type Class = {
 };
 
 const Button = ({ className, content, onClick, disabled }: Class) => {
-    return (
-        <StyledButton
-            className={className}
-            onClick={onClick}
-            disabled={disabled}
-        >
-            {content}
-        </StyledButton>
-    );
+	return (
+		<StyledButton
+			className={className}
+			onClick={onClick}
+			disabled={disabled}
+		>
+			{content}
+		</StyledButton>
+	);
 };
 
 const StyledButton = styled.button`
@@ -70,12 +70,12 @@ const StyledButton = styled.button`
         transform: translateY(2px);
     }
 
-    /* &.invalid {
+    &.invalid {
         opacity: 60%;
         &:active {
             transform: translateY(0px);
         }
-    } */
+    }
 `;
 
 export default Button;

@@ -1,32 +1,18 @@
-import styled from 'styled-components';
-import axios from 'axios';
-import { LoginButtonRule } from '../../common/types';
+import styled from "styled-components";
+import { LoginButtonRule } from "../../common/types";
 
 const LoginButton = (props: LoginButtonRule) => {
-    const { title, image } = props.loginButtonData;
+	const { title, image } = props.loginButtonData;
 
-    // const loginHandler = async (): Promise<void> => {
-    //     console.log('one');
-
-    //     try {
-    //         console.log('two');
-    //         const res = await axios.get(`/oauth2/google`);
-    //         console.log({ res });
-    //     } catch (error) {
-    //         console.log('three');
-    //         console.log({ error });
-    //     }
-    // };
-
-    return (
-        // <Button onClick={loginHandler}>
-        <a href="/oauth2/google">
-            <Button>
-                {image && <Img src={image} alt="logo" />}
-                <span>{title}</span>
-            </Button>
-        </a>
-    );
+	return (
+	// the below link should change more dynamically when more oauth login feature is added
+		<a href="/oauth2/google">
+			<Button>
+				{image && <Img src={image} alt="logo" />}
+				<span>{title}</span>
+			</Button>
+		</a>
+	);
 };
 
 const Button = styled.button`

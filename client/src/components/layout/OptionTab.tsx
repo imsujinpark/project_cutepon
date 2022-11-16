@@ -1,46 +1,65 @@
-import styled from 'styled-components';
-import Button from '../common/Button';
-import { OptionType, CouponOption } from '../../common/types';
+import styled from "styled-components";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 
-type PropsType = {
-    optionMode: CouponOption;
-    setOptionMode: React.Dispatch<React.SetStateAction<CouponOption>>;
-};
+import Button from "../common/Button";
+import { OptionType, CouponOption } from "../../common/types";
 
-const OptionTab = ({ optionMode, setOptionMode }: PropsType) => {
-    const options: OptionType[] = [
-        {
-            mode: 'active',
-            text: 'Active',
-        },
-        {
-            mode: 'disabled',
-            text: 'Disabled',
-        },
-    ];
+const OptionTab = () => {
+	const navigate = useNavigate();
+	const { pathname } = useLocation();
+	// console.log({ pathname });
 
-    const handleClick = (mode: CouponOption) => {
-        setOptionMode(mode);
-    };
+	const { status } = useParams();
+	// console.log({ status });
 
-    return (
-        <OptionWrapper>
-            {options.map((option, idx) => {
-                return (
-                    <Button
-                        key={idx}
-                        content={option.text}
-                        className={`small curve ${
-                            optionMode === option.mode ? 'darkliver' : 'grey'
-                        }`}
-                        onClick={() => {
-                            handleClick(option.mode);
-                        }}
-                    />
-                );
-            })}
-        </OptionWrapper>
-    );
+	const options: OptionType[] = [
+		{
+			mode: "active",
+			text: "Active",
+		},
+		{
+			mode: "disabled",
+			text: "Disabled",
+		},
+	];
+
+	const handleClick = (mode: CouponOption) => {
+		if (
+			pathname === "/received/active" ||
+            pathname === "/received/disabled"
+		) {
+			navigate(`/received/${mode}`);
+		}
+		else if (
+			pathname === "/sent/active" ||
+            pathname === "/sent/disabled"
+		) {
+			navigate(`/sent/${mode}`);
+		}
+		else {
+			console.log("wrong path");
+			navigate("/");
+		}
+	};
+
+	return (
+		<OptionWrapper>
+			{options.map((option, idx) => {
+				return (
+					<Button
+						key={idx}
+						content={option.text}
+						className={`small curve ${
+							status === option.mode ? "darkliver" : "grey"
+						}`}
+						onClick={() => {
+							handleClick(option.mode);
+						}}
+					/>
+				);
+			})}
+		</OptionWrapper>
+	);
 };
 
 const OptionWrapper = styled.div`
