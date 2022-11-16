@@ -21,6 +21,12 @@ export class UserCoupon {
         this.rowid = rowid;
     }
 
+    primitive(): any {
+        return {
+            hidden: this.hidden,
+        }
+    }
+
     static async reset_table(db: Database) {
         await db.run(`
             drop table if exists user_coupon;
@@ -109,6 +115,44 @@ export class UserCoupon {
         finally {
             await UserCoupon.query_get_user_coupon_statement?.reset();
         }
+    }
+
+    // Sets the user data to every and each coupon
+    // Every coupon must be related to the user
+    static async get_all(user: User, coupons: Coupon[]) {
+        UserCoupon.require_initialized();
+
+        for (let i = 0; i < coupons.length; i++) {
+            const coupon = coupons[i];
+            if (coupon.target_user.internal_id !== user.internal_id && coupon.origin_user.internal_id !== user.internal_id) {
+                throw new Error(`The user and coupon have no relationship!`);
+            }
+
+            try {
+                let create_result = await UserCoupon.query_insert_ignore_user_coupon_statement?.get(user.internal_id, coupon.id);
+                if (create_result) {
+                    // This will only happen the first time that a UserCoupon is created
+                    const user_data = await UserCoupon.parse_object(create_result, user, coupon);
+                    util.log(`Registered a UserCoupon ${util.inspect(user_data)}`);
+                    coupon.set_user_data(user_data);
+                    continue;
+                }
+            }
+            finally {
+                await UserCoupon.query_insert_ignore_user_coupon_statement?.reset();
+            }
+    
+            try {
+                let result = await UserCoupon.query_get_user_coupon_statement?.get(user.internal_id, coupon.id);
+                const user_data = await UserCoupon.parse_object(result, user, coupon);
+                coupon.set_user_data(user_data);
+                continue;
+            }
+            finally {
+                await UserCoupon.query_get_user_coupon_statement?.reset();
+            }
+        }
+
     }
 
     // Updates the UserCoupon relationship data of the given coupon

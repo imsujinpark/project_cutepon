@@ -325,7 +325,8 @@ async function main() {
             target
         );
         const updated = await Coupon.update_status(coupon) ?? coupon;
-        res.json(updated.primitive());
+        const user_data = await UserCoupon.get(user, updated);
+        res.json(updated.set_user_data(user_data).primitive());
     }));
 
     app.post("/api/redeem", body_as_json(), asyncHandler(async (req, res, next) => {
@@ -342,8 +343,8 @@ async function main() {
         if (coupon_to_redeem.expiration_date.getTime() < now.getTime()) return response_error(res, Errors.RedeemCouponExpired, next);
         if (coupon_to_redeem.status !== CouponStatus.Active) return response_error(res, Errors.RedeemCouponNotActive, next);
         const redeemed_coupon = await Coupon.redeem(coupon_to_redeem)
-        
-        res.json(redeemed_coupon.primitive());
+        const user_data = await UserCoupon.get(user, redeemed_coupon);
+        res.json(redeemed_coupon.set_user_data(user_data).primitive());
     }));
 
     app.post("/api/delete", body_as_json(), asyncHandler(async (req, res, next) => {
@@ -357,35 +358,36 @@ async function main() {
         // update status of coupon
         coupon_to_delete = await Coupon.update_status(coupon_to_delete) ?? coupon_to_delete;
 
-        let updated_coupon: Coupon;
+        // get user data for this coupon
+        const user_data = await UserCoupon.get(user, coupon_to_delete);
+
         if (coupon_to_delete.status !== CouponStatus.Active) {
             
-            return response_error(res, Errors.NotImplemented, next);
-            // TODO Hide the coupon for both sender and receiver
-
-            const user_coupon = await UserCoupon.get(user, coupon_to_delete);
-            user_coupon.hidden = true;
-            await UserCoupon.update(user_coupon);
+            // If its not active we just hide it
+            user_data.hidden = true;
+            await UserCoupon.update(user_data);
 
         }
         else {
-            // Delete the coupon that is active
             
-            // Only receiver of the coupon can delete
+            // If active, only receiver of the coupon can delete
             if (coupon_to_delete.target_user.internal_id !== user.internal_id) {
                 return response_error(res, Errors.DeleteCouponDeleteActiveNoAuthorized, next);
             }
 
-            updated_coupon = await Coupon.set_deleted(coupon_to_delete);
+            coupon_to_delete = await Coupon.set_deleted(coupon_to_delete);
         }
+
+        coupon_to_delete.set_user_data(user_data);
         
-        res.json(updated_coupon.primitive());
+        res.json(coupon_to_delete.primitive());
     }));
 
     app.get("/api/received", asyncHandler(async (req, res) => {
         const user: User = await User.get_existing_user_internal((req as any).internal_id) ?? util.unreachable();
         const available = await Coupon.get_received(user);
         const updated = await Coupon.update_all(available);
+        await UserCoupon.get_all(user, updated);
         res.json(Coupon.primitivize(updated));
     }));
 
@@ -394,6 +396,7 @@ async function main() {
         const user: User = await User.get_existing_user_internal((req as any).internal_id) ?? util.unreachable();
         const sent = await Coupon.get_sent(user);
         const updated = await Coupon.update_all(sent);
+        await UserCoupon.get_all(user, updated);
         res.json(Coupon.primitivize(updated));
     }));
 

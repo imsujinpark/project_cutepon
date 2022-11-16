@@ -1,5 +1,6 @@
 import { Database, Statement } from './sqlite-async.js';
 import { User } from './User.js';
+import { UserCoupon } from './UserCoupon.js';
 import * as util from './util.js';
 
 export enum CouponStatus {
@@ -18,6 +19,7 @@ export class Coupon {
     
     status: CouponStatus;
     finish_date: Date | null;
+    user_data?: any;
 
     private constructor(id: number, title: string, description: string, created_date: Date, expiration_date: Date, origin_user: User, target_user: User, status: CouponStatus, finish_date: Date | null) {
         this.id = id;
@@ -47,7 +49,13 @@ export class Coupon {
             target_user: this.target_user.public_id,
             status: this.status,
             finish_date: this.finish_date ? this.finish_date.getTime() : null,
+            user_data: this.user_data
         }
+    }
+
+    set_user_data(data: UserCoupon): Coupon {
+        this.user_data = data.primitive();
+        return this;
     }
 
     /** Given a list of Coupons, returns a list of the coupons in primitive form */
