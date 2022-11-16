@@ -155,12 +155,12 @@ Returns the same `coupon` but with its data updated (status changed, finish_date
 
 * `DeleteCouponIdMissing`: The coupon id is missing from the request.
 * `DeleteCouponUnknownCoupon`: The coupon id is unknown.
-* `NotImplemented`: When trying to delete a coupon that is not active, the coupon will just be hidden for the user, but this is not implemented yet.
 * `DeleteCouponDeleteActiveNoAuthorized`: When the user is not allowed to delete an active coupon. Only the `target_user` of a coupon may delete an active coupon.
 
-Deletes the `coupon` from the coupon list.
-Active `coupon`s can only be deleted by the target of the `coupon`.
-Deleting a non-active `coupon` will just hide it for the user sending the request (and not the other user). **WARNING: This is not implemented yet!**
+Deletes the `coupon`. This can mean 2 different things.
+* Active `coupon`s can only be deleted by the target of the `coupon`. It will set the coupon as deleted and the coupon wont be redeemable anymore
+* Deleting a non-active `coupon` will just hide, meaning that it wont be visible for that user anymore.
+
 Returns the same `coupon` but with its data updated (status changed, finish_date changed...).
 
 ### POST `/api/send`
