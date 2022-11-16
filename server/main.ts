@@ -33,6 +33,7 @@ async function database_start(): Promise<Database> {
     // await Coupon.reset_table(database);
     await User.initialize_statements(database);
     await Coupon.initialize_statements(database);
+    await UserCoupon.initialize_statements(database);
 
     return database;
 }
