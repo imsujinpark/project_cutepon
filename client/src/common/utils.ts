@@ -203,3 +203,8 @@ export const couponRequest = async (method: Method, api: string, paylaod?: any, 
 		}
 	}
 };
+
+// purge function is to remove state from session storage
+export const purge = async () => {
+	await persistor.purge();
+};

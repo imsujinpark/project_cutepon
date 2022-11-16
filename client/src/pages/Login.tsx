@@ -2,7 +2,8 @@ import { useEffect } from "react";
 import styled from "styled-components";
 import googleLogo from "../assets/google_logo.png";
 import LoginButton from "../components/layout/LoginButton";
-
+// external functions
+import { purge } from "../common/utils";
 // redux related
 import { useDispatch } from "react-redux";
 import { logoutFulfilled } from "../features/userSlice";
@@ -12,11 +13,6 @@ const Login = () => {
 	const dispatch = useDispatch();
 
 	const googleLogin = { title: "Sign in with Google", image: googleLogo };
-
-	// purge function is to remove state from session storage
-	const purge = async () => {
-		await persistor.purge();
-	};
 		
 	// remove any previous login info which is now invalid
 	useEffect(() => {

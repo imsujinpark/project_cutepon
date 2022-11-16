@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-
+// external functions
+import { purge } from "../common/utils";
 // redux related
 import { useDispatch } from "react-redux";
 import { logoutFulfilled } from "../features/userSlice";
@@ -10,11 +11,6 @@ import { setNoticeToast, setWarningToast } from "../features/toastSlice";
 const Logout = () => {
 	const dispatch = useDispatch();
 	const navigate = useNavigate();
-
-	// purge function is to remove state from session storage
-	const purge = async () => {
-		await persistor.purge();
-	};
 
 	useEffect(() => {
 		logout();
