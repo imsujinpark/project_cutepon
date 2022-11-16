@@ -15,6 +15,9 @@ export class Tester {
     current_test_name: string = "No test assigned yet";
     padding: string = "";
     scope_number: number = 0;
+    tests_found = 0;
+    tests_ok = 0;
+    tests_fail = 0;
 
     constructor(name: string, on_start: tester_on_start|null, on_end: tester_on_end|null, all_tests: tester_all_tests) {
         this.name = name;
@@ -64,6 +67,7 @@ export class Tester {
 
     async test(name: string, test_function: () => Promise<void>) {
         
+        this.tests_found++;
         this.log(`test "${name}"`);
         this.scope();
 
@@ -72,11 +76,13 @@ export class Tester {
 
             await test_function();
 
+            this.tests_ok++;
             this.log(`Test OK!`);
 
         }
         catch (e) {
 
+            this.tests_fail++;
             this.log("Test FAILED with exception:");
             this.log(e);
             
@@ -123,6 +129,18 @@ export class Tester {
                 this.log("");
             }
         }
+        
+        this.log(`|************** *  *  *   *`);
+        this.log(`|Found a total of ${this.tests_found}`);
+        this.log(`|Tests passed ${this.tests_ok}`);
+        this.log(`|Tests failed ${this.tests_fail}`);
+        this.log(`|______________ _  _   _  _   _`);
+
+        if (this.tests_fail != 0) {
+            this.log("")
+            this.log(`SOMETHING IS WRONG IN THIS TEST SUIT!`)
+        }
+
         this.descope();
         this.log("");
 
