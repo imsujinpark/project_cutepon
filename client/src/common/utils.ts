@@ -67,10 +67,11 @@ export const dDayCalculator = (epochMs: number): string => {
 };
 
 // epoch date -> string "YYYYMMDD"
-export const dateToYYYYYMMDD = (epochMs: number): string => {
+export const dateToYYYYYMMDDHHMM = (epochMs: number): string => {
 	const date: Date = new Date(epochMs);
 	const dateToString: string = date.toISOString().slice(0, 10).replace(/-/g, "");
-	return dateToString;
+	const timeToString: string = date.toISOString().slice(11, 16).replace(/:/g, "");
+	return dateToString + "-" + timeToString;
 };
 
 // today's date in YYYY-MM-DD for default value in expiration date
@@ -123,10 +124,7 @@ export const couponRequest = async (method: Method, api: string, paylaod?: any, 
 		return {data:  response.data};
 	}
 	catch (error: any){
-		console.log({error: error.response.data.error});
-		console.log({error2: error.response.data.message});
-		console.log(Errors.AuthorizationMissing);
-		
+	
 		if (
 			error.response.data.message &&
             error.response.data.error >= 0

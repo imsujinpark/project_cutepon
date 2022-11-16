@@ -6,7 +6,7 @@ import axios from "axios";
 import { CouponData, CouponStatus } from "../../common/types";
 import useDetectClickOutside from "../../hooks/useDetectClickOutside";
 import Button from "../common/Button";
-import { dateToYYYYYMMDD, dDayCalculator } from "../../common/utils";
+import { dateToYYYYYMMDDHHMM, dDayCalculator } from "../../common/utils";
 // redux related
 import { useDispatch } from "react-redux";
 import { makeCopy } from "../../features/copyCouponSlice";
@@ -146,7 +146,7 @@ const Coupon = ({ data }: UserProps) => {
 					<TailTop>{CouponStatus[status]}</TailTop>
 					<TailBottom>
 						<span>
-                            #{dateToYYYYYMMDD(created_date)}-{id}
+                            #{dateToYYYYYMMDDHHMM(created_date)}-{id}
 						</span>
 						<span>{dDayCalculator(expiration_date)}</span>
 					</TailBottom>
