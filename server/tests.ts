@@ -583,12 +583,6 @@ async function main () {
             // TODO Test that boolean cant be other than 0 or 1
             // TODO Test get coupon (also one that doesnt exists)
             // TODO Test update coupon (also one that doesnt exists)
-            await t.test("Test whether the double primary key is a kept constraint", async () => {
-
-            });
-            await t.test("Test that boolean cant be other than 0 or 1", async () => {
-
-            });
             await t.test("Test get coupon (also one that doesnt exists)", async () => {
                 const user_a = await User.create_new_user("user_a", "A");
                 const user_b = await User.create_new_user("user_b", "B");
@@ -608,8 +602,20 @@ async function main () {
                 const user_coupon_3 = await UserCoupon.get(user_a, coupon);
                 t.expect_equal(user_coupon_1.rowid, user_coupon_3.rowid);
 
-            });
-            await t.test("Test update coupon (also one that doesnt exists)", async () => {
+
+                // user_coupon_1.hidden = true;
+                // await UserCoupon.update(user_coupon_1);
+
+                await t.expect_throw(
+                    async () => {
+                        (user_coupon_1.hidden as any) = 33333;
+                        await UserCoupon.update(user_coupon_1);
+                    },
+                    (error) => {
+                        // console.log(error.stack);
+                        t.expect(error, 'SQLITE_RANGE: column index out of range');
+                    }
+                );
 
             });
         }

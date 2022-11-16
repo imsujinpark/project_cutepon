@@ -9,10 +9,10 @@ export class UserCoupon {
     readonly user: User;
     /** The id of the coupon */
     readonly coupon: Coupon;
-    /** Whether the user has hidden a coupon or not */
-    readonly hidden: boolean;
     /** SQLite internal row id */
     readonly rowid: number;
+    /** Whether the user has hidden a coupon or not */
+    hidden: boolean;
 
     private constructor(user_id: User, coupon_id: Coupon, hidden: boolean, rowid: number) {
         this.user = user_id;
@@ -41,11 +41,15 @@ export class UserCoupon {
     static async initialize_statements(db: Database) {
         UserCoupon.query_get_user_coupon_statement = await db.prepare(UserCoupon.query_get_user_coupon);
         UserCoupon.query_insert_update_user_coupon_statement = await db.prepare(UserCoupon.query_insert_update_user_coupon);
+        UserCoupon.query_insert_ignore_user_coupon_statement = await db.prepare(UserCoupon.query_insert_ignore_user_coupon);
         UserCoupon.initialized = true;
     }
 
-    static query_get_user_coupon = `
+    static query_insert_ignore_user_coupon = `
         insert or ignore into user_coupon (user_id, coupon_id) values (?, ?) returning rowid, *;
+    `;
+    static query_insert_ignore_user_coupon_statement: Statement | null = null;
+    static query_get_user_coupon = `
         select rowid, * from user_coupon where user_id = ? and coupon_id = ?;
     `;
     static query_get_user_coupon_statement: Statement | null = null;
@@ -73,19 +77,33 @@ export class UserCoupon {
             coupon = await Coupon.get(object.coupon_id) ?? util.unreachable();
         }
 
-        return new UserCoupon(object.user_id, object.coupon_id, object.hidden, object.rowid);
+        return new UserCoupon(user, coupon, object.hidden as boolean, object.rowid as number);
     }
 
     // Returns the UserCoupon relationship data
     static async get(user: User, coupon: Coupon): Promise<UserCoupon> {
         UserCoupon.require_initialized();
+
         if (coupon.target_user.internal_id !== user.internal_id && coupon.origin_user.internal_id !== user.internal_id) {
             throw new Error(`The user and coupon have no relationship!`);
         }
+
         try {
-            let result = await UserCoupon.query_get_user_coupon_statement?.get(user.internal_id, coupon.id); // user.internal_id, coupon.id
-            util.log(result);
-            const user_coupon = UserCoupon.parse_object(result, user, coupon);
+            let create_result = await UserCoupon.query_insert_ignore_user_coupon_statement?.get(user.internal_id, coupon.id);
+            if (create_result) {
+                // This will only happen the first time that a UserCoupon is created
+                const user_coupon = await UserCoupon.parse_object(create_result, user, coupon);
+                util.log(`Registered a UserCoupon ${util.inspect(user_coupon)}`);
+                return user_coupon;
+            }
+        }
+        finally {
+            await UserCoupon.query_insert_ignore_user_coupon_statement?.reset();
+        }
+
+        try {
+            let result = await UserCoupon.query_get_user_coupon_statement?.get(user.internal_id, coupon.id);
+            const user_coupon = await UserCoupon.parse_object(result, user, coupon);
             return user_coupon;
         }
         finally {

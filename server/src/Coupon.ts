@@ -62,7 +62,7 @@ export class Coupon {
     static same(a: Coupon, b: Coupon): { isSame: boolean, different?: string } {
         if (a.id !== b.id) return {isSame: false, different: "id"} ;
         if (a.title !== b.title) return {isSame: false, different: "title"} ;
-        if (a.description !== b.description) return {isSame: false, different: "description"} ;
+        if (a.description !== b.description) return { isSame: false, different: "description" };
         if (a.created_date.getTime() !== b.created_date.getTime()) return {isSame: false, different: "created_date"} ;
         if (a.expiration_date.getTime() !== b.expiration_date.getTime()) return {isSame: false, different: "expiration_date"} ;
         if (a.origin_user.internal_id !== b.origin_user.internal_id) return {isSame: false, different: "origin_user"} ;
