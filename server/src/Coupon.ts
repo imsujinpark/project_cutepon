@@ -218,13 +218,13 @@ export class Coupon {
 
     /** Pass origin and target user if you know for sure who they are, else just pass null and it will be check inside the function */
     static async parse_object(object: any, origin_user: User | null, target_user?: User | null): Promise<Coupon> {
-        if (!object.id) util.unreachable("parse coupon is missing field id!")
-        if (!object.title) util.unreachable("parse coupon is missing field title!")
-        if (!object.description) util.unreachable("parse coupon is missing field description!")
-        if (!object.created_date) util.unreachable("parse coupon is missing field created_date!")
-        if (!object.expiration_date) util.unreachable("parse coupon is missing field expiration_date!")
-        if (!object.origin_user) util.unreachable("parse coupon is missing field origin_user!")
-        if (!object.target_user) util.unreachable("parse coupon is missing field target_user!")
+        if (object.id === null || object.id === undefined) util.unreachable("parse coupon is missing field id!")
+        if (object.title === null || object.title === undefined) util.unreachable("parse coupon is missing field title!")
+        if (object.description === null || object.description === undefined) util.unreachable("parse coupon is missing field description!")
+        if (object.created_date === null || object.created_date === undefined) util.unreachable("parse coupon is missing field created_date!")
+        if (object.expiration_date === null || object.expiration_date === undefined) util.unreachable("parse coupon is missing field expiration_date!")
+        if (object.origin_user === null || object.origin_user === undefined) util.unreachable("parse coupon is missing field origin_user!")
+        if (object.target_user === null || object.target_user === undefined) util.unreachable("parse coupon is missing field target_user!")
         if (object.status === null || object.status === undefined) util.unreachable("parse coupon is missing field status!")
         if (!object.finish_date === undefined) util.unreachable("parse coupon is missing field finish_date!")
 
