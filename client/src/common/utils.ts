@@ -80,19 +80,36 @@ export const nowToYYYYMMDD = (): string => {
 	return nowToString;
 };
 
-type Method = "get" | "post";
-// isRefreshabled: true means silentRefresh() function has not yet been called. This will prevent stackoverflow from recursion.
-export const couponRequest = async (method: Method, api: string, paylaod?: any, axiosOptions?: any, isRefreshable = true): Promise<any> => {
-	const dispatch = useDispatch();
-	const navigate = useNavigate();
+// gets login information from session storage (replacing useSelector in non-react functions)
+export const getLoginInfoFromSessionStorage = () => {
+	// access data saved by redux persist
+	const stringSessionStorage = sessionStorage.getItem("persist:root");
+	if (stringSessionStorage === null) {
+		// initial value of login status from loginSlice
+		return {isLoggedin: false, token: null, refreshToken: null};
+	}
+	else {
+		const {user} = JSON.parse(stringSessionStorage);
+		const {isLoggedin, token, refreshToken} = JSON.parse(user);
+		return {isLoggedin, token, refreshToken};
+	}
+};
 
-	// login status
-	const { refreshToken } = useSelector(
-		(state: RootState) => {
-			return state.user;
-		}
-	);
-    
+type Method = "get" | "post";
+/**
+ * @param headers 
+ * @param isRefreshable true means silentRefresh() function has not yet been called. This will prevent stackoverflow from recursion.
+ * @returns 
+ * When successful, {data: response.data}
+ * when error is handled and navigate is needed, {message: "this is a message used for toast", path: "/login"}
+ * when error is handled but navigate is not needed, {message: "this is a message used for toast"}
+ * when errer could not be handled {error: error.response.data}
+ */
+export const couponRequest = async (method: Method, api: string, paylaod?: any, axiosOptions?: any, isRefreshable = true): Promise<any> => {
+
+	// refresh token from session storage
+	const {refreshToken} = getLoginInfoFromSessionStorage();
+	
 	try {
 		let response;
 		switch (method) {
@@ -100,107 +117,89 @@ export const couponRequest = async (method: Method, api: string, paylaod?: any, 
 				response = await axios.get(api, axiosOptions);
 			} break;
 			case "post": {
-				response = await axios.post(api, axiosOptions);
+				response = await axios.post(api, paylaod, axiosOptions);
 			} break;
 		}
-		return response.data;
+		return {data:  response.data};
 	}
 	catch (error: any){
-
+		console.log({error: error.response.data.error});
+		console.log({error2: error.response.data.message});
+		console.log(Errors.AuthorizationMissing);
+		
 		if (
 			error.response.data.message &&
-            error.response.data.error
+            error.response.data.error >= 0
 		) {
 			switch (error.response.data.error) {
 				case Errors.AuthorizationMissing: {
-					dispatch(setWarningToast("You are not logged in"));
-					navigate("/login");
-				} break;
-        
+					return {message: "You are not logged in", path: "/login"};
+				} 
+
 				case Errors.AuthorizationExpired: {
 					if (refreshToken !== null && isRefreshable && await silentRefresh(refreshToken)) {
 						return couponRequest(method, api, paylaod, axiosOptions, false);
 					}
 					else {
-						dispatch(setWarningToast("Login information has expired"));
-						navigate("/login");
+						return {message: "Login information has expired", path: "/login"};
 					}
-				} break;
+				} 
         
 				case Errors.AuthorizationInvalid: {
 					if (refreshToken !== null && isRefreshable && await silentRefresh(refreshToken)) {
 						return couponRequest(method, api, paylaod, axiosOptions, false);
 					}
 					else {
-						dispatch(setWarningToast("Login information is invalid"));
-						navigate("/login");
+						return {message: "Login information is invalid", path: "/login"};
 					}
-				} break;
+				}
         
 				case Errors.RegistrationInvalidEmail: {
-					dispatch(
-						setWarningToast(
-							"Please confirm your email with the provider"
-						)
-					);
-					return;
+					return {message: "Please confirm your email with the provider"};
 				}
         
 				case Errors.SendCouponTargetUnknown: {
-					dispatch(setWarningToast("Receiver not recognised"));
-					return;
+					return {message: "Receiver not recognised"};
 				}	
         
 				case Errors.SendCouponTargetMissing: {
-					dispatch(setWarningToast("No receiver information"));
-					return;
+					return {message: "No receiver information"};
 				}
         
 				case Errors.RedeemCouponIdMissing: {
-					dispatch(setWarningToast("Coupon ID is missing"));
-					return;
+					return {message: "Coupon ID is missing"};
 				}
         
 				case Errors.RedeemCouponUnknownCoupon: {
-					dispatch(setWarningToast("Invalid coupon"));
-					return;
+					return {message: "Invalid coupon"};
 				}
         
 				case Errors.RedeemCouponWrongOwner: {
-					dispatch(
-						setWarningToast(
-							"This coupon does not belong to you"
-						)
-					);
-					return;
+					return {message: "This coupon does not belong to you"};
 				}
         
 				case Errors.RedeemCouponExpired: {
-					dispatch(setWarningToast("Coupon is expired"));
-					return;
+					return {message: "Coupon is expired"};
 				}
         
 				case Errors.RedeemCouponNotActive: {
-					dispatch(setWarningToast("Coupon is already disabled"));
-					return;
+					return {message: "Coupon is already disabled"};
 				}
         
 				case Errors.RateLimitExceeded: {
-					dispatch(
-						setWarningToast("Request rate exceeded the limit")
-					);
-					return;
+					return {message: "Request rate exceeded the limit"};
 				}
         
 				case Errors.Internal: {
-					dispatch(setWarningToast("Unexpected error"));
-				}	break;
+					return {message: "Unexpected error"};
+				}
 			}
-			return error.response.data;
+			return {error: error.response.data};
 		}
 		else {
 			// The error is from axios, so throw it
-			throw error;
+			// throw error;
+			return {error: error};
 		}
 	}
 };
