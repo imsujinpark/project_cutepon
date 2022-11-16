@@ -69,7 +69,7 @@ const NewCoupon = () => {
 	const navigate = useNavigate();
 
 	// login status
-	const { isLoggedIn, token, refreshToken } = useSelector(
+	const { isLoggedIn } = useSelector(
 		(state: RootState) => {
 			return state.user;
 		}

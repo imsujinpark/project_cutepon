@@ -13,7 +13,7 @@ const CustomToast = () => {
 	const [toastAnimation, setToastAnimation] = useState("openAnimation");
 	const dispatch = useDispatch();
 
-	const { showToast, message, mode } = useSelector((state: RootState) => {
+	const { message, mode } = useSelector((state: RootState) => {
 		return state.toast;
 	});
 

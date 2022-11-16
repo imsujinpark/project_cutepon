@@ -1,10 +1,9 @@
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
 
 import { Errors } from "./types";
 // redux related
 import { loginFulfilled, logoutFulfilled } from "../features/userSlice";
-import store,  { RootState } from "../store";
+import store from "../store";
 import { persistor } from "../index";
 
 // a function to ask server for new token every 30 min

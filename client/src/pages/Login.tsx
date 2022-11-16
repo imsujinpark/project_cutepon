@@ -7,7 +7,6 @@ import { purge } from "../common/utils";
 // redux related
 import { useDispatch } from "react-redux";
 import { logoutFulfilled } from "../features/userSlice";
-import { persistor } from "../index";
 
 const Login = () => {
 	const dispatch = useDispatch();

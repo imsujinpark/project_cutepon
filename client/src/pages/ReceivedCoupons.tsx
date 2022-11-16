@@ -52,6 +52,7 @@ const ReceivedCoupons = () => {
 
 	const getCoupons = async () => {
 		const {data, message, path, error} = await couponRequest("get", "/api/received");
+		console.log(data);
 		
 		// Unhandled server error
 		if (error) {
