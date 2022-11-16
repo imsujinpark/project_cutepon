@@ -18,6 +18,7 @@ const { json: body_as_json } = pkg;
 import { install as soure_map_support } from 'source-map-support';
 import rateLimit from 'express-rate-limit'
 import * as util from './src/util.js';
+import { UserCoupon } from './src/UserCoupon.js';
 
 async function database_start(): Promise<Database> {
     
@@ -361,6 +362,10 @@ async function main() {
             
             return response_error(res, Errors.NotImplemented, next);
             // TODO Hide the coupon for both sender and receiver
+
+            const user_coupon = await UserCoupon.get(user, coupon_to_delete);
+            user_coupon.hidden = true;
+            await UserCoupon.update(user_coupon);
 
         }
         else {
