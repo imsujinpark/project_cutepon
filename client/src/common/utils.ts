@@ -3,14 +3,13 @@ import { useNavigate } from "react-router-dom";
 
 import { Errors } from "./types";
 // redux related
-import { useDispatch, useSelector } from "react-redux";
-import { setNoticeToast, setWarningToast } from "../features/toastSlice";
-import { loginFulfilled } from "../features/userSlice";
+import { loginFulfilled, logoutFulfilled } from "../features/userSlice";
 import store,  { RootState } from "../store";
+import { persistor } from "../index";
 
 // a function to ask server for new token every 30 min
 export const silentRefresh = async (refreshToken: string): Promise<boolean> => {
-	// Token expire time (30 min)
+	// Interval between silentRefresh callbacks (30 min)
 	const TOKEN_EXPIRY_TIME = 30 * 60 * 1000;
 
 	try {
@@ -34,7 +33,6 @@ export const silentRefresh = async (refreshToken: string): Promise<boolean> => {
 		// set the new token as default header for http request
 		axios.defaults.headers.common["Authorization"] = data.token;
 		return true;
-
 	}
 	catch (error: any) {
 		if (
@@ -46,7 +44,9 @@ export const silentRefresh = async (refreshToken: string): Promise<boolean> => {
 		else {
 			console.log(error);
 		}
-		// log out redux needed here
+		// log out if refresh fails
+		store.dispatch(logoutFulfilled());
+		setTimeout(() => purge(), 1000); 
 		return false;
 	}
 };
