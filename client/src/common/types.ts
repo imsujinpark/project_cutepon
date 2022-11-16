@@ -17,6 +17,7 @@ export type CouponData = {
     target_user?: string;
     status: CouponStatus;
     // finish_date: number | null;
+    // user_data: {hidden: number};
 };
 
 export type DropdownMenuData = {
@@ -34,7 +35,7 @@ export type OptionType = {
 
 // enum to show coupon status
 export enum CouponStatus {
-    Active, Redeemed, Expired, Deleted
+    Active, Redeemed, Deleted, Expired
 }
 // 1 -> Console.log(CouponStatus.Redeemed)
 // "Redeemed" -> Console.log(CouponStatus[CouponStatus.Redeemed])
