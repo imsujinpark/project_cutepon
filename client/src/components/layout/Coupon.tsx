@@ -154,7 +154,11 @@ const Coupon = ({ data }: UserProps) => {
 			{isClicked && (
 				<ButtonWrapper>
 					<Button
-						content="Delete"
+						// change status to deleted from active coupons, disabled coupons will hide disabled coupons
+						content={pathname === "/received/active" || pathname === "/sent/active" 
+							? "Delete" 
+							: "Hide"
+						}
 						className="grey"
 						onClick={handleDelete}
 					/>
