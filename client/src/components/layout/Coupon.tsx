@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import styled from "styled-components";
 import axios from "axios";
 
-import { CouponData, CouponStatus, Errors } from "../../common/types";
+import { CouponData, CouponStatus } from "../../common/types";
 import useDetectClickOutside from "../../hooks/useDetectClickOutside";
 import Button from "../common/Button";
 import { dateToYYYYYMMDD, dDayCalculator } from "../../common/utils";
@@ -164,7 +164,7 @@ const Coupon = ({ data }: UserProps) => {
 						className="lightpink"
 						onClick={handleSendCopy}
 					/>
-					{status === CouponStatus.Active && (
+					{pathname === "/received/active" && (
 						<Button
 							content="Redeem"
 							className="primary"
