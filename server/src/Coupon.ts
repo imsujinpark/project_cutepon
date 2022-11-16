@@ -226,7 +226,7 @@ export class Coupon {
         if (object.origin_user === null || object.origin_user === undefined) util.unreachable("parse coupon is missing field origin_user!")
         if (object.target_user === null || object.target_user === undefined) util.unreachable("parse coupon is missing field target_user!")
         if (object.status === null || object.status === undefined) util.unreachable("parse coupon is missing field status!")
-        if (!object.finish_date === undefined) util.unreachable("parse coupon is missing field finish_date!")
+        if (object.finish_date === undefined) util.unreachable("parse coupon is missing field finish_date!")
 
         if (!origin_user) {
             origin_user = await User.get_existing_user_internal(object.origin_user);
