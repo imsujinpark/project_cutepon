@@ -13,8 +13,6 @@ import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../store";
 import { setWarningToast } from "../features/toastSlice";
 
-import axios from "axios";
-
 const ReceivedCoupons = () => {
 	const [couponData, setCouponData] = useState<CouponData[]>([]);
 	const [activeCoupons, setActiveCoupons] = useState<CouponData[]>([]);
@@ -46,21 +44,31 @@ const ReceivedCoupons = () => {
 			setActiveCoupons([...filteredArr]);
 		}
 		else {
-			const filteredArr = couponData.filter((data) => data.status !== 0);
+			// data.status: 0 = active, 3 = deleted (hide deleted in disabled)
+			const filteredArr = couponData.filter((data) => data.status !== 0 && data.status !== 3);
 			setDisabledCoupons([...filteredArr]);
 		}
 	}, [status, couponData]);
 
 	const getCoupons = async () => {
-		const response = await couponRequest("get", "/api/received");
+		const {data, message, path, error} = await couponRequest("get", "/api/received");
+		
 		// Unhandled server error
-		if (response.error) {
-			console.log(response.error);
+		if (error) {
+			console.log(error);
+		}
+		// handled server error requires warning toast & navigate action
+		else if (message && path) {
+			dispatch(setWarningToast(message));
+			navigate(path);
+		}
+		// handled server error requires only warning toast
+		else if (message) {
+			dispatch(setWarningToast(message));
 		}
 		// no error
 		else {
-			console.log(response);
-			setCouponData(response);
+			setCouponData([...data]);
 		}
 	};
 

@@ -34,7 +34,7 @@ export type OptionType = {
 
 // enum to show coupon status
 export enum CouponStatus {
-    Active, Redeemed, Deleted, Expired
+    Active, Redeemed, Expired, Deleted
 }
 // 1 -> Console.log(CouponStatus.Redeemed)
 // "Redeemed" -> Console.log(CouponStatus[CouponStatus.Redeemed])
