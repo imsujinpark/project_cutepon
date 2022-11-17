@@ -4,10 +4,8 @@ import styled, { keyframes } from "styled-components";
 // external components & fuctions
 import Button from "../common/Button";
 import DummyCoupon from "./DummyCoupon";
-import { couponRequest, nowToYYYYMMDD } from "../../common/utils";
+import { nowToYYYYMMDD } from "../../common/utils";
 import { FormValues } from "../../common/types";
-// redux related
-import { useDispatch } from "react-redux";
 
 const LandingBeforeLogin = () => {
 	const dummyData: FormValues = {
