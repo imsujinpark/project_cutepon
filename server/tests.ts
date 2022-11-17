@@ -10,6 +10,7 @@ import fs from 'fs';
 import * as util from "./src/util.js";
 import { assert } from 'console';
 import { UserCoupon } from './src/UserCoupon.js';
+import { SessionError, SessionsManager } from './src/sessions.js';
 
 async function main () {
     
@@ -606,16 +607,131 @@ async function main () {
                 // user_coupon_1.hidden = true;
                 // await UserCoupon.update(user_coupon_1);
 
-                await t.expect_throw(
-                    async () => {
-                        (user_coupon_1.hidden as any) = 33333;
-                        await UserCoupon.update(user_coupon_1);
-                    },
-                    (error) => {
-                        // console.log(error.stack);
-                        t.expect(error, 'SQLITE_RANGE: column index out of range');
-                    }
-                );
+                (user_coupon_1.hidden as any) = 33333;
+                t.expect((user_coupon_1.hidden as any) === 33333)
+                // It wont fail even though the database has a constraint check
+                // because update has a failsafe and transfroms it to boolean
+                await UserCoupon.update(user_coupon_1);
+
+            });
+        }
+    ).run();
+
+    await new Tester(
+        "Sessions tests!",
+        null,
+        null,
+        async (t:Tester) => {
+
+            await t.test("make session and verify token", async () => {
+                
+                const s = new SessionsManager();
+                
+                const tokens = s.make_session(1);
+                t.expect(s.sessions.size === 1);
+                t.expect(s.sessions_long.size === 1);
+                t.expect(s.user_sessions.size === 1);
+
+                const verification1 = s.verify_token("non-existing token");
+                t.expect(verification1 === SessionError.InvalidToken)
+
+                const verification2 = s.verify_token(tokens.refresh_token);
+                t.expect(verification2 === SessionError.InvalidToken)
+
+                const verification3 = s.verify_token(tokens.token);
+                t.expect(verification3 !== SessionError.InvalidToken);
+                t.expect(verification3 !== SessionError.ExpiredToken);
+                t.expect(verification3.user_id === 1);
+
+                t.expect(s.sessions.size === 1);
+                t.expect(s.sessions_long.size === 1);
+                t.expect(s.user_sessions.size === 1);
+
+            });
+
+            await t.test("make session and refresh token", async () => {
+                
+                const s = new SessionsManager();
+                
+                const tokens1 = s.make_session(1);
+                t.expect(s.sessions.size === 1);
+                t.expect(s.sessions_long.size === 1);
+                t.expect(s.user_sessions.size === 1);
+
+                const verification1 = s.verify_token(tokens1.token);
+                t.expect(verification1 !== SessionError.InvalidToken);
+                t.expect(verification1 !== SessionError.ExpiredToken);
+                t.expect(verification1.user_id === 1);
+
+                const refresh1 = s.refresh_session(tokens1.token);
+                t.expect(refresh1 === SessionError.InvalidToken);
+
+                const tokens2 = s.refresh_session(tokens1.refresh_token);
+                t.expect(tokens2 !== SessionError.InvalidToken);
+                t.expect(tokens2 !== SessionError.ExpiredToken);
+                t.expect(tokens2.token !== tokens1.token)
+                t.expect(tokens2.refresh_token !== tokens1.refresh_token)
+
+                const verification2 = s.verify_token(tokens1.token);
+                t.expect(verification2 === SessionError.InvalidToken);
+
+                const verification3 = s.verify_token(tokens2.token);
+                t.expect(verification3 !== SessionError.InvalidToken);
+                t.expect(verification3 !== SessionError.ExpiredToken);
+
+                t.expect(s.sessions.size === 1);
+                t.expect(s.sessions_long.size === 1);
+                t.expect(s.user_sessions.size === 1);
+
+            });
+
+            await t.test("make session and make session again", async () => {
+                
+                const s = new SessionsManager();
+                
+                const tokens1 = s.make_session(1);
+                t.expect(s.sessions.size === 1);
+                t.expect(s.sessions_long.size === 1);
+                t.expect(s.user_sessions.size === 1);
+
+                const tokens2 = s.make_session(1);
+                t.expect(s.sessions.size === 1);
+                t.expect(s.sessions_long.size === 1);
+                t.expect(s.user_sessions.size === 1);
+
+                // different tokens, same user
+                t.expect(tokens2.token !== tokens1.token);
+                t.expect(tokens2.refresh_token !== tokens1.refresh_token);
+
+            });
+
+            await t.test("make session with id 0 (damn js)", async () => {
+                
+                const s = new SessionsManager();
+                
+                const tokens1 = s.make_session(0);
+                t.expect(s.sessions.size === 1);
+                t.expect(s.sessions_long.size === 1);
+                t.expect(s.user_sessions.size === 1);
+
+                const verification1 = s.verify_token(tokens1.token);
+                t.expect(verification1 !== SessionError.InvalidToken);
+                t.expect(verification1 !== SessionError.ExpiredToken);
+                t.expect(verification1.user_id === 0);
+
+                const tokens2 = s.make_session(0);
+                t.expect(s.sessions.size === 1);
+                t.expect(s.sessions_long.size === 1);
+                t.expect(s.user_sessions.size === 1);
+
+                // different tokens, same user
+                t.expect(tokens2.token !== tokens1.token);
+                t.expect(tokens2.refresh_token !== tokens1.refresh_token);
+
+                const verification2 = s.verify_token(tokens2.token);
+                t.expect(verification2 !== SessionError.InvalidToken);
+                t.expect(verification2 !== SessionError.ExpiredToken);
+                t.expect(verification1.user_id === 0);
 
             });
         }

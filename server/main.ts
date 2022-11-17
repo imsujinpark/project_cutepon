@@ -19,6 +19,7 @@ import { install as soure_map_support } from 'source-map-support';
 import rateLimit from 'express-rate-limit'
 import * as util from './src/util.js';
 import { UserCoupon } from './src/UserCoupon.js';
+import { SessionError, SessionsManager } from './src/sessions.js';
 
 async function database_start(): Promise<Database> {
     
@@ -158,7 +159,7 @@ interface user_data {
     name: string,
     email: string,
     unique_id: string,
-    pciture: string,
+    picture: string,
 };
 
 async function get_or_register_user(data: user_data): Promise<User> {
@@ -246,6 +247,9 @@ const asyncHandler = (fn: RequestHandler) => (req: Request, res: Response, next:
 async function main() {
 
     verify_environment();
+
+    const sessions: SessionsManager = new SessionsManager()
+
     const database = await database_start();
     const app = express();
     
@@ -257,7 +261,6 @@ async function main() {
         next();
     });
 
-    // TODO Add error and explanations to docs
     // Rate limit `/api/*` to 250 request per 15 minutes
     // Send `Errors.RateLimitExceeded` if exceeded
     // Test with powershel:
@@ -273,25 +276,14 @@ async function main() {
     /** cors configuration */
     app.use(cors());
 
-    /** token -> token_data */
-    const sessions = new Map<string, token_data>();
-    /** refresh_token -> refresh_token_data */
-    const sessions_long = new Map<string, token_data>();
-    /** internal_id -> user_tokens */
-    const user_sessions = new Map<number, user_tokens>();
-
     /** Anything in the path /api/* is a protected route and needs to be accessed with proper authorization */
     app.use('/api/*', asyncHandler(async (req, res, next) => {
         const token = req.headers.authorization;
         if(!token) return response_error(res, Errors.AuthorizationMissing, next);
-        const user_session = sessions.get(token);
-        
-        if (!user_session) return response_error(res, Errors.AuthorizationInvalid, next);
-        
-        if (Date.now().valueOf() > user_session.expiration) return response_error(res, Errors.AuthorizationExpired, next);
-        
-        // TODO: This is pretty ugly... is there a better way?
-        (req as any).internal_id = user_session.internal_id;
+        const result = sessions.verify_token(token);
+        if (result === SessionError.InvalidToken) return response_error(res, Errors.AuthorizationInvalid, next);
+        else if (result === SessionError.ExpiredToken) return response_error(res, Errors.AuthorizationExpired, next);
+        (req as any).internal_id = result.user_id;
         next();
     }));
 
@@ -392,22 +384,12 @@ async function main() {
     }));
 
     app.get("/refresh_token", (req, res, next) => {
-        const auth = req.headers.authorization;
-        if(!auth) return response_error(res, Errors.AuthorizationMissing, next);
-        const refresh_token = sessions_long.get(auth);
-        if (!refresh_token) return response_error(res, Errors.AuthorizationInvalid, next);
-        if (Date.now().valueOf() > refresh_token.expiration) return response_error(res, Errors.AuthorizationExpired, next);
-        const user_tokens = user_sessions.get(refresh_token.internal_id);
-        if (!user_tokens) {
-            util.unreachable("Unreachable! The user somehow has a valid refresh token but not sessions?");
-        }
-        sessions.delete(user_tokens.token);
-        const expiration_short = new Date().getTime() + util.hour_in_ms * 1;
-        const token = uuid.v4();
-        sessions.set(token, {internal_id: refresh_token.internal_id, token: token, expiration: expiration_short});
-        const tokens = {token, refresh_token: refresh_token.token};
-        user_sessions.set(refresh_token.internal_id, tokens);
-        res.json(tokens);
+        const refresh_token = req.headers.authorization;
+        if(!refresh_token) return response_error(res, Errors.AuthorizationMissing, next);
+        const result = sessions.refresh_session(refresh_token);
+        if (result === SessionError.ExpiredToken) return response_error(res, Errors.AuthorizationExpired, next);
+        else if (result === SessionError.InvalidToken) return response_error(res, Errors.AuthorizationInvalid, next);
+        res.json(result);
     });
 
     app.get('/oauth2/google', function handleGoogleLogin(req, res) {
@@ -439,34 +421,16 @@ async function main() {
         if (!code) util.unreachable("No code found on oauth callback");
         const api_access = await googleapi_token(code.toString()) ;
         const user_details = await googleapi_oauth2_v2_userinfo(api_access.access_token);
-        if(!user_details.verified_email) response_error(res, Errors.RegistrationInvalidEmail, next);
+        if(!user_details.verified_email) return response_error(res, Errors.RegistrationInvalidEmail, next);
         const user_data: user_data = {
             name: user_details.name,
             email: user_details.email,
             unique_id: user_details.id,
-            pciture: user_details.picture,
+            picture: user_details.picture,
         }
         const user: User = await get_or_register_user(user_data);
-        // TODO fix the issues with jwt stuff...
-        // https://medium.com/@Flowlet/a-quick-introduction-to-json-web-tokens-jwt-and-jose-95f6e06b7bf7
-        // const jwt_token = await generate_user_token(user.internal_id, user.public_id)
-        // const jwt_refresh_token = await generate_user_token_long(user.internal_id, user.public_id)
-        const old_sessions = user_sessions.get(user.internal_id);
-        if (old_sessions) {
-            sessions_long.delete(old_sessions.refresh_token);
-            sessions.delete(old_sessions.token);
-        }
-        const hour_in_ms = 3600000;
-        const expiration_short = new Date().getTime() + hour_in_ms * 1;
-        const expiration_long = new Date().getTime() + hour_in_ms * 2;
-        const token = uuid.v4();
-        sessions.set(token, {internal_id: user.internal_id, token: token, expiration: expiration_short});
-        const refresh_token = uuid.v4();
-        sessions_long.set(refresh_token, {internal_id: user.internal_id, token: refresh_token, expiration: expiration_long});
-        const authorized_tokens = {token, refresh_token};
-        user_sessions.set(user.internal_id, authorized_tokens);
-        console.log({tokens: authorized_tokens});
-        res.redirect(`/oauth2/tokens?${new URLSearchParams(authorized_tokens).toString()}`);
+        const tokens = sessions.make_session(user.internal_id);
+        res.redirect(`/oauth2/tokens?${new URLSearchParams({...tokens}).toString()}`);
     }));
 
     /** serve all the files where the react app will be */
