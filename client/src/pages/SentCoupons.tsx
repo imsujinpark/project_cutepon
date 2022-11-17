@@ -45,7 +45,7 @@ const SentCoupons = () => {
 		}
 		else {
 			// data.status: 0 = active, 3 = deleted (hide deleted in disabled)
-			const filteredArr = couponData.filter((data) => data.status !== 0 && data.status !== 3);
+			const filteredArr = couponData.filter((data) => data.status !== 0 && data.status !== 2);
 			setDisabledCoupons([...filteredArr]);
 		}
 	}, [status, couponData]);
