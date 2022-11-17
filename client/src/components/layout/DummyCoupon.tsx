@@ -13,8 +13,9 @@ import { setNoticeToast } from "../../features/toastSlice";
 type UserProps = {
     data: FormValues;
     className: string;
+    redeemHandler?: () => void;
 };
-const DummyCoupon = ({ data, className }: UserProps) => {
+const DummyCoupon = ({ data, className, redeemHandler}: UserProps) => {
 	const {
 		target_user,
 		title,
@@ -95,22 +96,13 @@ const DummyCoupon = ({ data, className }: UserProps) => {
 					<Button
 						content="Redeem"
 						className="primary"
-						onClick={handleRedeem}
+						onClick={redeemHandler}
 					/>
 				</ButtonWrapper>
 			)}
 		</OuterContainer>
 	);
 };
-// keyframes animation
-const fadeIn = keyframes`
-    from {
-		opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
-`;
 const shake = keyframes`
     5%, 45% {
         transform: translate3d(-1px, 0, 0);
@@ -137,7 +129,6 @@ const OuterContainer = styled.div`
     width: 360px;
     height: 120px;
     margin: 4px 0;
-    animation: ${fadeIn} 0.5s;
     &.shake {
         animation: ${shake} 2s infinite;
     }
