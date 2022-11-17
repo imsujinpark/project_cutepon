@@ -130,6 +130,32 @@ async function get_or_register_user(data: user_data): Promise<User> {
     }
 }
 
+// TODO add "isGuest" in User table
+// TODO design guest user, how should they work?
+async function new_guest(): Promise<User | null> {
+    let unique_id: string;
+    let public_id: string;
+    let tries = 0;
+    
+    while (true) {
+        unique_id = "guest-" + uuid.v4();
+        public_id = "guest-" + uuid.v4();
+        let by_unique = await User.get_existing_user_unique(unique_id);
+        let by_public = await User.get_existing_user_public(public_id);
+        if (by_public || by_unique) {
+            // try again
+            tries++;
+            if (tries > 5) return null;
+            continue;
+        }
+        else {
+            break;
+        }
+    }
+
+    return await User.create_new_user(unique_id, public_id);
+}
+
 enum Errors {
     AuthorizationMissing,
     AuthorizationExpired,
