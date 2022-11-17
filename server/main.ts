@@ -286,18 +286,6 @@ async function main() {
         if(!token) return response_error(res, Errors.AuthorizationMissing, next);
         const user_session = sessions.get(token);
         
-        if (!user_session && token === "ADMIN1") {
-            const user: User = await User.get_existing_user_public("oscaraguinagalde@gmail.com") ?? util.unreachable();
-            (req as any).internal_id = user.internal_id;
-            return next();
-        }
-
-        if (!user_session && token === "ADMIN2") {
-            const user: User = await User.get_existing_user_public("imsujinpark@gmail.com") ?? util.unreachable();
-            (req as any).internal_id = user.internal_id;
-            return next();
-        }
-        
         if (!user_session) return response_error(res, Errors.AuthorizationInvalid, next);
         
         if (Date.now().valueOf() > user_session.expiration) return response_error(res, Errors.AuthorizationExpired, next);
