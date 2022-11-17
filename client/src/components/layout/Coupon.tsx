@@ -25,6 +25,7 @@ const Coupon = ({ data }: UserProps) => {
 		description,
 		created_date,
 		expiration_date,
+		finish_date,
 		status,
 	} = data;
 
@@ -36,6 +37,10 @@ const Coupon = ({ data }: UserProps) => {
 	// to check whether the component is used in received or sent
 	const { pathname } = useLocation();
 
+	// change finish date: string -> Date -> change time to 23:59 local (number)
+	const stringToDate = new Date(finish_date);
+	const finishDateToMidnightNum = stringToDate.setHours(23, 59, 59, 999);
+	
 	// changes epoch number to "YYYY-MM-DD" string
 	const epochToString = (epoch: number) => {
 		const date: Date = new Date(epoch);
@@ -49,7 +54,9 @@ const Coupon = ({ data }: UserProps) => {
 
 	const handleDelete = async () => {
 		setIsClicked(false);
-		const payload = { coupon_id: id };
+		const payload = {
+			coupon_id: id 
+		};
 
 		const {data, message, path, error} = await couponRequest("post", "/api/delete", payload);
 		
@@ -89,7 +96,9 @@ const Coupon = ({ data }: UserProps) => {
 
 	const handleRedeem = async () => {
 		setIsClicked(false);
-		const payload = { coupon_id: id };
+		const payload = {
+			coupon_id: id 
+		};
 
 		const {data, message, path, error} = await couponRequest("post", "/api/redeem", payload);
 		
@@ -147,7 +156,13 @@ const Coupon = ({ data }: UserProps) => {
 						<span>
                             #{dateToYYYYYMMDDHHMM(created_date)}-{id}
 						</span>
-						<span>{dDayCalculator(expiration_date)}</span>
+						<span>{
+							// if active, show expiration date/ if expired show finish date
+							pathname === "/received/active" ||
+							pathname === "/sent/active" 
+								? dDayCalculator(expiration_date) 
+								: dDayCalculator(finishDateToMidnightNum)}
+						</span>
 					</TailBottom>
 				</InnerContainer>
 			</Container>

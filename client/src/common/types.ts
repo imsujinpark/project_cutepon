@@ -16,7 +16,7 @@ export type CouponData = {
     origin_user?: string;
     target_user?: string;
     status: CouponStatus;
-    // finish_date: number | null;
+    finish_date: number;
     // user_data: {hidden: number};
 };
 
