@@ -1,4 +1,4 @@
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 
 type Class = {
     className?: string;
@@ -18,7 +18,28 @@ const Button = ({ className, content, onClick, disabled }: Class) => {
 		</StyledButton>
 	);
 };
+// keyframes animation
+const shake = keyframes`
+    5%, 45% {
+        transform: translate3d(-1px, 0, 0);
+    }
 
+    10%, 40% {
+        transform: translate3d(2px, 0, 0);
+    }
+
+    15%, 25%, 35% {
+        transform: translate3d(-4px, 0, 0);
+    }
+
+    20%, 30% {
+        transform: translate3d(4px, 0, 0);
+    }
+    50% {
+        transform: translate3d(0px, 0, 0);
+    }
+`;
+// styled components
 const StyledButton = styled.button`
     width: 100px;
     height: 48px;
@@ -62,6 +83,12 @@ const StyledButton = styled.button`
         height: 30px;
         font-size: 10px;
     }
+    &.large {
+        max-width: 98vw;
+        width: 352px;
+        height: 36px;
+        font-size: 13px;
+    }
     &.curve {
         border-radius: 12px;
     }
@@ -75,6 +102,9 @@ const StyledButton = styled.button`
         &:active {
             transform: translateY(0px);
         }
+    }
+    &.shake {
+        animation: ${shake} 2s infinite;
     }
 `;
 
