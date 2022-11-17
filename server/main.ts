@@ -39,22 +39,6 @@ async function database_start(): Promise<Database> {
     return database;
 }
 
-function database_close(database: Database) {
-    console.log("Closing " + {database});
-    database.close();
-}
-
-interface token_data {
-    token: string,
-    internal_id: number,
-    expiration: number
-};
-
-interface user_tokens {
-    token: string,
-    refresh_token: string,
-};
-
 function verify_environment(): void {
     util.require_not_null(process.env.APP_DOMAIN);
     util.require_not_null(process.env.JWT_SECRET);
@@ -63,32 +47,6 @@ function verify_environment(): void {
     util.require_not_null(process.env.CLIENT_SECRET);
     util.require_not_null(process.env.NODE_ENV);
     util.require_not_null(process.env.NODE_ROOT);
-}
-
-// TODO not working for now...
-// https://medium.com/@Flowlet/a-quick-introduction-to-json-web-tokens-jwt-and-jose-95f6e06b7bf7
-async function generate_user_token(internal_id: number, public_id: string): Promise<string> {
-    const secret = process.env.JWT_SECRET ?? util.throw_expression("JWT_SECRET");
-    const data = { internal_id, public_id };
-    const jwt = jsonwebtoken.sign(data, secret, {expiresIn: '5h'});
-    // const jwt = await new jose.SignJWT(data)
-    //     .setProtectedHeader({ alg: 'ES256' })
-    //     .setExpirationTime('5h')
-    //     .sign(Buffer.from(secret));
-    return jwt;
-}
-
-// TODO not working for now...
-// https://medium.com/@Flowlet/a-quick-introduction-to-json-web-tokens-jwt-and-jose-95f6e06b7bf7
-async function generate_user_token_long(internal_id: number, public_id: string): Promise<string> {
-    const secret = process.env.REFRESH_JWT_SECRET ?? util.throw_expression("REFRESH_JWT_SECRET");
-    const data = { internal_id, public_id };
-    const jwt = jsonwebtoken.sign(data, secret, {expiresIn: '150d'});
-    // const jwt = await new jose.SignJWT(data)
-    //     .setProtectedHeader({ alg: 'ES256' })
-    //     .setExpirationTime('150d')
-    //     .sign(Buffer.from(secret));
-    return jwt;
 }
 
 /** return type of googleapis.com/token */
