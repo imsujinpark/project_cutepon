@@ -50,9 +50,7 @@ function IsolateReRenderTitle({ control }: { control: Control<FormValues> }) {
 }
 
 // character counter for Description
-function IsolateReRenderDescription({
-	control,
-}: {
+function IsolateReRenderDescription({control,}: {
     control: Control<FormValues>;
 }) {
 	const description = useWatch({
@@ -166,7 +164,9 @@ const NewCoupon = () => {
 				<Input
 					type="text"
 					id="title"
-					{...register("title", { value: title })}
+					{...register("title", {
+						value: title 
+					})}
 				/>
 				<IsolateReRenderTitle control={control} />
 				<ErrorMessage className="title">
@@ -176,7 +176,9 @@ const NewCoupon = () => {
 				<Label htmlFor="description">Description</Label>
 				<TextArea
 					id="description"
-					{...register("description", { value: description })}
+					{...register("description", {
+						value: description 
+					})}
 				/>
 				<IsolateReRenderDescription control={control} />
 				<ErrorMessage>{errors.description?.message}</ErrorMessage>

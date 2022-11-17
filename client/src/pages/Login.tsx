@@ -11,7 +11,9 @@ import { logoutFulfilled } from "../features/userSlice";
 const Login = () => {
 	const dispatch = useDispatch();
 
-	const googleLogin = { title: "Continue with Google", image: googleLogo };
+	const googleLogin = {
+		title: "Continue with Google", image: googleLogo 
+	};
 		
 	// remove any previous login info which is now invalid
 	useEffect(() => {

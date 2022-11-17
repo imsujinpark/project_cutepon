@@ -25,6 +25,12 @@
         "brace-style": ["error", "stroustrup"],
         "indent": ["error", "tab", { "SwitchCase": 1 }],
         "semi": ["error", "always"],
-        "quotes": ["error", "double"]
+        "quotes": ["error", "double"],
+        "object-curly-newline": ["error", {
+            "ObjectExpression": "always",
+            "ObjectPattern": { "multiline": true },
+            "ImportDeclaration": { "multiline": true, "minProperties": 5 },
+            "ExportDeclaration": { "multiline": true, "minProperties": 3 }
+        }]
     }
 }

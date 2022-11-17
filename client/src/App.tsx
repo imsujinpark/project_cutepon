@@ -40,7 +40,9 @@ const App = () => {
 		return state.toast;
 	});
 
-	console.log({ isLoggedIn, token, refreshToken });
+	console.log({
+		isLoggedIn, token, refreshToken 
+	});
 
 	// this will let the default headers to be set first before rendering certain components
 	const preventRenderBeforeAuth = async () => {

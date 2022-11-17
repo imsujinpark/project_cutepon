@@ -90,12 +90,16 @@ export const getLoginInfoFromSessionStorage = () => {
 	const stringSessionStorage = sessionStorage.getItem("persist:root");
 	if (stringSessionStorage === null) {
 		// initial value of login status from loginSlice
-		return {isLoggedin: false, token: null, refreshToken: null};
+		return {
+			isLoggedin: false, token: null, refreshToken: null
+		};
 	}
 	else {
 		const {user} = JSON.parse(stringSessionStorage);
 		const {isLoggedin, token, refreshToken} = JSON.parse(user);
-		return {isLoggedin, token, refreshToken};
+		return {
+			isLoggedin, token, refreshToken
+		};
 	}
 };
 
@@ -124,7 +128,9 @@ export const couponRequest = async (method: Method, api: string, paylaod?: any, 
 				response = await axios.post(api, paylaod, axiosOptions);
 			} break;
 		}
-		return {data:  response.data};
+		return {
+			data:  response.data
+		};
 	}
 	catch (error: any){
 	
@@ -134,7 +140,9 @@ export const couponRequest = async (method: Method, api: string, paylaod?: any, 
 		) {
 			switch (error.response.data.error) {
 				case Errors.AuthorizationMissing: {
-					return {message: "You are not logged in", path: "/login"};
+					return {
+						message: "You are not logged in", path: "/login"
+					};
 				} 
 
 				case Errors.AuthorizationExpired: {
@@ -142,7 +150,9 @@ export const couponRequest = async (method: Method, api: string, paylaod?: any, 
 						return couponRequest(method, api, paylaod, axiosOptions, false);
 					}
 					else {
-						return {message: "Login information has expired", path: "/login"};
+						return {
+							message: "Login information has expired", path: "/login"
+						};
 					}
 				} 
         
@@ -151,56 +161,82 @@ export const couponRequest = async (method: Method, api: string, paylaod?: any, 
 						return couponRequest(method, api, paylaod, axiosOptions, false);
 					}
 					else {
-						return {message: "Login information is invalid", path: "/login"};
+						return {
+							message: "Login information is invalid", path: "/login"
+						};
 					}
 				}
         
 				case Errors.RegistrationInvalidEmail: {
-					return {message: "Please confirm your email with the provider"};
+					return {
+						message: "Please confirm your email with the provider"
+					};
 				}
         
 				case Errors.SendCouponTargetUnknown: {
-					return {message: "Receiver not recognised"};
+					return {
+						message: "Receiver not recognised"
+					};
 				}	
         
 				case Errors.SendCouponTargetMissing: {
-					return {message: "No receiver information"};
+					return {
+						message: "No receiver information"
+					};
 				}
         
 				case Errors.RedeemCouponIdMissing: {
-					return {message: "Coupon ID is missing"};
+					return {
+						message: "Coupon ID is missing"
+					};
 				}
         
 				case Errors.RedeemCouponUnknownCoupon: {
-					return {message: "Invalid coupon"};
+					return {
+						message: "Invalid coupon"
+					};
 				}
         
 				case Errors.RedeemCouponWrongOwner: {
-					return {message: "This coupon does not belong to you"};
+					return {
+						message: "This coupon does not belong to you"
+					};
 				}
         
 				case Errors.RedeemCouponExpired: {
-					return {message: "Coupon is expired"};
+					return {
+						message: "Coupon is expired"
+					};
 				}
         
 				case Errors.RedeemCouponNotActive: {
-					return {message: "Coupon is already disabled"};
+					return {
+						message: "Coupon is already disabled"
+					};
 				}
         
 				case Errors.RateLimitExceeded: {
-					return {message: "Request rate exceeded the limit"};
+					return {
+						message: "Request rate exceeded the limit"
+					};
 				}
         
 				case Errors.Internal: {
-					return {message: "Unexpected error"};
+					return {
+						message: "Unexpected error"
+					};
 				}
 			}
-			return {error: error.response.data};
+			return {
+				error: error.response.data
+			};
 		}
 		else {
 			// The error is from axios, so throw it
 			// throw error;
-			return {error: error};
+			return {
+				error: error
+			};
 		}
 	}
 };
