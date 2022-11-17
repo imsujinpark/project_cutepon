@@ -4,7 +4,6 @@ import styled from "styled-components";
 // external components and functions
 import Nav from "./components/layout/Nav";
 import GlobalStyle from "./GlobalStyle";
-import Home from "./pages/Home";
 import Login from "./pages/Login";
 import NewCoupon from "./pages/NewCoupon";
 import OAuth2RedirectHandler from "./pages/OAuth2RedirectHandler";
@@ -22,6 +21,7 @@ import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 
 const App = () => {
 	// React.lazy imports
+	const Home = React.lazy(() => import("./pages/Home"));
 	const ReceivedCoupons = React.lazy(() => import("./pages/ReceivedCoupons"));
 	const SentCoupons = React.lazy(() => import("./pages/SentCoupons"));
 
@@ -38,10 +38,6 @@ const App = () => {
 
 	const { showToast } = useSelector((state: RootState) => {
 		return state.toast;
-	});
-
-	console.log({
-		isLoggedIn, token, refreshToken 
 	});
 
 	// this will let the default headers to be set first before rendering certain components
