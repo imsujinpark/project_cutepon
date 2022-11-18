@@ -4,7 +4,6 @@ import styled from "styled-components";
 // external components and functions
 import Nav from "./components/layout/Nav";
 import GlobalStyle from "./GlobalStyle";
-import Login from "./pages/Login";
 import NewCoupon from "./pages/NewCoupon";
 import OAuth2RedirectHandler from "./pages/OAuth2RedirectHandler";
 import CustomToast from "./components/common/CustomToast";
@@ -24,6 +23,7 @@ const App = () => {
 	const Home = React.lazy(() => import("./pages/Home"));
 	const ReceivedCoupons = React.lazy(() => import("./pages/ReceivedCoupons"));
 	const SentCoupons = React.lazy(() => import("./pages/SentCoupons"));
+	const Login = React.lazy(() => import("./pages/Login"));
 
 	// this state is to prevent component rendering before default header is set for http request when logged in
 	// if the rendering takes too long, a loading component might be added in the future
