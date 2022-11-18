@@ -4,8 +4,8 @@ import styled, { keyframes } from "styled-components";
 // external components & fuctions
 import Button from "../common/Button";
 import DummyCoupon from "./DummyCoupon";
+import Firework from "./Firework";
 import { nowToYYYYMMDD } from "../../common/utils";
-import { FormValues } from "../../common/types";
 
 const LandingBeforeLogin = () => {
 	// the states of coupon input with default values
@@ -184,10 +184,11 @@ const LandingBeforeLogin = () => {
 					className={`instruction ${!thirdTypedStr.length && "invisible"}`}
 					ref={loginRef}
 				/>
+				{couponRedeemeed && <Firework />}
 				{couponRedeemeed && thirdTypedStr.length > 70 && <FadeInWrapper>
 					<Button 
 						content="Log in" 
-						className={`primary ${thirdTypedStr.length > 38 && "shake"}`}
+						className="primary shake"
 						onClick={() => navigate("/login")}
 					/>	
 				</FadeInWrapper>}
@@ -208,7 +209,7 @@ const fadeIn = keyframes`
 // styled components
 const Container = styled.div`
 	width: 100%;
-	height: 1100px;
+	height: 1200px;
     padding: 36px 0 36px 0;
     display: flex;
     flex-direction: column;
