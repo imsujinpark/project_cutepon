@@ -9,6 +9,7 @@ import NewCoupon from "./pages/NewCoupon";
 import OAuth2RedirectHandler from "./pages/OAuth2RedirectHandler";
 import CustomToast from "./components/common/CustomToast";
 import Logout from "./pages/Logout";
+import Footer from "./components/layout/Footer";
 import ScrollToTop from "./components/layout/ScrollToTop";
 import { silentRefresh } from "./common/utils";
 // redux related
@@ -34,11 +35,6 @@ const App = () => {
 			return state.user;
 		}
 	);
-
-	console.log({
-		isLoggedIn, token, refreshToken 
-	});
-	
 
 	const { showToast } = useSelector((state: RootState) => {
 		return state.toast;
@@ -88,6 +84,7 @@ const App = () => {
 						</Routes>
 					</Suspense>
 				)}
+				<Footer />
 				{showToast && <CustomToast />}
 			</BrowserRouter>
 		</Div>
@@ -101,7 +98,7 @@ const Div = styled.div`
 
 const Loader = styled.div`
     width: 100vw;
-    height: 80vh;
+	height: calc(100vh - 60px);
     display: flex;
     align-items: center;
     justify-content: center;
