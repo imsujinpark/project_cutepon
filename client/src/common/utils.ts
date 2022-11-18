@@ -52,11 +52,12 @@ export const silentRefresh = async (refreshToken: string): Promise<boolean> => {
 
 // D-Day calculator
 export const dDayCalculator = (epochMs: number): string => {
-	const now: Date = new Date(); // current date
-	const gap = epochMs - now.getTime(); // difference in milliseconds
+	const today: Date = new Date(); // current date
+	const todayToMidnightNum = today.setHours(0, 0, 0, 1); // changes today time to 00:00:00:001 and epoch format
+	const gap = epochMs - todayToMidnightNum; // difference in milliseconds
 	const gapDay = gap / (1000 * 60 * 60 * 24); // milliseconds to days
 
-	// to prevent -0.1 ~ -0.9 day passed from now turning into D-0
+	// to prevent -0.1 ~ -0.9 day passed from today turning into D-0
 	if (gapDay < 0) {
 		return `D+${Math.abs(Math.floor(gapDay))}`;
 	}
