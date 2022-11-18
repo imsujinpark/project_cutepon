@@ -13,13 +13,16 @@ import { DropdownMenuData } from "../../common/types";
 import useDetectClickOutside from "../../hooks/useDetectClickOutside";
 import logo from "../../assets/logo.png";
 // redux related
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { setNoticeToast } from "../../features/toastSlice";
 import { RootState } from "../../store";
 
 const Nav = () => {
 	const navigate = useNavigate();
-	const menuRef = useRef(null);
-	const profileRef = useRef(null);
+	const dispatch = useDispatch();
+
+	const menuRef = useRef(null); // when menu is clicked
+	const profileRef = useRef(null); // when face(profile) is clicked
 
 	// login status
 	const { isLoggedIn } = useSelector((state: RootState) => {
@@ -134,6 +137,9 @@ const Nav = () => {
 							<StyledFontAwesomeIcon
 								icon={faBell}
 								title="notification"
+								onClick={() => {
+									dispatch(setNoticeToast("notification feature coming soon!"));
+								}}
 							/>
 						</IconWrapper>
 					</RightSideWrapper>
