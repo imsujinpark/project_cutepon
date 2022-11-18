@@ -26,7 +26,7 @@ const schema = yup.object().shape({
 		.min(1)
 		.max(27, "title cannot be over 27 characters")
 		.required("title cannot be empty"),
-	description: yup.string().max(100, "title cannot be over 92 characters"),
+	description: yup.string().max(100, "title cannot be over 100 characters"),
 	expiration_date: yup.string().required(),
 });
 
@@ -218,6 +218,7 @@ const NewCoupon = () => {
 
 const Container = styled.div`
     width: 100%;
+	height: calc(100vh - 168px);
     padding: 48px 0 0 0;
     display: flex;
     flex-direction: column;

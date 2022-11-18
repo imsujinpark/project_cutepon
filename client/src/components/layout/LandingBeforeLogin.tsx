@@ -8,16 +8,12 @@ import { nowToYYYYMMDD } from "../../common/utils";
 import { FormValues } from "../../common/types";
 
 const LandingBeforeLogin = () => {
-	const dummyData: FormValues = {
-		target_user: "My Bestie 😘",
-		title: "Special lunch on me",
-		description: "You can ask me to take you out on a special lunch on the day of your choice.",
-		expiration_date: nowToYYYYMMDD(),
-	};
-	const [targetUser, setTargetUser] = useState<string>(dummyData.target_user);
-	const [title, setTitle] = useState<string>(dummyData.title);
-	const [description, setDescription] = useState<string>(dummyData.description);
-	const [expirationDate, setExpirationDate] = useState<string>(dummyData.expiration_date);
+	// the states of coupon input with default values
+	const [targetUser, setTargetUser] = useState<string>("My Bestie 😘");
+	const [title, setTitle] = useState<string>("Special lunch on me");
+	const [description, setDescription] = useState<string>("You can ask me to take you out on a special lunch on the day of your choice.");
+	const [expirationDate, setExpirationDate] = useState<string>(nowToYYYYMMDD());
+	// coupon data used for Coupon component
 	const payload = {
 		target_user: targetUser,
 		title: title,
@@ -25,27 +21,26 @@ const LandingBeforeLogin = () => {
 		expiration_date: expirationDate,
 	};
 
-	// const productIntro1 = "Send coupons with CUTEPON!";
-	// const productIntro2 = "Receive coupons with CUTEPON!!";
-	// const productIntro3 = "Cutepon with CUTEPON!!!";
+	// these are string data used for typing animation
 	const productIntro1 = "CUTEPON allows you to";
 	const productIntro2 = "send and receive coupons";
 	const productIntro3 = "with your friends and family";
 	const firstTargetStr = "Let's try it!\nFill in your coupon details.\nThen click the \"Send\" button.";
 	const secondTargetStr = "Ta-da!\nYou made your first coupon!\nNow click to redeem.";
 	const thirdTargetStr = "Congratulations!\nYou are now ready to CUTEPON.\nLog in for more!";
-
+	// these are states where each char of target string will be set one by one
+	// use the below state in html for typing animation
 	const [introTypedStr1, setIntroTypedStr1] = useState<string>("");
 	const [introTypedStr2, setIntroTypedStr2] = useState<string>("");
 	const [introTypedStr3, setIntroTypedStr3] = useState<string>("");
 	const [firstTypedStr, setFirstTypedStr] = useState<string>("");
 	const [secondTypedStr, setSecondTypedStr] = useState<string>("");
 	const [thirdTypedStr, setThirdTypedStr] = useState<string>("");
-
-	const [showCouponEditor, setShowCouponEditor] = useState<boolean>(false);
+	// these states set booleans of target component rendering
+	const [showCouponEditor, setShowCouponEditor] = useState<boolean>(false); 
 	const [couponSent, setCouponSent] = useState<boolean>(false);
 	const [couponRedeemeed, setCouponRedeemed] = useState<boolean>(false);
-
+	// these refs are for auto scroll
 	const couponRef = useRef<HTMLDivElement>(null);
 	const loginRef = useRef<HTMLDivElement>(null);
 
@@ -55,6 +50,7 @@ const LandingBeforeLogin = () => {
 		intro();
 	}, []);
 
+	// first interaction of landing page
 	const intro = async() => {
 		await typer(productIntro1, 20, (str) => setIntroTypedStr1(str), async() => await pause(20));
 		await typer(productIntro2, 20, (str) => setIntroTypedStr2(str), async() => await pause(20));
@@ -84,7 +80,7 @@ const LandingBeforeLogin = () => {
 		}
 		await onFinished?.();
 	};
-
+	// second interaction of landing page
 	const handleSend = async() => {
 		setCouponSent(true);
 		setTimeout(function () {
@@ -96,7 +92,7 @@ const LandingBeforeLogin = () => {
 		}, 100);
 		await typer(secondTargetStr, 50, (str) => setSecondTypedStr(str));
 	};
-
+	// third interaction of landing page
 	const handleRedeem = async() => {
 		setCouponRedeemed(true);
 		setTimeout(function () {
@@ -113,14 +109,14 @@ const LandingBeforeLogin = () => {
 		<Container>
 			<InnerContainer>
 				{/* PRODUCT INTO */}
-				<TyperWrapper className="oneLine bold darkpink center">{introTypedStr1}</TyperWrapper>
-				<TyperWrapper className="oneLine bold darkpink center">{introTypedStr2}</TyperWrapper>
-				<TyperWrapper className="oneLine bold darkpink center">{introTypedStr3}</TyperWrapper>
+				<TyperWrapper className="title">{introTypedStr1}</TyperWrapper>
+				<TyperWrapper className="title">{introTypedStr2}</TyperWrapper>
+				<TyperWrapper className="title">{introTypedStr3}</TyperWrapper>
 				<TyperWrapper 
 					dangerouslySetInnerHTML={{
 						__html: firstTypedStr
 					}}
-					className={`threeLines small wrap shadow ${!firstTypedStr.length && "invisible"}`}
+					className={`instruction ${!firstTypedStr.length && "invisible"}`}
 				/>
 				{showCouponEditor && <FadeInWrapper>
 					<OuterCoupon>
@@ -171,8 +167,9 @@ const LandingBeforeLogin = () => {
 					dangerouslySetInnerHTML={{
 						__html: secondTypedStr
 					}}
-					className={`threeLines small wrap shadow ${!secondTypedStr.length && "invisible"}`}
+					className={`instruction ${!secondTypedStr.length && "invisible"}`}
 				/>
+				{/* when redeem button is pressed, stop shaking */}
 				{couponSent && <FadeInWrapper ref={couponRef}>
 					<DummyCoupon 
 						data={payload}
@@ -184,7 +181,7 @@ const LandingBeforeLogin = () => {
 					dangerouslySetInnerHTML={{
 						__html: thirdTypedStr
 					}}
-					className={`threeLines small wrap shadow ${!thirdTypedStr.length && "invisible"}`}
+					className={`instruction ${!thirdTypedStr.length && "invisible"}`}
 					ref={loginRef}
 				/>
 				{couponRedeemeed && thirdTypedStr.length > 70 && <FadeInWrapper>
@@ -230,45 +227,35 @@ const InnerContainer = styled.div`
     justify-content: flex-start;
     align-items: center;
 `;
-
+// wraps typing animation
 const TyperWrapper = styled.div`
 	width: 340px;
 	margin-bottom: 12px;
 	line-height: 22px;
 	color: var(--liver-700);
-	&.threeLines {
-		height: 76px;
-		margin-top: 24px;
-	}
-	&.oneLine {
+	&.title {
+		font-family: Verdana, Geneva, sans-serif;
 		line-height: 12px;
-	}
-	&.darkpink {
+		font-weight: 900;
 		color: var(--primary-700);
-	}
-	&.bold {
-		font-weight: bold;
-	}
-	&.center {
 		text-align: center;
+		font-size: 18px;
 	}
-	&.small {
-		font-size: 14px;
-	}
-	&.wrap {
+	&.instruction {
 		width: 352px;
+		height: 76px;
 		padding: 4px 16px;
 		background-color: var(--liver-100);
 		border-radius: 8px;
+		margin-top: 24px;
+		font-size: 14px;
+		box-shadow: var(--shadow-low);
 	}
 	&.invisible {
 		display: none;
 	}
-	&.shadow {
-		box-shadow: var(--shadow-low);
-	}
 `;
-
+// wraps components used for interaction with fade in animation
 const FadeInWrapper = styled.div`
 	margin-bottom: 36px;
 	animation: ${fadeIn} 0.5s;
@@ -306,7 +293,7 @@ const InnerCoupon = styled.div`
 		font-size: 12px;
 	}
 `;
-
+// wraps To.
 const TargetWrapper = styled.div`
 	display: flex;
 	flex-direction: row;
