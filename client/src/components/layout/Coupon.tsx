@@ -275,11 +275,14 @@ const Head = styled.div`
     // title
     > h2 {
         margin: 0;
+		height: 16px;
         font-size: 14px;
         width: 218px;
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
+		display: flex;
+		align-items: center;
     }
     // Sender/Receiver
     > span {
@@ -291,7 +294,7 @@ const Head = styled.div`
         text-overflow: ellipsis;
     }
 `;
-
+// description
 const Body = styled.div`
     width: 100%;
     height: 30px;
@@ -305,7 +308,7 @@ const Body = styled.div`
     margin-bottom: 12px;
     color: var(--liver-500);
 `;
-
+// status
 const TailTop = styled.div`
     font-size: 10px;
     font-weight: bold;
@@ -314,7 +317,7 @@ const TailTop = styled.div`
     margin-bottom: 6px;
     color: var(--liver-500);
 `;
-
+// id + dates
 const TailBottom = styled.div`
     font-size: 10px;
     display: flex;
