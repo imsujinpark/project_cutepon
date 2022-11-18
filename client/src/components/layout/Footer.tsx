@@ -7,15 +7,15 @@ const Footer = () => {
 	return (
 		<Container>
 			<LeftBox>
-				<LeftTop>PROJECT CUTEPON</LeftTop>
-				<LeftBottom>
+				<ProjectName>PROJECT CUTEPON</ProjectName>
+				<Contact>
 					<a href="mailto: project.cutepon@gmail.com">
 						<FontAwesomeIcon icon={faEnvelope} />
 					</a>
 					<a href="https://github.com/imsujinpark/project_cutepon" target="_blank" rel="noreferrer">
 						<FontAwesomeIcon icon={faGithub} />
 					</a>
-				</LeftBottom>
+				</Contact>
 			</LeftBox>
 			<RightBox>
 				<div>
@@ -44,32 +44,38 @@ const Container = styled.div`
     flex-wrap: wrap;
     justify-content: space-around;
     align-items: center;
-    padding: 12px 0px 8px 0;
+    padding: 8px 0px 8px 0;
     background-color: var(--liver-400);
     color: var(--white);
     font-size: 14px;
     a {
+        display: flex;
+        justify-content: center;
+        align-items: center;
         color: var(--white);
     }
 `;
 // Project name + contact info
 const LeftBox = styled.div`
-    /* padding-bottom: 16px; */
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     justify-content: center;
     align-items: center;
     margin: 8px 0;
 `;
 // Project name
-const LeftTop = styled.div`
-    margin-bottom: 8px;
+const ProjectName = styled.div`
     font-weight: bold;
+    margin-right: 16px;
 `;
 // contact info
-const LeftBottom = styled.div`
+const Contact = styled.div`
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
     > * {
-        margin-right: 16px;
+        margin-right: 12px;
     }
 `;
 // Contributor
@@ -80,9 +86,9 @@ const RightBox = styled.div`
     margin: 8px 0;
     // wraps position, name, a tag of icon
     > div {
-        width: 120px;
+        width: 140px;
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
         justify-content: center;
         align-items: center;
     }
@@ -100,7 +106,7 @@ const RightBox = styled.div`
     .name {
         font-size: 11px;
         text-align: center;
-        margin-bottom: 8px;
+        margin-right: 8px;
     }
 `;
 export default Footer;

@@ -218,7 +218,7 @@ const NewCoupon = () => {
 
 const Container = styled.div`
     width: 100%;
-	height: calc(100vh - 168px);
+	height: calc(100vh - 108px);
     padding: 48px 0 0 0;
     display: flex;
     flex-direction: column;
