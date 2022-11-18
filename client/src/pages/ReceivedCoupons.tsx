@@ -84,7 +84,7 @@ const ReceivedCoupons = () => {
 				/>
 			) : (
 				<Description
-					text="Click the coupon to delete or send a copy"
+					text="Click the coupon to hide or send a copy"
 					icon={faArrowPointer}
 				/>
 			)}
