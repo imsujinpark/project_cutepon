@@ -7,10 +7,9 @@ import GlobalStyle from "./GlobalStyle";
 import Login from "./pages/Login";
 import NewCoupon from "./pages/NewCoupon";
 import OAuth2RedirectHandler from "./pages/OAuth2RedirectHandler";
-// import ReceivedCoupons from './pages/ReceivedCoupons';
-// import SentCoupons from './pages/SentCoupons';
 import CustomToast from "./components/common/CustomToast";
 import Logout from "./pages/Logout";
+import ScrollToTop from "./components/layout/ScrollToTop";
 import { silentRefresh } from "./common/utils";
 // redux related
 import { useSelector } from "react-redux";
@@ -54,9 +53,10 @@ const App = () => {
 	}, []);
 
 	return (
-		<BrowserRouter>
-			<GlobalStyle />
-			<Div>
+		<Div>
+			<BrowserRouter>
+				<GlobalStyle />
+				<ScrollToTop />
 				<Nav />
 				{isAuthChecked && (
 					<Suspense
@@ -84,8 +84,8 @@ const App = () => {
 					</Suspense>
 				)}
 				{showToast && <CustomToast />}
-			</Div>
-		</BrowserRouter>
+			</BrowserRouter>
+		</Div>
 	);
 };
 
