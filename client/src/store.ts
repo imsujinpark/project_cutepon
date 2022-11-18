@@ -3,7 +3,7 @@ import { combineReducers, configureStore } from "@reduxjs/toolkit";
 //for redux persist
 import { persistReducer } from "redux-persist";
 import thunk from "redux-thunk";
-import storageSession from "redux-persist/lib/storage/session";
+import storage from "redux-persist/lib/storage";
 
 import userSlice from "./features/userSlice";
 import copyCouponSlice from "./features/copyCouponSlice";
@@ -17,8 +17,8 @@ const rootReducer = combineReducers({
 
 const persistConfig = {
 	key: "root",
-	storage: storageSession, // will be saved in session storage
-	whitelist: ["user"], // will save only user reducer in session storage
+	storage: storage, // will be saved in local storage
+	whitelist: ["user"], // will save only user reducer in local storage
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

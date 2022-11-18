@@ -23,7 +23,7 @@ export const silentRefresh = async (refreshToken: string): Promise<boolean> => {
 			silentRefresh(data.refresh_token);
 		}, TOKEN_EXPIRY_TIME);
 
-		// set the new token in redux store + session storage 
+		// set the new token in redux store + local storage 
 		store.dispatch(loginFulfilled({
 			token: data.token,
 			refreshToken: data.refresh_token,
@@ -85,18 +85,18 @@ export const nowToYYYYMMDD = (): string => {
 	return nowToString;
 };
 
-// gets login information from session storage (replacing useSelector in non-react functions)
-export const getLoginInfoFromSessionStorage = () => {
+// gets login information from local storage (replacing useSelector in non-react functions)
+export const getLoginInfoFromLocalStorage = () => {
 	// access data saved by redux persist
-	const stringSessionStorage = sessionStorage.getItem("persist:root");
-	if (stringSessionStorage === null) {
+	const stringLocalStorage = localStorage.getItem("persist:root");
+	if (stringLocalStorage === null) {
 		// initial value of login status from loginSlice
 		return {
 			isLoggedin: false, token: null, refreshToken: null
 		};
 	}
 	else {
-		const {user} = JSON.parse(stringSessionStorage);
+		const {user} = JSON.parse(stringLocalStorage);
 		const {isLoggedin, token, refreshToken} = JSON.parse(user);
 		return {
 			isLoggedin, token, refreshToken
@@ -116,8 +116,8 @@ type Method = "get" | "post";
  */
 export const couponRequest = async (method: Method, api: string, paylaod?: any, axiosOptions?: any, isRefreshable = true): Promise<any> => {
 
-	// refresh token from session storage
-	const {refreshToken} = getLoginInfoFromSessionStorage();
+	// refresh token from local storage
+	const {refreshToken} = getLoginInfoFromLocalStorage();
 	
 	try {
 		let response;
@@ -242,7 +242,7 @@ export const couponRequest = async (method: Method, api: string, paylaod?: any, 
 	}
 };
 
-// purge function is to remove state from session storage
+// purge function is to remove state from local storage
 export const purge = async () => {
 	await persistor.purge();
 };

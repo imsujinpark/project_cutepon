@@ -17,7 +17,7 @@ const Logout = () => {
 
 	const logout = () => {
 		dispatch(logoutFulfilled()); // changes login state in redux slice
-		setTimeout(() => purge(), 1000); // will remove login info from session storage
+		setTimeout(() => purge(), 1000); // will remove login info from local storage
 		dispatch(setNoticeToast("Successfully logged out"));
 		// window.location.reload(); // refresh to remove remaining silent refresh function timeout
 		navigate("/");

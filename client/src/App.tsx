@@ -35,6 +35,11 @@ const App = () => {
 		}
 	);
 
+	console.log({
+		isLoggedIn, token, refreshToken 
+	});
+	
+
 	const { showToast } = useSelector((state: RootState) => {
 		return state.toast;
 	});

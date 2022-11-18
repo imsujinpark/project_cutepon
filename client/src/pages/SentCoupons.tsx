@@ -52,7 +52,7 @@ const SentCoupons = () => {
 
 	const getCoupons = async () => {
 
-		const {data, message, path, error} = await couponRequest("get", "/api/sent");
+		const {data, message, path, error} = await couponRequest("get", "/api/sent");	
 		
 		// Unhandled server error
 		if (error) {
