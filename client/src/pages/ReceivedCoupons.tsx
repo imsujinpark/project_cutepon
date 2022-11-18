@@ -100,7 +100,7 @@ const ReceivedCoupons = () => {
 
 const Container = styled.div`
     width: 100%;
-	min-height: calc(100vh - 108px);
+	min-height: calc(100vh - 60px);
 	height: fit-content;
     display: flex;
     flex-direction: column;

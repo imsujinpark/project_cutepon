@@ -31,7 +31,7 @@ const Login = () => {
 
 const Container = styled.div`
     width: 100vw;
-	height: calc(100vh - 108px);
+	height: calc(100vh - 60px);
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
