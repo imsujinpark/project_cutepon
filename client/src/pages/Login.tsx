@@ -7,12 +7,13 @@ import { purge } from "../common/utils";
 // redux related
 import { useDispatch } from "react-redux";
 import { logoutFulfilled } from "../features/userSlice";
-import { persistor } from "../index";
 
 const Login = () => {
 	const dispatch = useDispatch();
 
-	const googleLogin = { title: "Sign in with Google", image: googleLogo };
+	const googleLogin = {
+		title: "Continue with Google", image: googleLogo 
+	};
 		
 	// remove any previous login info which is now invalid
 	useEffect(() => {
@@ -30,6 +31,7 @@ const Login = () => {
 
 const Container = styled.div`
     width: 100vw;
+	height: calc(100vh - 60px);
     display: flex;
     flex-direction: column;
     justify-content: flex-start;

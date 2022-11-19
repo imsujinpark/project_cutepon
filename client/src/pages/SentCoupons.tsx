@@ -45,14 +45,14 @@ const SentCoupons = () => {
 		}
 		else {
 			// data.status: 0 = active, 3 = deleted (hide deleted in disabled)
-			const filteredArr = couponData.filter((data) => data.status !== 0 && data.status !== 3);
+			const filteredArr = couponData.filter((data) => data.status !== 0 && data.status !== 2);
 			setDisabledCoupons([...filteredArr]);
 		}
 	}, [status, couponData]);
 
 	const getCoupons = async () => {
 
-		const {data, message, path, error} = await couponRequest("get", "/api/sent");
+		const {data, message, path, error} = await couponRequest("get", "/api/sent");	
 		
 		// Unhandled server error
 		if (error) {
@@ -84,7 +84,7 @@ const SentCoupons = () => {
 				/>
 			) : (
 				<Description
-					text="Click the coupon to delete or send a copy"
+					text="Click the coupon to hide or send a copy"
 					icon={faArrowPointer}
 				/>
 			)}
@@ -101,11 +101,13 @@ const SentCoupons = () => {
 
 const Container = styled.div`
     width: 100%;
+	min-height: calc(100vh - 60px);
+	height: fit-content;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
     align-items: center;
-    padding: 8px 0;
+    padding: 8px 0 36px 0;
 `;
 
 export default SentCoupons;

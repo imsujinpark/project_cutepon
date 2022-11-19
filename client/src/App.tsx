@@ -4,14 +4,12 @@ import styled from "styled-components";
 // external components and functions
 import Nav from "./components/layout/Nav";
 import GlobalStyle from "./GlobalStyle";
-import Home from "./pages/Home";
-import Login from "./pages/Login";
 import NewCoupon from "./pages/NewCoupon";
 import OAuth2RedirectHandler from "./pages/OAuth2RedirectHandler";
-// import ReceivedCoupons from './pages/ReceivedCoupons';
-// import SentCoupons from './pages/SentCoupons';
 import CustomToast from "./components/common/CustomToast";
 import Logout from "./pages/Logout";
+import Footer from "./components/layout/Footer";
+import ScrollToTop from "./components/layout/ScrollToTop";
 import { silentRefresh } from "./common/utils";
 // redux related
 import { useSelector } from "react-redux";
@@ -22,8 +20,10 @@ import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 
 const App = () => {
 	// React.lazy imports
+	const Home = React.lazy(() => import("./pages/Home"));
 	const ReceivedCoupons = React.lazy(() => import("./pages/ReceivedCoupons"));
 	const SentCoupons = React.lazy(() => import("./pages/SentCoupons"));
+	const Login = React.lazy(() => import("./pages/Login"));
 
 	// this state is to prevent component rendering before default header is set for http request when logged in
 	// if the rendering takes too long, a loading component might be added in the future
@@ -40,8 +40,6 @@ const App = () => {
 		return state.toast;
 	});
 
-	console.log({ isLoggedIn, token, refreshToken });
-
 	// this will let the default headers to be set first before rendering certain components
 	const preventRenderBeforeAuth = async () => {
 		// if the user is logged in and refresh token exists, call silent refresh function
@@ -56,9 +54,10 @@ const App = () => {
 	}, []);
 
 	return (
-		<BrowserRouter>
-			<GlobalStyle />
-			<Div>
+		<Div>
+			<BrowserRouter>
+				<GlobalStyle />
+				<ScrollToTop />
 				<Nav />
 				{isAuthChecked && (
 					<Suspense
@@ -85,9 +84,10 @@ const App = () => {
 						</Routes>
 					</Suspense>
 				)}
+				<Footer />
 				{showToast && <CustomToast />}
-			</Div>
-		</BrowserRouter>
+			</BrowserRouter>
+		</Div>
 	);
 };
 
@@ -98,7 +98,7 @@ const Div = styled.div`
 
 const Loader = styled.div`
     width: 100vw;
-    height: 80vh;
+	height: calc(100vh - 60px);
     display: flex;
     align-items: center;
     justify-content: center;

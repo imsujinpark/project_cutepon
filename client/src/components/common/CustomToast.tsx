@@ -1,10 +1,10 @@
-import { useSelector, useDispatch } from "react-redux";
 import { useState, useEffect } from "react";
-import { closeToast } from "../../features/toastSlice";
-import { faExclamation, faCheck } from "@fortawesome/free-solid-svg-icons";
 import styled, { keyframes } from "styled-components";
+import { faExclamation, faCheck } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-
+// redux related
+import { useSelector, useDispatch } from "react-redux";
+import { closeToast } from "../../features/toastSlice";
 import { RootState } from "../../store";
 
 // mode는 warning 또는 notice
@@ -13,7 +13,7 @@ const CustomToast = () => {
 	const [toastAnimation, setToastAnimation] = useState("openAnimation");
 	const dispatch = useDispatch();
 
-	const { showToast, message, mode } = useSelector((state: RootState) => {
+	const { message, mode } = useSelector((state: RootState) => {
 		return state.toast;
 	});
 

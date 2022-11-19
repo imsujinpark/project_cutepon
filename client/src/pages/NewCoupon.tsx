@@ -26,7 +26,7 @@ const schema = yup.object().shape({
 		.min(1)
 		.max(27, "title cannot be over 27 characters")
 		.required("title cannot be empty"),
-	description: yup.string().max(100, "title cannot be over 92 characters"),
+	description: yup.string().max(100, "title cannot be over 100 characters"),
 	expiration_date: yup.string().required(),
 });
 
@@ -50,9 +50,7 @@ function IsolateReRenderTitle({ control }: { control: Control<FormValues> }) {
 }
 
 // character counter for Description
-function IsolateReRenderDescription({
-	control,
-}: {
+function IsolateReRenderDescription({control,}: {
     control: Control<FormValues>;
 }) {
 	const description = useWatch({
@@ -69,7 +67,7 @@ const NewCoupon = () => {
 	const navigate = useNavigate();
 
 	// login status
-	const { isLoggedIn, token, refreshToken } = useSelector(
+	const { isLoggedIn } = useSelector(
 		(state: RootState) => {
 			return state.user;
 		}
@@ -166,7 +164,9 @@ const NewCoupon = () => {
 				<Input
 					type="text"
 					id="title"
-					{...register("title", { value: title })}
+					{...register("title", {
+						value: title 
+					})}
 				/>
 				<IsolateReRenderTitle control={control} />
 				<ErrorMessage className="title">
@@ -176,7 +176,9 @@ const NewCoupon = () => {
 				<Label htmlFor="description">Description</Label>
 				<TextArea
 					id="description"
-					{...register("description", { value: description })}
+					{...register("description", {
+						value: description 
+					})}
 				/>
 				<IsolateReRenderDescription control={control} />
 				<ErrorMessage>{errors.description?.message}</ErrorMessage>
@@ -203,7 +205,7 @@ const NewCoupon = () => {
 						onClick={handleCancel}
 					/>
 					<Button
-						content="SUBMIT"
+						content="SEND"
 						className={`primary ${!isValid && "invalid"}`}
 						// if the button is actually invalid, it won't let the error message appear, so it is only made visually-invalid
 						// disabled={!isValid}
@@ -216,6 +218,7 @@ const NewCoupon = () => {
 
 const Container = styled.div`
     width: 100%;
+	height: calc(100vh - 60px);
     padding: 48px 0 0 0;
     display: flex;
     flex-direction: column;

@@ -25,6 +25,7 @@ const Coupon = ({ data }: UserProps) => {
 		description,
 		created_date,
 		expiration_date,
+		finish_date,
 		status,
 	} = data;
 
@@ -36,6 +37,10 @@ const Coupon = ({ data }: UserProps) => {
 	// to check whether the component is used in received or sent
 	const { pathname } = useLocation();
 
+	// change finish date: string -> Date -> change time to 23:59 local (number)
+	const stringToDate = new Date(finish_date);
+	const finishDateToMidnightNum = stringToDate.setHours(23, 59, 59, 999);
+	
 	// changes epoch number to "YYYY-MM-DD" string
 	const epochToString = (epoch: number) => {
 		const date: Date = new Date(epoch);
@@ -49,7 +54,9 @@ const Coupon = ({ data }: UserProps) => {
 
 	const handleDelete = async () => {
 		setIsClicked(false);
-		const payload = { coupon_id: id };
+		const payload = {
+			coupon_id: id 
+		};
 
 		const {data, message, path, error} = await couponRequest("post", "/api/delete", payload);
 		
@@ -89,7 +96,9 @@ const Coupon = ({ data }: UserProps) => {
 
 	const handleRedeem = async () => {
 		setIsClicked(false);
-		const payload = { coupon_id: id };
+		const payload = {
+			coupon_id: id 
+		};
 
 		const {data, message, path, error} = await couponRequest("post", "/api/redeem", payload);
 		
@@ -147,14 +156,24 @@ const Coupon = ({ data }: UserProps) => {
 						<span>
                             #{dateToYYYYYMMDDHHMM(created_date)}-{id}
 						</span>
-						<span>{dDayCalculator(expiration_date)}</span>
+						<span>{
+							// if active, show expiration date/ if expired show finish date
+							pathname === "/received/active" ||
+							pathname === "/sent/active" 
+								? dDayCalculator(expiration_date) 
+								: dDayCalculator(finishDateToMidnightNum)}
+						</span>
 					</TailBottom>
 				</InnerContainer>
 			</Container>
 			{isClicked && (
 				<ButtonWrapper>
 					<Button
-						content="Delete"
+						// change status to deleted from active coupons, disabled coupons will hide disabled coupons
+						content={pathname === "/received/active" || pathname === "/sent/active" 
+							? "Delete" 
+							: "Hide"
+						}
 						className="grey"
 						onClick={handleDelete}
 					/>
@@ -256,11 +275,14 @@ const Head = styled.div`
     // title
     > h2 {
         margin: 0;
+		height: 16px;
         font-size: 14px;
         width: 218px;
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
+		display: flex;
+		align-items: center;
     }
     // Sender/Receiver
     > span {
@@ -272,7 +294,7 @@ const Head = styled.div`
         text-overflow: ellipsis;
     }
 `;
-
+// description
 const Body = styled.div`
     width: 100%;
     height: 30px;
@@ -286,7 +308,7 @@ const Body = styled.div`
     margin-bottom: 12px;
     color: var(--liver-500);
 `;
-
+// status
 const TailTop = styled.div`
     font-size: 10px;
     font-weight: bold;
@@ -295,7 +317,7 @@ const TailTop = styled.div`
     margin-bottom: 6px;
     color: var(--liver-500);
 `;
-
+// id + dates
 const TailBottom = styled.div`
     font-size: 10px;
     display: flex;

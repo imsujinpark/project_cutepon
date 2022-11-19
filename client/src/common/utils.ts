@@ -1,10 +1,9 @@
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
 
 import { Errors } from "./types";
 // redux related
 import { loginFulfilled, logoutFulfilled } from "../features/userSlice";
-import store,  { RootState } from "../store";
+import store from "../store";
 import { persistor } from "../index";
 
 // a function to ask server for new token every 30 min
@@ -24,7 +23,7 @@ export const silentRefresh = async (refreshToken: string): Promise<boolean> => {
 			silentRefresh(data.refresh_token);
 		}, TOKEN_EXPIRY_TIME);
 
-		// set the new token in redux store + session storage 
+		// set the new token in redux store + local storage 
 		store.dispatch(loginFulfilled({
 			token: data.token,
 			refreshToken: data.refresh_token,
@@ -53,11 +52,12 @@ export const silentRefresh = async (refreshToken: string): Promise<boolean> => {
 
 // D-Day calculator
 export const dDayCalculator = (epochMs: number): string => {
-	const now: Date = new Date(); // current date
-	const gap = epochMs - now.getTime(); // difference in milliseconds
+	const today: Date = new Date(); // current date
+	const todayToMidnightNum = today.setHours(0, 0, 0, 1); // changes today time to 00:00:00:001 and epoch format
+	const gap = epochMs - todayToMidnightNum; // difference in milliseconds
 	const gapDay = gap / (1000 * 60 * 60 * 24); // milliseconds to days
 
-	// to prevent -0.1 ~ -0.9 day passed from now turning into D-0
+	// to prevent -0.1 ~ -0.9 day passed from today turning into D-0
 	if (gapDay < 0) {
 		return `D+${Math.abs(Math.floor(gapDay))}`;
 	}
@@ -66,11 +66,15 @@ export const dDayCalculator = (epochMs: number): string => {
 	}
 };
 
-// epoch date -> string "YYYYMMDD"
+// epoch date -> string "YYYYMMDD-HHMM"
 export const dateToYYYYYMMDDHHMM = (epochMs: number): string => {
 	const date: Date = new Date(epochMs);
 	const dateToString: string = date.toISOString().slice(0, 10).replace(/-/g, "");
 	const timeToString: string = date.toISOString().slice(11, 16).replace(/:/g, "");
+	// below for time in local, above in utc is use now
+	// as it needs to be the same for everyone to be a coupon id
+	// const dateToString: string = date.toLocaleString().slice(0, 10).replace(/\//g, "");
+	// const timeToString: string = date.toLocaleString().slice(12, 20).replace(/:/g, "");
 	return dateToString + "-" + timeToString;
 };
 
@@ -81,18 +85,22 @@ export const nowToYYYYMMDD = (): string => {
 	return nowToString;
 };
 
-// gets login information from session storage (replacing useSelector in non-react functions)
-export const getLoginInfoFromSessionStorage = () => {
+// gets login information from local storage (replacing useSelector in non-react functions)
+export const getLoginInfoFromLocalStorage = () => {
 	// access data saved by redux persist
-	const stringSessionStorage = sessionStorage.getItem("persist:root");
-	if (stringSessionStorage === null) {
+	const stringLocalStorage = localStorage.getItem("persist:root");
+	if (stringLocalStorage === null) {
 		// initial value of login status from loginSlice
-		return {isLoggedin: false, token: null, refreshToken: null};
+		return {
+			isLoggedin: false, token: null, refreshToken: null
+		};
 	}
 	else {
-		const {user} = JSON.parse(stringSessionStorage);
+		const {user} = JSON.parse(stringLocalStorage);
 		const {isLoggedin, token, refreshToken} = JSON.parse(user);
-		return {isLoggedin, token, refreshToken};
+		return {
+			isLoggedin, token, refreshToken
+		};
 	}
 };
 
@@ -108,8 +116,8 @@ type Method = "get" | "post";
  */
 export const couponRequest = async (method: Method, api: string, paylaod?: any, axiosOptions?: any, isRefreshable = true): Promise<any> => {
 
-	// refresh token from session storage
-	const {refreshToken} = getLoginInfoFromSessionStorage();
+	// refresh token from local storage
+	const {refreshToken} = getLoginInfoFromLocalStorage();
 	
 	try {
 		let response;
@@ -121,7 +129,9 @@ export const couponRequest = async (method: Method, api: string, paylaod?: any, 
 				response = await axios.post(api, paylaod, axiosOptions);
 			} break;
 		}
-		return {data:  response.data};
+		return {
+			data:  response.data
+		};
 	}
 	catch (error: any){
 	
@@ -131,7 +141,9 @@ export const couponRequest = async (method: Method, api: string, paylaod?: any, 
 		) {
 			switch (error.response.data.error) {
 				case Errors.AuthorizationMissing: {
-					return {message: "You are not logged in", path: "/login"};
+					return {
+						message: "You are not logged in", path: "/login"
+					};
 				} 
 
 				case Errors.AuthorizationExpired: {
@@ -139,7 +151,9 @@ export const couponRequest = async (method: Method, api: string, paylaod?: any, 
 						return couponRequest(method, api, paylaod, axiosOptions, false);
 					}
 					else {
-						return {message: "Login information has expired", path: "/login"};
+						return {
+							message: "Login information has expired", path: "/login"
+						};
 					}
 				} 
         
@@ -148,61 +162,87 @@ export const couponRequest = async (method: Method, api: string, paylaod?: any, 
 						return couponRequest(method, api, paylaod, axiosOptions, false);
 					}
 					else {
-						return {message: "Login information is invalid", path: "/login"};
+						return {
+							message: "Login information is invalid", path: "/login"
+						};
 					}
 				}
         
 				case Errors.RegistrationInvalidEmail: {
-					return {message: "Please confirm your email with the provider"};
+					return {
+						message: "Please confirm your email with the provider"
+					};
 				}
         
 				case Errors.SendCouponTargetUnknown: {
-					return {message: "Receiver not recognised"};
+					return {
+						message: "Receiver not recognised"
+					};
 				}	
         
 				case Errors.SendCouponTargetMissing: {
-					return {message: "No receiver information"};
+					return {
+						message: "No receiver information"
+					};
 				}
         
 				case Errors.RedeemCouponIdMissing: {
-					return {message: "Coupon ID is missing"};
+					return {
+						message: "Coupon ID is missing"
+					};
 				}
         
 				case Errors.RedeemCouponUnknownCoupon: {
-					return {message: "Invalid coupon"};
+					return {
+						message: "Invalid coupon"
+					};
 				}
         
 				case Errors.RedeemCouponWrongOwner: {
-					return {message: "This coupon does not belong to you"};
+					return {
+						message: "This coupon does not belong to you"
+					};
 				}
         
 				case Errors.RedeemCouponExpired: {
-					return {message: "Coupon is expired"};
+					return {
+						message: "Coupon is expired"
+					};
 				}
         
 				case Errors.RedeemCouponNotActive: {
-					return {message: "Coupon is already disabled"};
+					return {
+						message: "Coupon is already disabled"
+					};
 				}
         
 				case Errors.RateLimitExceeded: {
-					return {message: "Request rate exceeded the limit"};
+					return {
+						message: "Request rate exceeded the limit"
+					};
 				}
         
 				case Errors.Internal: {
-					return {message: "Unexpected error"};
+					return {
+						message: "Unexpected error"
+					};
 				}
 			}
-			return {error: error.response.data};
+			return {
+				error: error.response.data
+			};
 		}
 		else {
 			// The error is from axios, so throw it
 			// throw error;
-			return {error: error};
+			return {
+				error: error
+			};
 		}
 	}
 };
 
-// purge function is to remove state from session storage
+// purge function is to remove state from local storage
 export const purge = async () => {
 	await persistor.purge();
 };

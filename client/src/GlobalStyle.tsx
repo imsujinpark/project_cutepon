@@ -8,7 +8,9 @@ const GlobalStyle = createGlobalStyle`
         font-family: 'GmarketSansMedium';
     }
 
-    
+    body {
+        overflow-x: hidden;
+    }
     /* html,
     body {
         height: 100%;

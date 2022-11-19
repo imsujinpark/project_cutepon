@@ -5,8 +5,7 @@ import { purge } from "../common/utils";
 // redux related
 import { useDispatch } from "react-redux";
 import { logoutFulfilled } from "../features/userSlice";
-import { persistor } from "../index";
-import { setNoticeToast, setWarningToast } from "../features/toastSlice";
+import { setNoticeToast } from "../features/toastSlice";
 
 const Logout = () => {
 	const dispatch = useDispatch();
@@ -18,7 +17,7 @@ const Logout = () => {
 
 	const logout = () => {
 		dispatch(logoutFulfilled()); // changes login state in redux slice
-		setTimeout(() => purge(), 1000); // will remove login info from session storage
+		setTimeout(() => purge(), 1000); // will remove login info from local storage
 		dispatch(setNoticeToast("Successfully logged out"));
 		// window.location.reload(); // refresh to remove remaining silent refresh function timeout
 		navigate("/");
