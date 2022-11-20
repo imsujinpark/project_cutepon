@@ -1,6 +1,6 @@
 # Cutepon
 
-<p align="center">  
+<p align="center" width="25">  
   <img src="logo.png">
 </p>
 
