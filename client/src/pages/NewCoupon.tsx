@@ -73,17 +73,17 @@ const NewCoupon = () => {
 		}
 	);
 
-	// if not logged in, navigate to Login page
-	useEffect(() => {
-		if (!isLoggedIn) {
-			dispatch(setWarningToast("You are not logged in"));
-			navigate("/login");
-		}
-		return () => {
-			// clears copy state
-			dispatch(clearCopyCoupon());
-		};
-	}, []);
+	// // if not logged in, navigate to Login page
+	// useEffect(() => {
+	// 	if (!isLoggedIn) {
+	// 		dispatch(setWarningToast("You are not logged in"));
+	// 		navigate("/login");
+	// 	}
+	// 	return () => {
+	// 		// clears copy state
+	// 		dispatch(clearCopyCoupon());
+	// 	};
+	// }, []);
 
 	// state of input data when coupon has been copied
 	const { target_user, title, description, expiration_date } = useSelector(
@@ -219,6 +219,9 @@ const NewCoupon = () => {
 const Container = styled.div`
     width: 100%;
 	height: calc(100vh - 60px);
+	// on android chrome, the view height changes when keyboard appears
+	// min height is to prevent the footer from moving
+	min-height: 600px;
     padding: 48px 0 0 0;
     display: flex;
     flex-direction: column;
