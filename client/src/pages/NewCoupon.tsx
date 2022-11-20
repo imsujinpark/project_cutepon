@@ -19,14 +19,14 @@ import * as yup from "yup";
 const schema = yup.object().shape({
 	target_user: yup
 		.string()
-		.email("invalid email format")
-		.required("receiver cannot be empty"),
+		.email("Invalid email format")
+		.required("Receiver cannot be empty"),
 	title: yup
 		.string()
 		.min(1)
-		.max(27, "title cannot be over 27 characters")
-		.required("title cannot be empty"),
-	description: yup.string().max(100, "title cannot be over 100 characters"),
+		.max(27, "Title cannot be over 27 characters")
+		.required("Title cannot be empty"),
+	description: yup.string().max(100, "Description cannot be over 100 characters"),
 	expiration_date: yup.string().required(),
 });
 
