@@ -1,7 +1,7 @@
 # Cutepon
 
-<p align="center" width="25">  
-  <img src="logo.png">
+<p align="center">  
+  <img src="logo.png" width="250">
 </p>
 
 This is the source repository for <https://cutepon.net>, a web application that allows you to send and receive coupons with friends and family!
