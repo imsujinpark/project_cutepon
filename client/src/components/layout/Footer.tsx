@@ -40,6 +40,7 @@ const Footer = () => {
 const Container = styled.div`
     width: 100%;
     display: flex;
+    position: static;
     /* flex-direction: column; */
     flex-wrap: wrap;
     justify-content: space-around;
