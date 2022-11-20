@@ -26,7 +26,7 @@ const schema = yup.object().shape({
 		.min(1)
 		.max(27, "Title cannot be over 27 characters")
 		.required("Title cannot be empty"),
-	description: yup.string().max(100, "Description cannot be over 100 characters"),
+	description: yup.string().max(95, "Description cannot be over 95 characters"),
 	expiration_date: yup.string().required(),
 });
 
@@ -59,7 +59,7 @@ function IsolateReRenderDescription({control,}: {
 		defaultValue: "",
 	});
 
-	return <Div>{description.length}/100</Div>;
+	return <Div>{description.length}/95</Div>;
 }
 
 const NewCoupon = () => {

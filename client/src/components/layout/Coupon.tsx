@@ -271,11 +271,11 @@ const Head = styled.div`
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     // title
     > h2 {
         margin: 0;
-		height: 16px;
+		height: 20px;
         font-size: 14px;
         width: 218px;
         overflow: hidden;
@@ -286,7 +286,7 @@ const Head = styled.div`
     }
     // Sender/Receiver
     > span {
-        font-size: 10px;
+        font-size: 9px;
         width: 90px;
         text-align: right;
         overflow: hidden;
@@ -297,15 +297,15 @@ const Head = styled.div`
 // description
 const Body = styled.div`
     width: 100%;
-    height: 30px;
-    font-size: 12px;
+    height: 39px;
+    font-size: 11px;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     text-overflow: ellipsis;
-    margin-bottom: 12px;
+    margin-bottom: 3px;
     color: var(--liver-500);
 `;
 // status
