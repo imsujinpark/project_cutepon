@@ -73,17 +73,17 @@ const NewCoupon = () => {
 		}
 	);
 
-	// // if not logged in, navigate to Login page
-	// useEffect(() => {
-	// 	if (!isLoggedIn) {
-	// 		dispatch(setWarningToast("You are not logged in"));
-	// 		navigate("/login");
-	// 	}
-	// 	return () => {
-	// 		// clears copy state
-	// 		dispatch(clearCopyCoupon());
-	// 	};
-	// }, []);
+	// if not logged in, navigate to Login page
+	useEffect(() => {
+		if (!isLoggedIn) {
+			dispatch(setWarningToast("You are not logged in"));
+			navigate("/login");
+		}
+		return () => {
+			// clears copy state
+			dispatch(clearCopyCoupon());
+		};
+	}, []);
 
 	// state of input data when coupon has been copied
 	const { target_user, title, description, expiration_date } = useSelector(
