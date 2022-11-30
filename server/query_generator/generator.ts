@@ -1,10 +1,10 @@
-const fs = require("fs");
+import fs from "fs";
 
 /**
  * Returns an object that acts as a FileWriter of sorts.
  * It merely knows how to write indented code and save itself as an actual file in the file system.
  */
-function createFileWriter(fileName) {
+function createFileWriter(fileName: string) {
     return {
         fileName: fileName,
         indentation: 0,
@@ -85,3 +85,24 @@ function main() {
 }
 
 main()
+
+
+// Notes:
+// Other than replacing in template, NAME should be used for the name of the file,
+// and need to check for [[[REPEAT]]]...[[[REPEAT]]] tags for repeated stuff, where tags are of shape <<<#:OUT_NAME>>>
+class template_input_data {
+    /** example: 'This query does something' */
+    COMMENT: string;
+    /** example: 'user_get_all' */
+    NAME: string;
+    /** example: [ 'unique_id', 'public_id' ] */
+    IN_NAME: string[];
+    /** example: [ 'number',    'string' ] */
+    IN_TYPE: string[];
+    /** example: [ 'unique_id', 'public_id' ] */
+    OUT_NAME: string[];
+    /** example: [ 'number',    'string' ] */
+    OUT_TYPE: string[];
+    /** example: 'select * from user wehere unique_id = ? and public_id = ?' */
+    QUERY_STRING: string;
+}

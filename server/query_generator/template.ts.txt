@@ -1,0 +1,30 @@
+import { Database, Statement } from '../src/sqlite-async.js';
+
+/** <<<COMMENT>>> */
+export abstract class <<<NAME>>> {
+    static input = class {
+        [[[REPEAT]]]<<<#:IN_NAME>>>: <<<#:IN_TYPE>>>;[[[REPEAT]]]
+    }
+    static output = class {
+        [[[REPEAT]]]<<<#:OUT_NAME>>>: <<<#:OUT_TYPE>>>;[[[REPEAT]]]
+    }
+    static query_string = '<<<QUERY_STRING>>>';
+    static query_statement: Statement | null = null;
+    static async query(input: typeof <<<NAME>>>.input): Promise<typeof <<<NAME>>>.output[]> {
+        if (!this.initialized) throw new Error('Query <<<NAME>>> is not initialized!');
+        const all = await this.query_statement?.all(Object.values(input));
+        let out: Array<typeof <<<NAME>>>.output> = new Array();
+        for (let i = 0; i < all.length; i++) {
+            out.push(all[i] as typeof <<<NAME>>>.output);
+        }
+        return out;
+    }
+    static async prepare(db: Database) {
+        this.query_statement = await db.prepare(this.query_string);
+        this.initialized = true;
+    }
+    static async finalize() {
+        await this.query_statement?.finalize();
+    }
+    static initialized: boolean = false;
+}
