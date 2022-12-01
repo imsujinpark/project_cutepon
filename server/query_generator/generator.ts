@@ -1,108 +1,162 @@
 import fs from "fs";
+import path from 'node:path';
+import { install as soure_map_support } from 'source-map-support'; soure_map_support();
+import * as util from '../src/util.js';
 
-/**
- * Returns an object that acts as a FileWriter of sorts.
- * It merely knows how to write indented code and save itself as an actual file in the file system.
- */
-function createFileWriter(fileName: string) {
+function create_file_context(file_name: string) {
     return {
-        fileName: fileName,
+        file_name: file_name,
         indentation: 0,
         content: "",
-        increaseIndentation: function() {
+        indent: function() {
             this.indentation++
             return this
         },
-        decreaseIndentation: function() {
+        deindent: function() {
             this.indentation--
             return this
         },
-        writeIndentedLine: function(line) {
+        write: function(text:string) {
             
             var indentationString = ""
             for (var i = 0; i < this.indentation; i++) { indentationString += "    " }
 
-            const comepleteLine = indentationString + line + "\n"
+            const comepleteLine = indentationString + text + "\n"
             
             this.content += comepleteLine
             return this
         },
-        newLine: function(numberOfNewLines = 1) {
+        new_line: function(numberOfNewLines = 1) {
             for (var i = 0; i < numberOfNewLines; i++) {
                 this.content += "\n"
             }
             return this
         },
-        save: function() {
-            fs.writeFile(this.fileName, this.content, function (err) {
-                if (err) { throw err }
-            });
+        save: async function() {
+            await fs.promises.writeFile(this.file_name, this.content);
         }
     }
 }
 
-/** Creates a FileWriter, generates the source code, and returns it */
-function generateSourceFile(input) {
+function create_source_js(input:any) {
 
-    var f = createFileWriter(`${input.name}.js`)
+    var f = create_file_context(`${input.name}.js`)
 
-    f.writeIndentedLine("import { Database, Statement } from './src/sqlite-async.js';")
+    f.write("import { Database, Statement } from './src/sqlite-async.js';")
 
-    f.writeIndentedLine(`export class ${input.name} {`).increaseIndentation().newLine()
+    f.write(`export class ${input.name} {`).indent().new_line()
 
     // Write some code...
 
-    f.decreaseIndentation().writeIndentedLine("}").newLine()
+    f.deindent().write("}").new_line()
 
     return f;
     
 }
 
-function main() {
+const regexp = /<<(REPEAT):(.+?)>>(.+?)<<REPEAT>>|\{\{(.+?)\}\}/;
+function process_template(template: string, input_data: any): string  {
+    let repeated: any = {}
+    let content = template;
+    for (let match = content.match(regexp), result; match;) {
+        if (match[0][0] === '<') {
+            switch (match[1]) {
+                case 'REPEAT': {
+                    const content = match[3];
+                    const input_object_name = match[2];
+                    const repeat_times = input_data[input_object_name].length;
+                    console.log(`REPEAT ${input_object_name} X ${repeat_times}: ${content}`);
+                    repeated[input_object_name] = {
+                        times: 0,
+                        processed: []
+                    }
+                    let expanded = "";
+                    for(let i = 0; i < repeat_times; i++) expanded += content;
+                    result = expanded;
+                } break;
+            }
+        }
+        else {
+            const content = match[4];
+            console.log(`inject into ${content}`);
+            const [ variable, list ] = content.split(":", 2);
+            if (list) {
+                if (variable === '#') {
+                    result = input_data[list][repeated[list].times];
+                    repeated[list].times++;
+                }
+                else {
+                    if (repeated[list].processed.includes(variable)) {
+                        repeated[list].times++;
+                        repeated[list].processed = [];
+                    }
+                    result = input_data[list][repeated[list].times][variable];
+                    repeated[list].processed.push(variable);
+                }
+            }
+            else {
+                result = input_data[variable];
+            }
+        }
+        content = content.replace(match[0], result);
+        match = content.match(regexp);
+    }
+
+    return content;
+}
+
+interface list_typed_variables { NAME: string; TYPE: string; }
+interface template_input_data {
+    COMMENT: string;
+    NAME: string;
+    IN: list_typed_variables[];
+    OUT: list_typed_variables[];
+    QUERY_STRING: string;
+}
+
+async function main() {
     
-    let dataFile = "./data.csv"
+    let input_file;
+    let template_file;
+    let out_file;
 
     for (let i = 0; i < process.argv.length; i++) {
         let val = process.argv[i];
-        if (val.startsWith("--file:")) {
-            dataFile = val.split(':').at(1)
+        
+        if (val === '-i') {
+            input_file = process.argv[i+1];
+        }
+
+        if (val === '-t') {
+            template_file = process.argv[i+1];
+        }
+
+        if (val === '-o') {
+            out_file = process.argv[i+1];
         }
     }
 
-    console.log(`Using file ${dataFile}`)
-    console.log(`Using file ${dataFile}`)
+    if (!input_file) throw new Error('Input parameters! Ex: -i ./in.json -t ./template.txt -o ./out.ts')
+    if (!template_file) throw new Error('Input parameters! Ex: -i ./in.json -t ./template.txt -o ./out.ts')
+    if (!out_file) throw new Error('Input parameters! Ex: -i ./in.json -t ./template.txt -o ./out.ts')
 
-    const data = require(dataFile)
+    const template = (await fs.promises.readFile(template_file)).toString()
+    let input;
     
-    data.queries.forEach(query => {
-    
-        console.log(`Generating source for query ${query.name}...`)
-        var file = generateSourceFile(query)
-        file.save()
-    
-    })
+    const extension = path.parse(input_file).ext;
+    switch (extension) {
+        
+        case '.json': {
+            input = JSON.parse((await fs.promises.readFile(input_file)).toString());
+        } break;
 
+        default: { throw new Error(); } break;
+    }
+
+    console.log(`Using file ${input_file}`);
+
+    const processed = process_template(template, input.queries[0]);
+    await fs.promises.writeFile(out_file, processed);
 }
 
 main()
-
-
-// Notes:
-// Other than replacing in template, NAME should be used for the name of the file,
-// and need to check for [[[REPEAT]]]...[[[REPEAT]]] tags for repeated stuff, where tags are of shape <<<#:OUT_NAME>>>
-class template_input_data {
-    /** example: 'This query does something' */
-    COMMENT: string;
-    /** example: 'user_get_all' */
-    NAME: string;
-    /** example: [ 'unique_id', 'public_id' ] */
-    IN_NAME: string[];
-    /** example: [ 'number',    'string' ] */
-    IN_TYPE: string[];
-    /** example: [ 'unique_id', 'public_id' ] */
-    OUT_NAME: string[];
-    /** example: [ 'number',    'string' ] */
-    OUT_TYPE: string[];
-    /** example: 'select * from user wehere unique_id = ? and public_id = ?' */
-    QUERY_STRING: string;
-}

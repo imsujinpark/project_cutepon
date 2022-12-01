@@ -19,6 +19,6 @@
     // "module": "ES2022",
     "sourceMap": true
   },
-  "include": ["src/**/*", "main.ts", "tests.ts", "db.ts"],
+  "include": ["src/**/*", "query_generator/generator.ts", "main.ts", "tests.ts", "db.ts"],
 
 }

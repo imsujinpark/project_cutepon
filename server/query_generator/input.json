@@ -1,0 +1,11 @@
+{
+    "queries" : [
+    {
+        "COMMENT": "Inserts a user, duh",
+        "NAME": "user_insert",
+        "IN": [{"NAME": "unique_id", "TYPE": "string"}, {"NAME": "public_id", "TYPE": "string"}],
+        "OUT": [{"NAME": "internal_id", "TYPE": "number"}],
+        "QUERY_STRING": "insert into user (unique_id, public_id) values (?, ?) returning internal_id"
+    }
+]
+}
