@@ -456,8 +456,28 @@ async function main() {
     
     // Start a server on https:443
     if (fs.existsSync("cert.pem") && fs.existsSync("key.pem")) {
-        const cert = fs.readFileSync("cert.pem");
-        const key = fs.readFileSync("key.pem");
+        // ubuntu@ip-172-31-32-26:~/certbot$ sudo certbot certonly --standalone
+        // Saving debug log to /var/log/letsencrypt/letsencrypt.log
+        // Please enter the domain name(s) you would like on your certificate (comma and/or
+        // space separated) (Enter 'c' to cancel): cutepon.net
+        // Renewing an existing certificate for cutepon.net
+        // 
+        // Successfully received certificate.
+        // Certificate is saved at: /etc/letsencrypt/live/cutepon.net/fullchain.pem
+        // Key is saved at:         /etc/letsencrypt/live/cutepon.net/privkey.pem
+        // This certificate expires on 2023-05-09.
+        // These files will be updated when the certificate renews.
+        // Certbot has set up a scheduled task to automatically renew this certificate in the background.
+        // 
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        // If you like Certbot, please consider supporting our work by:
+        // * Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate
+        // * Donating to EFF:                    https://eff.org/donate-le
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        // ubuntu@ip-172-31-32-26:~/project_cutepon/server$ sudo cp /etc/letsencrypt/live/cutepon.net/fullchain.pem cert2.pem
+        // ubuntu@ip-172-31-32-26:~/project_cutepon/server$ sudo cp /etc/letsencrypt/live/cutepon.net/privkey.pem key2.pem
+        const cert = fs.readFileSync("cert2.pem");
+        const key = fs.readFileSync("key2.pem");
         const server = https.createServer({key, cert}, app)
             .listen(443, () => {
                 console.log(`https://${process.env.APP_DOMAIN}/`)
