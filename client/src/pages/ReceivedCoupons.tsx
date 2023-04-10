@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 // components + external functions
-import { CouponData, CouponStatus } from "../common/types";
+import { CouponData, CouponMode, CouponStatus } from "../common/types";
 import { Status } from "../common/constants";
 import Coupon from "../components/layout/Coupon";
 import OptionTab from "../components/layout/OptionTab";
 import Description from "../components/layout/Description";
+import SearchBar from "../components/common/SearchBar";
 import { faArrowPointer } from "@fortawesome/free-solid-svg-icons";
 import { couponRequest } from "../common/utils";
 // redux related
@@ -18,6 +19,7 @@ const ReceivedCoupons = () => {
 	const [couponData, setCouponData] = useState<CouponData[]>([]);
 	const [activeCoupons, setActiveCoupons] = useState<CouponData[]>([]);
 	const [disabledCoupons, setDisabledCoupons] = useState<CouponData[]>([]);
+	const [keyword, setKeyword] = useState<string>("");
 
 	const { status } = useParams(); // status is either "active" or "disabled"
 	const navigate = useNavigate();
@@ -40,15 +42,11 @@ const ReceivedCoupons = () => {
 
 	// filters server coupon data by status
 	useEffect(() => {
-		if (status === Status.ACTIVE) {
-			const filteredArr = couponData.filter(data => data.status === CouponStatus.Active);
-			setActiveCoupons([...filteredArr]);
-		}
-		else {
-			const filteredArr = couponData.filter(data => data.status !== CouponStatus.Active && data.status !== CouponStatus.Deleted);
-			setDisabledCoupons([...filteredArr]);
-		}
-	}, [status, couponData]);
+		const debounce = setTimeout(() => {
+			filterCouponsByStatusAndKeyword();
+		}, 300);
+		return () => clearTimeout(debounce);
+	}, [status, couponData, keyword]);
 
 	const getCoupons = async () => {
 		const { data, message, path, error } = await couponRequest("get", "/api/received");
@@ -72,10 +70,36 @@ const ReceivedCoupons = () => {
 		}
 	};
 
+	const filterCouponsByStatusAndKeyword = () => {
+		if (status === Status.ACTIVE) {
+			const couponsFilteredByStatus = couponData.filter(data => data.status === CouponStatus.Active);
+			const couponsFilteredByKeyword = filterCouponsByKeyword(couponsFilteredByStatus, keyword);
+			setActiveCoupons([...couponsFilteredByKeyword]);
+		}
+		else {
+			const couponsFilteredByStatus = couponData.filter((data) => {
+				return (
+					data.status !== CouponStatus.Active 
+					&& data.status !== CouponStatus.Deleted
+				);
+			});
+			const couponsFilteredByKeyword = filterCouponsByKeyword(couponsFilteredByStatus, keyword);
+			setDisabledCoupons([...couponsFilteredByKeyword]);
+		}
+	};
+
+	const filterCouponsByKeyword = (coupons: CouponData[], keyword: string): CouponData[] => {
+		return coupons.filter((coupon) => (
+			coupon.title.toLowerCase().includes(keyword.toLowerCase())
+            || coupon.description.toLowerCase().includes(keyword.toLowerCase())
+		));
+	};
+
 	return (
 		<Container>
 			<h1>Received Coupons</h1>
 			<OptionTab />
+			<SearchBar keyword={keyword} setKeyword={setKeyword}/>
 			{status === Status.ACTIVE ? (
 				<Description
 					text="Click the coupon to redeem, delete, or send a copy"
