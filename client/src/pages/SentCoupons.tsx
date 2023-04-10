@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 // components + external functions
 import { CouponData } from "../common/types";
+import { Status } from "../common/constants";
 import Coupon from "../components/layout/Coupon";
 import OptionTab from "../components/layout/OptionTab";
 import Description from "../components/layout/Description";
@@ -39,7 +40,7 @@ const SentCoupons = () => {
 
 	// filters server coupon data by status
 	useEffect(() => {
-		if (status === "active") {
+		if (status === Status.ACTIVE) {
 			const filteredArr = couponData.filter((data) => data.status === 0);
 			setActiveCoupons([...filteredArr]);
 		}
@@ -77,7 +78,7 @@ const SentCoupons = () => {
 		<Container>
 			<h1>Sent Coupons</h1>
 			<OptionTab />
-			{status === "active" ? (
+			{status === Status.ACTIVE ? (
 				<Description
 					text="Click the coupon to redeem, delete, or send a copy"
 					icon={faArrowPointer}
@@ -88,7 +89,7 @@ const SentCoupons = () => {
 					icon={faArrowPointer}
 				/>
 			)}
-			{status === "active"
+			{status === Status.ACTIVE
 				? activeCoupons.map((el, idx) => {
 					return <Coupon key={idx} data={el} />;
 				})

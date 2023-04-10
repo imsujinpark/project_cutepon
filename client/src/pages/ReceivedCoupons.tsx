@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 // components + external functions
-import { CouponData } from "../common/types";
+import { CouponData, CouponStatus } from "../common/types";
+import { Status } from "../common/constants";
 import Coupon from "../components/layout/Coupon";
 import OptionTab from "../components/layout/OptionTab";
 import Description from "../components/layout/Description";
@@ -39,20 +40,19 @@ const ReceivedCoupons = () => {
 
 	// filters server coupon data by status
 	useEffect(() => {
-		if (status === "active") {
-			const filteredArr = couponData.filter((data) => data.status === 0);
+		if (status === Status.ACTIVE) {
+			const filteredArr = couponData.filter(data => data.status === CouponStatus.Active);
 			setActiveCoupons([...filteredArr]);
 		}
 		else {
-			// data.status: 0 = active, 3 = deleted (hide deleted in disabled)
-			const filteredArr = couponData.filter((data) => data.status !== 0 && data.status !== 2);
+			const filteredArr = couponData.filter(data => data.status !== CouponStatus.Active && data.status !== CouponStatus.Deleted);
 			setDisabledCoupons([...filteredArr]);
 		}
 	}, [status, couponData]);
 
 	const getCoupons = async () => {
-		const {data, message, path, error} = await couponRequest("get", "/api/received");
-		
+		const { data, message, path, error } = await couponRequest("get", "/api/received");
+
 		// Unhandled server error
 		if (error) {
 			console.log(error);
@@ -76,7 +76,7 @@ const ReceivedCoupons = () => {
 		<Container>
 			<h1>Received Coupons</h1>
 			<OptionTab />
-			{status === "active" ? (
+			{status === Status.ACTIVE ? (
 				<Description
 					text="Click the coupon to redeem, delete, or send a copy"
 					icon={faArrowPointer}
@@ -87,7 +87,7 @@ const ReceivedCoupons = () => {
 					icon={faArrowPointer}
 				/>
 			)}
-			{status === "active"
+			{status === Status.ACTIVE
 				? activeCoupons.map((el, idx) => {
 					return <Coupon key={idx} data={el} />;
 				})

@@ -1,8 +1,9 @@
 import styled from "styled-components";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
+import { Status, StatusText } from "../../common/constants";
 import Button from "../common/Button";
-import { OptionType, CouponOption } from "../../common/types";
+import { OptionType, CouponMode } from "../../common/types";
 
 const OptionTab = () => {
 	const navigate = useNavigate();
@@ -14,16 +15,16 @@ const OptionTab = () => {
 
 	const options: OptionType[] = [
 		{
-			mode: "active",
-			text: "Active",
+			mode: Status.ACTIVE as CouponMode,
+			text: StatusText.ACTIVE,
 		},
 		{
-			mode: "disabled",
-			text: "Disabled",
+			mode: Status.DISABLED as CouponMode,
+			text: StatusText.DISABLED,
 		},
 	];
 
-	const handleClick = (mode: CouponOption) => {
+	const handleClick = (mode: CouponMode) => {
 		if (
 			pathname === "/received/active" ||
             pathname === "/received/disabled"

@@ -1,4 +1,6 @@
-// these are all external types that are used/shared in each functions
+/**
+ * these are all external types that are used/shared in each functions 
+ */
 
 export interface LoginButtonRule {
     loginButtonData: {
@@ -26,10 +28,10 @@ export type DropdownMenuData = {
 };
 
 // types for coupon mode selecting tab
-export type CouponOption = "active" | "disabled";
+export type CouponMode = "active" | "disabled";
 
 export type OptionType = {
-    mode: CouponOption;
+    mode: CouponMode;
     text: string;
 };
 
