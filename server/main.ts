@@ -237,13 +237,15 @@ async function main() {
     const database = await database_start();
     const app = express();
     
-    /** redirect http to https */
-    app.use((req, res, next) => {
-        if (process.env.NODE_ENV != 'development' && !req.secure) {
-            return res.redirect("https://" + req.headers.host + req.url);
-        }
-        next();
-    });
+    // NOTE Since now the TLS is handled by NGINX and all the requests are redirected from nginx to this server through http there there is no need to redirect
+    // anything (In fact, it will just not work if we redirect)
+    // Redirect http to https
+    // app.use((req, res, next) => {
+    //     if (process.env.NODE_ENV != 'development' && !req.secure) {
+    //         return res.redirect("https://" + req.headers.host + req.url);
+    //     }
+    //     next();
+    // });
 
     // Rate limit `/api/*` to 250 request per 15 minutes
     // Send `Errors.RateLimitExceeded` if exceeded
