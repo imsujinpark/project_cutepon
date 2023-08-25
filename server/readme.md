@@ -326,3 +326,129 @@ The tokens returned will be subsequently used for accessing any API that require
 The client will never manually access this API.
 When the client tries to login via oauth at `/oauth2/google` and completes the form,
 google will redirect the client here, with the required data already set.
+
+# Deployment
+
+Just `git pull main && npx tsc && sudo -b nohup node dist/main.js > out.log 2>&1 &`
+
+# NGINX
+We are currently using `NGINX` as a reverse proxy.
+
+> If you want to self host, you can modify `main.ts` and at the bottom fo the file there is the code used the create the `https` server, just make sure to provide the certificates and private keys.
+
+For future reference, installation of `NGINX` and configuration goes as follows:
+
+```
+$ sudo apt-get update
+$ sudo apt-get install nginx
+$ nginx -v
+nginx version: nginx/1.18.0 (Ubuntu)
+```
+
+Now modify the configuration for `NGINX` here.
+
+```
+$ sudo micro /etc/nginx/nginx.conf
+```
+
+Start `NGINX` by providing the configuration.
+
+```
+$ sudo nginx -c nginx.conf
+```
+
+Whenever modifications to the config file are made it can be syntax checked and loaded with this command.
+
+```
+$ sudo nginx -t && sudo nginx -s reload
+```
+
+The current configuration used is...
+
+```conf
+http {
+
+    # Original default configuration of nginx...
+    
+    # Config for cutepon.net
+    server {
+        listen 80;
+        server_name cutepon.net;
+        return 301 https://$server_name$request_uri;
+    }
+    server {
+        listen 443 ssl;
+        server_name cutepon.net;
+        ssl_certificate /etc/letsencrypt/live/cutepon.net/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/cutepon.net/privkey.pem;
+        location / {
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_pass http://localhost:8001;
+        }
+    }
+    
+    # Config for second domain hosted in the same machine
+    server {
+        listen 80;
+        server_name otherdomain.com;
+        return 301 https://$server_name$request_uri;
+    }
+    server {
+        listen 443 ssl;
+        server_name otherdomain.com;
+        ssl_certificate_key /etc/letsencrypt/live/cutepon.net/privkey.pem;
+        ssl_certificate /etc/letsencrypt/live/cutepon.net/fullchain.pem;
+        location / {
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_pass http://localhost:8002;
+        }
+    }
+}
+```
+
+# Certification notes
+
+This is relevant since the certificates (and their paths) used for the `NGINX` configuration come from here.
+
+```
+$ sudo certbot certonly --standalone -d cutepon.net,otherdomain.com
+Saving debug log to /var/log/letsencrypt/letsencrypt.log
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+An RSA certificate named cutepon.net already exists. Do you want to update its
+key type to ECDSA?
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+(U)pdate key type/(K)eep existing key type: u
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+You have an existing certificate that contains a portion of the domains you
+requested (ref: /etc/letsencrypt/renewal/cutepon.net.conf)
+
+It contains these names: cutepon.net
+
+You requested these names for the new certificate: cutepon.net,
+otherdomain.com.
+
+Do you want to expand and replace this existing certificate with the new
+certificate?
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+(E)xpand/(C)ancel: e
+Renewing an existing certificate for cutepon.net and otherdomain.com
+
+Successfully received certificate.
+Certificate is saved at: /etc/letsencrypt/live/cutepon.net/fullchain.pem
+Key is saved at:         /etc/letsencrypt/live/cutepon.net/privkey.pem
+This certificate expires on 2023-11-23.
+These files will be updated when the certificate renews.
+Certbot has set up a scheduled task to automatically renew this certificate in the background.
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+If you like Certbot, please consider supporting our work by:
+ * Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate
+ * Donating to EFF:                    https://eff.org/donate-le
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+```
