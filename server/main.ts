@@ -448,14 +448,15 @@ async function main() {
     // Start a server on http:80 for the sole purpose of redirecting to https in production
     // Or in development, for testing
     const server = http.createServer(app)
-        .listen(80, () => {
+        .listen(8001, () => {
             console.log(`http://${process.env.APP_DOMAIN}/`)
             console.log(`http://${process.env.APP_DOMAIN}/oauth2/google`)
             console.log(`http://${process.env.APP_DOMAIN}/hello`)
         });
     
+    // Starting now I'm relying on nginx for TLS processes
     // Start a server on https:443
-    if (fs.existsSync("cert.pem") && fs.existsSync("key.pem")) {
+    if (false && fs.existsSync("cert.pem") && fs.existsSync("key.pem")) {
         // ubuntu@ip-172-31-32-26:~/certbot$ sudo certbot certonly --standalone
         // Saving debug log to /var/log/letsencrypt/letsencrypt.log
         // Please enter the domain name(s) you would like on your certificate (comma and/or
