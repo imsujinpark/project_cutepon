@@ -452,3 +452,14 @@ If you like Certbot, please consider supporting our work by:
  * Donating to EFF:                    https://eff.org/donate-le
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ```
+
+## Notes on issue 23/11/2023
+
+So, the automatic cert renewal process may fail since nginx is already listening on port 80 (which just happened).
+
+But aparently, the certbot tool has a way to work with an already working nginx instance by using the `--nginx` option rather than the `--standalone` option.
+
+Renewing the certs was as easy as running the usual command with the --nginx option:
+
+    sudo certbot certonly --nginx -d cutepon.net,gobletofgoals.com
+
