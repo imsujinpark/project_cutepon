@@ -2,14 +2,14 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 // components + external functions
-import { CouponData, CouponMode, CouponStatus } from "../common/types";
+import { CouponData, CouponStatus } from "../common/types";
 import { Status } from "../common/constants";
 import Coupon from "../components/layout/Coupon";
 import OptionTab from "../components/layout/OptionTab";
 import Description from "../components/layout/Description";
 import SearchBar from "../components/common/SearchBar";
 import { faArrowPointer } from "@fortawesome/free-solid-svg-icons";
-import { couponRequest } from "../common/utils";
+import { couponRequest, filterCouponsByKeyword } from "../common/utils";
 // redux related
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../store";
@@ -21,7 +21,7 @@ const ReceivedCoupons = () => {
 	const [disabledCoupons, setDisabledCoupons] = useState<CouponData[]>([]);
 	const [keyword, setKeyword] = useState<string>("");
 
-	const { status } = useParams(); // status is either "active" or "disabled"
+	const { status } = useParams(); // status is either CouponStatus.Active or "disabled"
 	const navigate = useNavigate();
 	const dispatch = useDispatch();
 
@@ -71,28 +71,25 @@ const ReceivedCoupons = () => {
 	};
 
 	const filterCouponsByStatusAndKeyword = () => {
+		const couponsFilteredByKeyword = keyword.length > 0
+			? filterCouponsByKeyword(couponData, keyword)
+			: couponData;
+
 		if (status === Status.ACTIVE) {
-			const couponsFilteredByStatus = couponData.filter(data => data.status === CouponStatus.Active);
-			const couponsFilteredByKeyword = filterCouponsByKeyword(couponsFilteredByStatus, keyword);
-			setActiveCoupons([...couponsFilteredByKeyword]);
+			const couponsFilteredByStatus = couponsFilteredByKeyword.filter(data => data.status === CouponStatus.Active);
+			const sortedCoupons = couponsFilteredByStatus.sort((a, b) => a.expiration_date - b.expiration_date);
+			setActiveCoupons([...sortedCoupons]);
 		}
 		else {
-			const couponsFilteredByStatus = couponData.filter((data) => {
+			const couponsFilteredByStatus = couponsFilteredByKeyword.filter((data) => {
 				return (
 					data.status !== CouponStatus.Active 
 					&& data.status !== CouponStatus.Deleted
 				);
 			});
-			const couponsFilteredByKeyword = filterCouponsByKeyword(couponsFilteredByStatus, keyword);
-			setDisabledCoupons([...couponsFilteredByKeyword]);
+			const sortedCoupons = couponsFilteredByStatus.sort((a, b) => b.finish_date - a.finish_date);
+			setDisabledCoupons([...sortedCoupons]);
 		}
-	};
-
-	const filterCouponsByKeyword = (coupons: CouponData[], keyword: string): CouponData[] => {
-		return coupons.filter((coupon) => (
-			coupon.title.toLowerCase().includes(keyword.toLowerCase())
-            || coupon.description.toLowerCase().includes(keyword.toLowerCase())
-		));
 	};
 
 	return (

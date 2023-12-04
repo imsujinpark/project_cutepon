@@ -1,6 +1,6 @@
 import axios from "axios";
 
-import { Errors } from "./types";
+import { CouponData, Errors } from "./types";
 // redux related
 import { loginFulfilled, logoutFulfilled } from "../features/userSlice";
 import store from "../store";
@@ -245,4 +245,12 @@ export const couponRequest = async (method: Method, api: string, paylaod?: any, 
 // purge function is to remove state from local storage
 export const purge = async () => {
 	await persistor.purge();
+};
+
+// filter coupon datas by keyword string
+export const filterCouponsByKeyword = (coupons: CouponData[], keyword: string): CouponData[] => {
+	return coupons.filter((coupon) => (
+		coupon.title.toLowerCase().includes(keyword.toLowerCase())
+		|| coupon.description.toLowerCase().includes(keyword.toLowerCase())
+	));
 };
