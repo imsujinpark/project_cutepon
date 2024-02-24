@@ -30,8 +30,12 @@ async function database_start(): Promise<Database> {
         throw err;
     });
 
-    // await User.reset_table(database);
-    // await Coupon.reset_table(database);
+    if (process.env.NODE_ENV == 'development') {
+        // await User.reset_table(database);
+        // await Coupon.reset_table(database);
+        // await UserCoupon.reset_table(database);
+    }
+
     await User.initialize_statements(database);
     await Coupon.initialize_statements(database);
     await UserCoupon.initialize_statements(database);
@@ -40,13 +44,15 @@ async function database_start(): Promise<Database> {
 }
 
 function verify_environment(): void {
-    util.require_not_null(process.env.APP_DOMAIN);
-    util.require_not_null(process.env.JWT_SECRET);
-    util.require_not_null(process.env.REFRESH_JWT_SECRET);
-    util.require_not_null(process.env.CLIENT_ID);
-    util.require_not_null(process.env.CLIENT_SECRET);
-    util.require_not_null(process.env.NODE_ENV);
-    util.require_not_null(process.env.NODE_ROOT);
+    if (process.env.APP_DOMAIN == null || process.env.APP_DOMAIN == undefined) process.env.APP_DOMAIN = "localhost";
+    if (process.env.NODE_ENV == null || process.env.NODE_ENV == undefined) process.env.NODE_ENV = "development";
+    if (process.env.NODE_ROOT == null || process.env.NODE_ROOT == undefined) process.env.NODE_ROOT = "../client";
+    if (process.env.NODE_ENV != 'development') {
+        util.require_not_null(process.env.JWT_SECRET);
+        util.require_not_null(process.env.REFRESH_JWT_SECRET);
+        util.require_not_null(process.env.CLIENT_ID);
+        util.require_not_null(process.env.CLIENT_SECRET);
+    }
 }
 
 /** return type of googleapis.com/token */
@@ -445,15 +451,14 @@ async function main() {
 
     });
     
-    console.log(`NODE_ENV ${process.env.NODE_ENV}`)
-    
+    console.log(`NODE_ENV ${process.env.NODE_ENV}`);
+
+    const port = process.env.NODE_ENV == 'development' ? 80 : 8001;
     // Start a server on http:80 for the sole purpose of redirecting to https in production
     // Or in development, for testing
     const server = http.createServer(app)
-        .listen(8001, () => {
+        .listen(port, () => {
             console.log(`http://${process.env.APP_DOMAIN}/`)
-            console.log(`http://${process.env.APP_DOMAIN}/oauth2/google`)
-            console.log(`http://${process.env.APP_DOMAIN}/hello`)
         });
     
     // Starting now I'm relying on nginx for TLS processes
