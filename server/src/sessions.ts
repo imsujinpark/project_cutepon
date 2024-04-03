@@ -38,7 +38,7 @@ export class SessionsManager {
 
         const user_session = this.sessions.get(token);
         
-        if (!user_session) return SessionError.InvalidToken;
+        if (user_session === undefined) return SessionError.InvalidToken;
         
         if (Date.now() > user_session.expiration) {
             
@@ -56,7 +56,7 @@ export class SessionsManager {
         
         const user_session_long = this.sessions_long.get(refresh_token);
 
-        if (!user_session_long) return SessionError.InvalidToken;
+        if (user_session_long === undefined) return SessionError.InvalidToken;
 
         if (Date.now() > user_session_long.expiration) {
             
@@ -69,7 +69,7 @@ export class SessionsManager {
 
         const user_tokens = this.user_sessions.get(user_id);
 
-        if (!user_tokens) util.unreachable(`
+        if (user_tokens === undefined) util.unreachable(`
             The user somehow has a valid refresh token but not known sessions?
         `.trim());
 
@@ -93,7 +93,7 @@ export class SessionsManager {
             tries_session++;
             if (tries_session > 10) util.unreachable("Somehow failed to create a token that is not in use more than 10 times?!")
         }
-        while (this.sessions.get(new_session.token))
+        while (this.sessions.get(new_session.token) !== undefined)
 
         let new_session_long;
         let tries_session_long = 0;
@@ -102,7 +102,7 @@ export class SessionsManager {
             tries_session_long++;
             if (tries_session_long > 10) util.unreachable("Somehow failed to create a token that is not in use more than 10 times?!")
         }
-        while (this.sessions_long.get(new_session_long.token))
+        while (this.sessions_long.get(new_session_long.token) !== undefined)
 
         
         // Save the tokens.
@@ -130,7 +130,7 @@ export class SessionsManager {
         const user_tokens = this.user_sessions.get(user_id);
 
         // If the user already has a session, remove it
-        if (user_tokens) {
+        if (user_tokens !== undefined) {
             this.sessions.delete(user_tokens.token);
             this.sessions_long.delete(user_tokens.refresh_token);
             this.user_sessions.delete(user_id);
@@ -144,7 +144,7 @@ export class SessionsManager {
             tries_session++;
             if (tries_session > 10) util.unreachable("Somehow failed to create a token that is not in use more than 10 times?!")
         }
-        while (this.sessions.get(new_session.token))
+        while (this.sessions.get(new_session.token) !== undefined)
 
         let new_session_long;
         let tries_session_long = 0;
@@ -153,7 +153,7 @@ export class SessionsManager {
             tries_session_long++;
             if (tries_session_long > 10) util.unreachable("Somehow failed to create a token that is not in use more than 10 times?!")
         }
-        while (this.sessions_long.get(new_session_long.token))
+        while (this.sessions_long.get(new_session_long.token) !== undefined)
 
         
         // Save the tokens.

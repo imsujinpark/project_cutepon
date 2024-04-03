@@ -4,7 +4,6 @@ import { Database, Statement } from './src/sqlite-async.js';
 import * as jsonwebtoken from 'jsonwebtoken';
 import express, { Express, NextFunction, Request, RequestHandler, Response } from 'express';
 import cors, {CorsOptions, CorsOptionsDelegate, CorsRequest} from 'cors';
-import * as dotenv from 'dotenv';
 import axios from 'axios';
 import https from 'https';
 import http from 'http';
@@ -14,8 +13,6 @@ import * as path from 'path';
 // import { json as body_as_json } from 'body-parser';
 import pkg from 'body-parser';
 const { json: body_as_json } = pkg;
-// This is required for stack traces to refer to the original typescript code instead of the compiled js
-import { install as soure_map_support } from 'source-map-support';
 import rateLimit from 'express-rate-limit'
 import * as util from './src/util.js';
 import { UserCoupon } from './src/UserCoupon.js';
@@ -30,8 +27,12 @@ async function database_start(): Promise<Database> {
         throw err;
     });
 
-    // await User.reset_table(database);
-    // await Coupon.reset_table(database);
+    if (process.env.NODE_ENV == 'development') {
+        // await User.reset_table(database);
+        // await Coupon.reset_table(database);
+        // await UserCoupon.reset_table(database);
+    }
+
     await User.initialize_statements(database);
     await Coupon.initialize_statements(database);
     await UserCoupon.initialize_statements(database);
@@ -40,13 +41,15 @@ async function database_start(): Promise<Database> {
 }
 
 function verify_environment(): void {
-    util.require_not_null(process.env.APP_DOMAIN);
-    util.require_not_null(process.env.JWT_SECRET);
-    util.require_not_null(process.env.REFRESH_JWT_SECRET);
-    util.require_not_null(process.env.CLIENT_ID);
-    util.require_not_null(process.env.CLIENT_SECRET);
-    util.require_not_null(process.env.NODE_ENV);
-    util.require_not_null(process.env.NODE_ROOT);
+    if (process.env.APP_DOMAIN == null || process.env.APP_DOMAIN == undefined) process.env.APP_DOMAIN = "localhost";
+    if (process.env.NODE_ENV == null || process.env.NODE_ENV == undefined) process.env.NODE_ENV = "development";
+    if (process.env.NODE_ROOT == null || process.env.NODE_ROOT == undefined) process.env.NODE_ROOT = "../client";
+    if (process.env.NODE_ENV != 'development') {
+        util.require_not_null(process.env.JWT_SECRET);
+        util.require_not_null(process.env.REFRESH_JWT_SECRET);
+        util.require_not_null(process.env.CLIENT_ID);
+        util.require_not_null(process.env.CLIENT_SECRET);
+    }
 }
 
 /** return type of googleapis.com/token */
@@ -176,7 +179,7 @@ enum Errors {
     Internal
 };
 
-function response_error(res: Response, error: Errors, next: express.NextFunction): void {
+function internal_error_to_http_error_code(error: Errors): number {
     let status: number = 500; // Internal error by default
     switch(error) {
         case Errors.AuthorizationExpired: status = 401; // Unauthorized
@@ -197,7 +200,16 @@ function response_error(res: Response, error: Errors, next: express.NextFunction
         case Errors.NotImplemented: status = 501; // Not implemented
         case Errors.Internal: status = 500; // Forbidden
     }
-    const error_object = { error: error, message: Errors[error] }
+    return status
+}
+
+function internal_error_to_error_message(error: Errors): string {
+    return Errors[error];
+}
+
+function response_error(res: Response, error: Errors, next: express.NextFunction): void {
+    let status: number = internal_error_to_http_error_code(error);
+    const error_object = { error: error, message: internal_error_to_error_message(error) }
     res.status(status).json(error_object);
     
     let err = new Error(util.inspect(error_object));
@@ -435,25 +447,30 @@ async function main() {
         // But unexpected errors still need to be notified to the client
         if (!(err as any).__handled__) {
             
+            const error = Errors.Internal;
+            const error_object = { error: error, message: internal_error_to_error_message(error) }
+            let status: number = internal_error_to_http_error_code(error);
+            
             // If unexpected error, log it and send an Internal error to the client
             util.log(`:::: Unhandled error ::::\n${util.inspect(err)}`);
-            res.status(Errors.Internal).json({ error: Errors.Internal, message: Errors[Errors.Internal] });
-            
+            if ((err as any).stack != undefined) {
+                util.log((err as any).stack);
+            }
+            res.status(status).json(error_object);
         }
         else {
         }
 
     });
     
-    console.log(`NODE_ENV ${process.env.NODE_ENV}`)
-    
+    console.log(`NODE_ENV ${process.env.NODE_ENV}`);
+
+    const port = process.env.NODE_ENV == 'development' ? 80 : 8001;
     // Start a server on http:80 for the sole purpose of redirecting to https in production
     // Or in development, for testing
     const server = http.createServer(app)
-        .listen(8001, () => {
+        .listen(port, () => {
             console.log(`http://${process.env.APP_DOMAIN}/`)
-            console.log(`http://${process.env.APP_DOMAIN}/oauth2/google`)
-            console.log(`http://${process.env.APP_DOMAIN}/hello`)
         });
     
     // Starting now I'm relying on nginx for TLS processes
@@ -490,6 +507,4 @@ async function main() {
     }
 }
 
-soure_map_support();
-dotenv.config();
 main();
