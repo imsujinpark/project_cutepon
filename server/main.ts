@@ -179,7 +179,7 @@ enum Errors {
     Internal
 };
 
-function response_error(res: Response, error: Errors, next: express.NextFunction): void {
+function internal_error_to_http_error_code(error: Errors): number {
     let status: number = 500; // Internal error by default
     switch(error) {
         case Errors.AuthorizationExpired: status = 401; // Unauthorized
@@ -200,7 +200,16 @@ function response_error(res: Response, error: Errors, next: express.NextFunction
         case Errors.NotImplemented: status = 501; // Not implemented
         case Errors.Internal: status = 500; // Forbidden
     }
-    const error_object = { error: error, message: Errors[error] }
+    return status
+}
+
+function internal_error_to_error_message(error: Errors): string {
+    return Errors[error];
+}
+
+function response_error(res: Response, error: Errors, next: express.NextFunction): void {
+    let status: number = internal_error_to_http_error_code(error);
+    const error_object = { error: error, message: internal_error_to_error_message(error) }
     res.status(status).json(error_object);
     
     let err = new Error(util.inspect(error_object));
@@ -438,10 +447,16 @@ async function main() {
         // But unexpected errors still need to be notified to the client
         if (!(err as any).__handled__) {
             
+            const error = Errors.Internal;
+            const error_object = { error: error, message: internal_error_to_error_message(error) }
+            let status: number = internal_error_to_http_error_code(error);
+            
             // If unexpected error, log it and send an Internal error to the client
             util.log(`:::: Unhandled error ::::\n${util.inspect(err)}`);
-            res.status(Errors.Internal).json({ error: Errors.Internal, message: Errors[Errors.Internal] });
-            
+            if ((err as any).stack != undefined) {
+                util.log((err as any).stack);
+            }
+            res.status(status).json(error_object);
         }
         else {
         }
