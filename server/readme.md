@@ -453,13 +453,15 @@ If you like Certbot, please consider supporting our work by:
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ```
 
-## Notes on issue 23/11/2023
+## Using `certbot` with `nginx`
 
 So, the automatic cert renewal process may fail since nginx is already listening on port 80 (which just happened).
 
 But aparently, the certbot tool has a way to work with an already working nginx instance by using the `--nginx` option rather than the `--standalone` option.
 
+> the nginx certbot plugin must be installed first! `apt install python3-certbot-nginx`. As far as I cant tell thats the way.
+
 Renewing the certs was as easy as running the usual command with the --nginx option:
 
-    sudo certbot certonly --nginx -d cutepon.net,gobletofgoals.com
+    sudo certbot certonly --nginx -d cutepon.net,otherdomain.com
 
