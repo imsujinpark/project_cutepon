@@ -29,10 +29,14 @@ const OAuth2RedirectHandler = () => {
 		);
 		axios.defaults.headers.common["Authorization"] = token;
 		if (refreshToken !== null) {
-			silentRefresh(refreshToken);
+			silentRefresh(refreshToken).then(() => {
+				dispatch(setNoticeToast("Successfully logged in"));
+				navigate("/received/active");
+			});
 		}
-		dispatch(setNoticeToast("Successfully logged in"));
-		navigate("/received/active");
+		else {
+			// TODO unreachable, how do I do unreachable in js?
+		}
 	};
 
 	return (
