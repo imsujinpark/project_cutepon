@@ -4,7 +4,6 @@ import { Database, Statement } from './src/sqlite-async.js';
 import * as jsonwebtoken from 'jsonwebtoken';
 import express, { Express, NextFunction, Request, RequestHandler, Response } from 'express';
 import cors, {CorsOptions, CorsOptionsDelegate, CorsRequest} from 'cors';
-import * as dotenv from 'dotenv';
 import axios from 'axios';
 import https from 'https';
 import http from 'http';
@@ -14,8 +13,6 @@ import * as path from 'path';
 // import { json as body_as_json } from 'body-parser';
 import pkg from 'body-parser';
 const { json: body_as_json } = pkg;
-// This is required for stack traces to refer to the original typescript code instead of the compiled js
-import { install as soure_map_support } from 'source-map-support';
 import rateLimit from 'express-rate-limit'
 import * as util from './src/util.js';
 import { UserCoupon } from './src/UserCoupon.js';
@@ -495,6 +492,4 @@ async function main() {
     }
 }
 
-soure_map_support();
-dotenv.config();
 main();
