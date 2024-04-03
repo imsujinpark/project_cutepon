@@ -2,22 +2,24 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 // components + external functions
-import { CouponData } from "../common/types";
+import { CouponData, CouponStatus } from "../common/types";
 import { Status } from "../common/constants";
 import Coupon from "../components/layout/Coupon";
 import OptionTab from "../components/layout/OptionTab";
 import Description from "../components/layout/Description";
 import { faArrowPointer } from "@fortawesome/free-solid-svg-icons";
-import { couponRequest } from "../common/utils";
+import { couponRequest, filterCouponsByKeyword } from "../common/utils";
 // redux related
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../store";
 import { setWarningToast } from "../features/toastSlice";
+import SearchBar from "../components/common/SearchBar";
 
 const SentCoupons = () => {
 	const [couponData, setCouponData] = useState<CouponData[]>([]);
 	const [activeCoupons, setActiveCoupons] = useState<CouponData[]>([]);
 	const [disabledCoupons, setDisabledCoupons] = useState<CouponData[]>([]);
+	const [keyword, setKeyword] = useState<string>("");
 
 	const { status } = useParams(); // status is either "active" or "disabled"
 	const navigate = useNavigate();
@@ -40,16 +42,33 @@ const SentCoupons = () => {
 
 	// filters server coupon data by status
 	useEffect(() => {
+		const debounce = setTimeout(() => {
+			filterCouponsByStatusAndKeyword();
+		}, 300);
+		return () => clearTimeout(debounce);
+	}, [status, couponData, keyword]);
+
+	const filterCouponsByStatusAndKeyword = () => {
+		const couponsFilteredByKeyword = keyword.length > 0
+			? filterCouponsByKeyword(couponData, keyword)
+			: couponData;
+
 		if (status === Status.ACTIVE) {
-			const filteredArr = couponData.filter((data) => data.status === 0);
-			setActiveCoupons([...filteredArr]);
+			const couponsFilteredByStatus = couponsFilteredByKeyword.filter(data => data.status === CouponStatus.Active);
+			const sortedCoupons = couponsFilteredByStatus.sort((a, b) => a.expiration_date - b.expiration_date);
+			setActiveCoupons([...sortedCoupons]);
 		}
 		else {
-			// data.status: 0 = active, 3 = deleted (hide deleted in disabled)
-			const filteredArr = couponData.filter((data) => data.status !== 0 && data.status !== 2);
-			setDisabledCoupons([...filteredArr]);
+			const couponsFilteredByStatus = couponsFilteredByKeyword.filter((data) => {
+				return (
+					data.status !== CouponStatus.Active 
+					&& data.status !== CouponStatus.Deleted
+				);
+			});
+			const sortedCoupons = couponsFilteredByStatus.sort((a, b) => b.finish_date - a.finish_date);
+			setDisabledCoupons([...sortedCoupons]);
 		}
-	}, [status, couponData]);
+	};
 
 	const getCoupons = async () => {
 
@@ -78,6 +97,7 @@ const SentCoupons = () => {
 		<Container>
 			<h1>Sent Coupons</h1>
 			<OptionTab />
+			<SearchBar keyword={keyword} setKeyword={setKeyword}/>
 			{status === Status.ACTIVE ? (
 				<Description
 					text="Click the coupon to redeem, delete, or send a copy"
